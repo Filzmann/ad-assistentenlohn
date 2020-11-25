@@ -1,4 +1,4 @@
-from tkinter import *
+import tkinter as tk
 from tkinter import messagebox
 from tkinter import filedialog
 import shelve
@@ -6,17 +6,17 @@ import datetime
 from tkcalendar import Calendar
 
 
-class TimePicker(Frame):
+class TimePicker(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
         self.reg = self.register(self.hour_valid)
-        self.hourstr = StringVar(self, '10')
-        self.hour = Spinbox(self, from_=0, to=23, wrap=True, validate='focusout', validatecommand=(self.reg, '%P'),
-                            invalidcommand=self.hour_invalid, textvariable=self.hourstr, width=2)
+        self.hourstr = tk.StringVar(self, '10')
+        self.hour = tk.Spinbox(self, from_=0, to=23, wrap=True, validate='focusout', validatecommand=(self.reg, '%P'),
+                               invalidcommand=self.hour_invalid, textvariable=self.hourstr, width=2)
         self.reg2 = self.register(self.min_valid)
-        self.minstr = StringVar(self, '30')
-        self.min = Spinbox(self, from_=0, to=59, wrap=True, validate='focusout', validatecommand=(self.reg2, '%P'),
-                           invalidcommand=self.min_invalid, textvariable=self.minstr, width=2)
+        self.minstr = tk.StringVar(self, '30')
+        self.min = tk.Spinbox(self, from_=0, to=59, wrap=True, validate='focusout', validatecommand=(self.reg2, '%P'),
+                              invalidcommand=self.min_invalid, textvariable=self.minstr, width=2)
         self.hour.grid()
         self.min.grid(row=0, column=1)
 
@@ -65,11 +65,7 @@ class Person:
 # erstellt den einen AS, kommt genau einmal pro Datei vor
 class AS(Person):
     count = 0
-
-    festeSchichten = []
-    urlaub = []
-    krank = []
-    einstellungsdatum = ''
+    assistent_is_loaded = 0
 
     def __init__(self, name='', vorname='', email="keine@email.de", einstellungsdatum="01.01.1970"):
         self.filepath = ''
@@ -80,6 +76,9 @@ class AS(Person):
         self.email = email
         self.einstellungsdatum = einstellungsdatum
         self.__class__.count += 1
+        self.festeSchichten = []
+        self.urlaub = []
+        self.arbeitsunfaehig = []
 
     def __del__(self):
         self.__class__.count -= 1
@@ -146,26 +145,25 @@ class Schicht:
 def neuer_as():
     def action_save_neuer_as():
         global assistent
-        global assistent_is_loaded
         assistent = AS(form_neuer_as_nachname_input.get(), form_neuer_as_vorname_input.get(),
                        form_neuer_as_email_input.get(), form_neuer_as_einstellungsdatum_input.get_date())
-        assistent_is_loaded = TRUE
+        assistent.__class__.assistent_is_loaded = 1
         alles_speichern(neu=1)
         fenster_neuer_as.destroy()
 
     #  global assistent
-    fenster_neuer_as = Toplevel(fenster)
-    form_neuer_as_headline = Label(fenster_neuer_as, text="Wer bist du denn eigentlich?")
-    form_neuer_as_vorname_label = Label(fenster_neuer_as, text="Vorname")
-    form_neuer_as_vorname_input = Entry(fenster_neuer_as, bd=5, width=40)
-    form_neuer_as_nachname_label = Label(fenster_neuer_as, text="Nachname")
-    form_neuer_as_nachname_input = Entry(fenster_neuer_as, bd=5, width=40)
-    form_neuer_as_email_label = Label(fenster_neuer_as, text="Email")
-    form_neuer_as_email_input = Entry(fenster_neuer_as, bd=5, width=40)
-    form_neuer_as_einstellungsdatum_label = Label(fenster_neuer_as, text="Seit wann bei ad? (tt.mm.JJJJ)")
+    fenster_neuer_as = tk.Toplevel(fenster)
+    form_neuer_as_headline = tk.Label(fenster_neuer_as, text="Wer bist du denn eigentlich?")
+    form_neuer_as_vorname_label = tk.Label(fenster_neuer_as, text="Vorname")
+    form_neuer_as_vorname_input = tk.Entry(fenster_neuer_as, bd=5, width=40)
+    form_neuer_as_nachname_label = tk.Label(fenster_neuer_as, text="Nachname")
+    form_neuer_as_nachname_input = tk.Entry(fenster_neuer_as, bd=5, width=40)
+    form_neuer_as_email_label = tk.Label(fenster_neuer_as, text="Email")
+    form_neuer_as_email_input = tk.Entry(fenster_neuer_as, bd=5, width=40)
+    form_neuer_as_einstellungsdatum_label = tk.Label(fenster_neuer_as, text="Seit wann bei ad? (tt.mm.JJJJ)")
     form_neuer_as_einstellungsdatum_input = Calendar(fenster_neuer_as)
-    form_neuer_as_save_button = Button(fenster_neuer_as, text="Daten speichern", command=action_save_neuer_as)
-    form_neuer_as_exit_button = Button(fenster_neuer_as, text="Abbrechen", command=fenster_neuer_as.destroy)
+    form_neuer_as_save_button = tk.Button(fenster_neuer_as, text="Daten speichern", command=action_save_neuer_as)
+    form_neuer_as_exit_button = tk.Button(fenster_neuer_as, text="Abbrechen", command=fenster_neuer_as.destroy)
 
     # ins Fenster packen
     form_neuer_as_headline.grid(row=0, column=0, columnspan=2)
@@ -261,60 +259,61 @@ def neue_schicht():
         alles_speichern()
         fenster_neue_schicht.destroy()
 
-    fenster_neue_schicht = Toplevel(fenster)
-    form_neue_schicht_headline = Label(fenster_neue_schicht, text="Schichten eintragen")
-    form_neue_schicht_startdatum_label = Label(fenster_neue_schicht, text="Datum (Beginn) der Schicht")
+    fenster_neue_schicht = tk.Toplevel(fenster)
+    form_neue_schicht_headline = tk.Label(fenster_neue_schicht, text="Schichten eintragen")
+    form_neue_schicht_startdatum_label = tk.Label(fenster_neue_schicht, text="Datum (Beginn) der Schicht")
     form_neue_schicht_startdatum_input = Calendar(fenster_neue_schicht, date_pattern='MM/dd/yyyy')
-    form_neue_schicht_startzeit_label = Label(fenster_neue_schicht, text="Startzeit")
+    form_neue_schicht_startzeit_label = tk.Label(fenster_neue_schicht, text="Startzeit")
     form_neue_schicht_startzeit_input = TimePicker(fenster_neue_schicht)
-    form_neue_schicht_endzeit_label = Label(fenster_neue_schicht, text="Schichtende")
+    form_neue_schicht_endzeit_label = tk.Label(fenster_neue_schicht, text="Schichtende")
     form_neue_schicht_endzeit_input = TimePicker(fenster_neue_schicht)
-    form_neue_schicht_enddatum_label = Label(fenster_neue_schicht, text="Datum Ende der Schicht")
+    form_neue_schicht_enddatum_label = tk.Label(fenster_neue_schicht, text="Datum Ende der Schicht")
     form_neue_schicht_enddatum_input = Calendar(fenster_neue_schicht, date_pattern='MM/dd/yyyy')
     # TODO Vorauswahl konfigurieren lassen
-    fenster_neue_schicht.v = IntVar()
+    fenster_neue_schicht.v = tk.IntVar()
     fenster_neue_schicht.v.set(1)
-    form_neue_schicht_anderes_enddatum_label = Label(fenster_neue_schicht,
-                                                     text="Tagschicht, Nachtschicht\noder mehrtägig?")
+    form_neue_schicht_anderes_enddatum_label = tk.Label(fenster_neue_schicht,
+                                                        text="Tagschicht, Nachtschicht\noder mehrtägig?")
     form_neue_schicht_anderes_enddatum_input_radio1 = \
-        Radiobutton(fenster_neue_schicht, text="Tagschicht", padx=20,
-                    variable=fenster_neue_schicht.v, value=1,
-                    command=lambda: tag_nacht_reise(1, form_neue_schicht_enddatum_input,
-                                                    form_neue_schicht_enddatum_label))
+        tk.Radiobutton(fenster_neue_schicht, text="Tagschicht", padx=20,
+                       variable=fenster_neue_schicht.v, value=1,
+                       command=lambda: tag_nacht_reise(1, form_neue_schicht_enddatum_input,
+                                                       form_neue_schicht_enddatum_label))
     form_neue_schicht_anderes_enddatum_input_radio2 = \
-        Radiobutton(fenster_neue_schicht, text="Nachtschicht\n(Ende der Schicht ist am Folgetag)", padx=20,
-                    variable=fenster_neue_schicht.v, value=2,
-                    command=lambda: tag_nacht_reise(2, form_neue_schicht_enddatum_input,
-                                                    form_neue_schicht_enddatum_label))
+        tk.Radiobutton(fenster_neue_schicht, text="Nachtschicht\n(Ende der Schicht ist am Folgetag)", padx=20,
+                       variable=fenster_neue_schicht.v, value=2,
+                       command=lambda: tag_nacht_reise(2, form_neue_schicht_enddatum_input,
+                                                       form_neue_schicht_enddatum_label))
     form_neue_schicht_anderes_enddatum_input_radio3 = \
-        Radiobutton(fenster_neue_schicht, text="Mehrtägig/Reisebegleitung", padx=20,
-                    variable=fenster_neue_schicht.v, value=3,
-                    command=lambda: tag_nacht_reise(3, form_neue_schicht_enddatum_input,
-                                                    form_neue_schicht_enddatum_label))
-    form_neue_schicht_asn_label = Label(fenster_neue_schicht, text="Assistenznehmer")
+        tk.Radiobutton(fenster_neue_schicht, text="Mehrtägig/Reisebegleitung", padx=20,
+                       variable=fenster_neue_schicht.v, value=3,
+                       command=lambda: tag_nacht_reise(3, form_neue_schicht_enddatum_input,
+                                                       form_neue_schicht_enddatum_label))
+    form_neue_schicht_asn_label = tk.Label(fenster_neue_schicht, text="Assistenznehmer")
     # grundsätzliche Optionen für Dropdown
     option_list = ["Bitte auswählen", "Neuer ASN", *assistent.get_all_asn()]
 
-    variable = StringVar()
+    variable = tk.StringVar()
     variable.set(option_list[0])
-    form_neue_schicht_asn_dropdown = OptionMenu(fenster_neue_schicht, variable, *option_list, command=neuer_asn)
+    form_neue_schicht_asn_dropdown = tk.OptionMenu(fenster_neue_schicht, variable, *option_list, command=neuer_asn)
     # Felder für neuen ASN
-    form_neuer_asn_kuerzel_label = Label(fenster_neue_schicht, text="Kürzel")
-    form_neuer_asn_kuerzel_input = Entry(fenster_neue_schicht, bd=5, width=40)
-    form_neuer_asn_vorname_label = Label(fenster_neue_schicht, text="Vorname")
-    form_neuer_asn_vorname_input = Entry(fenster_neue_schicht, bd=5, width=40)
-    form_neuer_asn_nachname_label = Label(fenster_neue_schicht, text="Nachname")
-    form_neuer_asn_nachname_input = Entry(fenster_neue_schicht, bd=5, width=40)
-    form_neuer_asn_strasse_label = Label(fenster_neue_schicht, text="Straße/Hausnummer")
-    form_neuer_asn_strasse_input = Entry(fenster_neue_schicht, bd=5, width=40)
-    form_neuer_asn_hausnummer_input = Entry(fenster_neue_schicht, bd=5, width=10)
-    form_neuer_asn_plz_label = Label(fenster_neue_schicht, text="Postleitzahl")
-    form_neuer_asn_plz_input = Entry(fenster_neue_schicht, bd=5, width=40)
-    form_neuer_asn_stadt_label = Label(fenster_neue_schicht, text="Stadt")
-    form_neuer_asn_stadt_input = Entry(fenster_neue_schicht, bd=5, width=40)
-    form_neue_schicht_save_button = Button(fenster_neue_schicht, text="Daten speichern",
-                                           command=action_save_neue_schicht)
-    form_neue_schicht_exit_button = Button(fenster_neue_schicht, text="Abbrechen", command=fenster_neue_schicht.destroy)
+    form_neuer_asn_kuerzel_label = tk.Label(fenster_neue_schicht, text="Kürzel")
+    form_neuer_asn_kuerzel_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
+    form_neuer_asn_vorname_label = tk.Label(fenster_neue_schicht, text="Vorname")
+    form_neuer_asn_vorname_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
+    form_neuer_asn_nachname_label = tk.Label(fenster_neue_schicht, text="Nachname")
+    form_neuer_asn_nachname_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
+    form_neuer_asn_strasse_label = tk.Label(fenster_neue_schicht, text="Straße/Hausnummer")
+    form_neuer_asn_strasse_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
+    form_neuer_asn_hausnummer_input = tk.Entry(fenster_neue_schicht, bd=5, width=10)
+    form_neuer_asn_plz_label = tk.Label(fenster_neue_schicht, text="Postleitzahl")
+    form_neuer_asn_plz_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
+    form_neuer_asn_stadt_label = tk.Label(fenster_neue_schicht, text="Stadt")
+    form_neuer_asn_stadt_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
+    form_neue_schicht_save_button = tk.Button(fenster_neue_schicht, text="Daten speichern",
+                                              command=action_save_neue_schicht)
+    form_neue_schicht_exit_button = tk.Button(fenster_neue_schicht, text="Abbrechen",
+                                              command=fenster_neue_schicht.destroy)
 
     # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
 
@@ -356,20 +355,21 @@ def alles_speichern(neu=0):
         dateiname = dateiname.name
         dateiname_zwischen = dateiname.split('.')
         dateiname = dateiname_zwischen[0]
+        assistent.__class__.assistent_is_loaded = 1
     else:
         dateiname = assistent.get_filepath()
-    print(dateiname)
     db = shelve.open(dateiname)
     db['assistent'] = assistent
     db.close()
-    info_text.config(text="Hallo " + str(assistent))
-    info_text.pack()
+    if neu == 1:
+        zeichne_hauptmenue()
+    zeichne_hauptseite()
 
 
 def alles_laden():
-    dateiname = filedialog.askopenfilename()
+    files = [('Assistenten-Dateien', '*.dat')]
+    dateiname = filedialog.askopenfilename(filetypes=files, defaultextension=files)
     dateiname_zwischen = dateiname.split('.')
-    print(dateiname_zwischen)
     dateiname = dateiname_zwischen[0]
     # dateiname = "Test Beyer"
     if not dateiname == '':
@@ -377,12 +377,9 @@ def alles_laden():
         assistent.set_filepath(dateiname)
         db = shelve.open(dateiname)
         assistent = db['assistent']
-        assistent_is_loaded = TRUE
-        info_text.config(text="Hallo " + str(assistent))
-        info_text.pack()
-        button_oeffnen.destroy()
-        button_neu.destroy()
+        assistent.__class__.assistent_is_loaded = 1
         zeichne_hauptmenue()
+        zeichne_hauptseite()
 
 
 def action_get_info_dialog():
@@ -392,17 +389,17 @@ Autor: Simon Beyer\n\
 Date: 16.11.2020\n\
 Version: 0.01\n\
 ************************"
-    messagebox.showinfo(message=m_text, title="Infos")
+    tk.messagebox.showinfo(message=m_text, title="Infos")
 
 
 def zeichne_hauptmenue():
     # Menüleiste erstellen
-    menuleiste = Menu(fenster)
+    menuleiste = tk.Menu(fenster)
 
     # Menü Datei und Help erstellen
-    datei_menu = Menu(menuleiste, tearoff=0)
-    bearbeiten_menu = Menu(menuleiste, tearoff=0)
-    help_menu = Menu(menuleiste, tearoff=0)
+    datei_menu = tk.Menu(menuleiste, tearoff=0)
+    bearbeiten_menu = tk.Menu(menuleiste, tearoff=0)
+    help_menu = tk.Menu(menuleiste, tearoff=0)
 
     # Beim Klick auf Datei oder auf Help sollen nun weitere Einträge erscheinen.
     # Diese werden also zu "datei_menu" und "help_menu" hinzugefügt
@@ -422,24 +419,58 @@ def zeichne_hauptmenue():
     menuleiste.add_cascade(label="Datei", menu=datei_menu)
     menuleiste.add_cascade(label="Bearbeiten", menu=bearbeiten_menu)
     menuleiste.add_cascade(label="Help", menu=help_menu)
+    # Die Menüleiste mit den Menüeinträgen noch dem Fenster übergeben und fertig.
+    fenster.config(menu=menuleiste)
+
+
+def zeichne_hauptseite():
+    global button_neu, button_oeffnen, assistent
+
+    def erstelle_navigation(nav):
+        vormonat = tk.Button(nav, text='einen Monat Zurück')
+        aktuelles_datum = datetime.date.today()
+        aktueller_monat = tk.Label(nav, text=aktuelles_datum.strftime("%B %Y"))
+        naechster_monat = tk.Button(nav, text='Nächster Monat')
+
+        # in den frame packen
+        vormonat.grid(row=0, column=0)
+        aktueller_monat.grid(row=0, column=1)
+        naechster_monat.grid(row=0, column=2)
+        pass
+
+    def erstelle_tabelle(tabelle):
+        test = tk.Label(tabelle, text='blubb')
+        test.grid(row=0, column=0)
+        pass
+
+    if assistent.__class__.assistent_is_loaded == 1:
+        info_text.config(text="Hallo " + str(assistent))
+        info_text.pack()
+        button_oeffnen.pack_forget()
+        button_neu.pack_forget()
+
+    # 2 Frames Für Navigation und Tabelle
+    nav = tk.Frame(fenster)
+    erstelle_navigation(nav)
+    nav.pack()
+    tabelle = tk.Frame(fenster)
+    erstelle_tabelle(tabelle)
+    tabelle.pack()
 
 
 assistent = AS()
-assistent_is_loaded = FALSE
-fenster = Tk()
+fenster = tk.Tk()
 fenster.geometry('500x200')
 fenster.title("Dein Assistentenlohn")
 
-info_text = Label(fenster, text="Bitte erstelle oder öffne eine Assistenten-Datei")
+info_text = tk.Label(fenster, text="Bitte erstelle oder öffne eine Assistenten-Datei")
 info_text.pack()
-
-button_oeffnen = Button(fenster, text="Gespeicherten Assistenten laden", command=alles_laden)
+button_oeffnen = tk.Button(fenster, text="Gespeicherten Assistenten laden", command=alles_laden)
 button_oeffnen.pack()
-button_neu = Button(fenster, text="Neuen Assistenten anlegen", command=neuer_as)
+button_neu = tk.Button(fenster, text="Neuen Assistenten anlegen", command=neuer_as)
 button_neu.pack()
 
-# Die Menüleiste mit den Menüeinträgen noch dem Fenster übergeben und fertig.
-# fenster.config(menu=menuleiste)
+
 print(assistent.get_all_schichten())
 
 fenster.mainloop()
