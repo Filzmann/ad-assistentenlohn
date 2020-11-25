@@ -46,7 +46,9 @@ class TimePicker(tk.Frame):
         return valid
 
 
-# erstellt eine Person. AS, ASN, PFK, etc.pp
+
+
+
 class Person:
     name = ""
     vorname = ""
@@ -447,13 +449,32 @@ def zeichne_hauptseite():
         aktueller_monat.grid(row=0, column=1)
         naechster_monat.grid(row=0, column=2)
 
-    def erstelle_tabelle():
+    def erstelle_tabelle(monatjahr=datetime.date.today()):
+        def end_of_month(month, year):
+            if month == 12:
+                month = 1
+                year += 1
+            else:
+                month += 1
+            return datetime.date(year, month, 1) - datetime.timedelta(days=1)
+
         for widget in tabelle.winfo_children():
             widget.destroy()
+
+        #kopfzeile erstellen
+        kopfzeile_spalte1 = tk.Label(tabelle, text='von', borderwidth=2, relief="solid", width=20).grid(row=0, column=0)
+        kopfzeile_spalte2 = tk.Label(tabelle, text='bis', borderwidth=2, relief="solid", width=20).grid(row=0, column=1)
+        kopfzeile_spalte3 = tk.Label(tabelle, text='ASN', borderwidth=2, relief="solid", width=20).grid(row=0, column=2)
         schichten = assistent.get_all_schichten()
-        print(schichten)
-        test = tk.Label(tabelle, text='blubb')
-        test.grid(row=0, column=0)
+        monat = int(monatjahr.strftime('%m'))
+        jahr = int(monatjahr.strftime('%Y'))
+        anzahl_tage = int(end_of_month(monat, jahr).strftime('%d'))
+        tabelle_monat_schichten = []
+        spaltenzahl = 4
+        for zeilennummer in range(anzahl_tage):
+           for spaltennummer in range(spaltenzahl):
+               pass
+
 
     for widget in fenster.winfo_children():
         widget.destroy()
@@ -473,7 +494,7 @@ def zeichne_hauptseite():
 
 assistent = AS()
 fenster = tk.Tk()
-fenster.geometry('500x200')
+fenster.geometry('1000x1000')
 fenster.title("Dein Assistentenlohn")
 
 info_text = tk.Label(fenster, text="Bitte erstelle oder öffne eine Assistenten-Datei")
@@ -482,7 +503,5 @@ button_oeffnen = tk.Button(fenster, text="Gespeicherten Assistenten laden", comm
 button_oeffnen.pack()
 button_neu = tk.Button(fenster, text="Neuen Assistenten anlegen", command=neuer_as)
 button_neu.pack()
-
-print(assistent.get_all_schichten())
 
 fenster.mainloop()
