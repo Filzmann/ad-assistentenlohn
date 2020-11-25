@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import filedialog
-import shelve
+# import shelve
+import pickle
 import datetime
 from tkcalendar import Calendar
 
@@ -69,16 +70,16 @@ class AS(Person):
 
     def __init__(self, name='', vorname='', email="keine@email.de", einstellungsdatum="01.01.1970"):
         self.filepath = ''
-        self.schichten = []
+        self.schichten = {}
         self.asn = {}
         self.name = name
         self.vorname = vorname
         self.email = email
         self.einstellungsdatum = einstellungsdatum
         self.__class__.count += 1
-        self.festeSchichten = []
-        self.urlaub = []
-        self.arbeitsunfaehig = []
+        self.festeSchichten = {}
+        self.urlaub = {}
+        self.arbeitsunfaehig = {}
 
     def __del__(self):
         self.__class__.count -= 1
@@ -88,6 +89,9 @@ class AS(Person):
 
     def get_all_asn(self):
         return self.asn
+
+    def set_all_asn(self, asn):
+        self.asn = asn
 
     def set_filepath(self, filepath):
         self.filepath = filepath
@@ -103,11 +107,15 @@ class AS(Person):
     def get_all_schichten(self):
         return self.schichten
 
+    def set_all_schichten(self, schichten):
+        self.schichten = schichten
+
     def asn_dazu(self, asn):
         self.asn[asn.get_kuerzel()] = asn
 
     def schicht_dazu(self, schicht):
-        self.schichten.append(schicht)
+        key = schicht.get_beginn().strftime("%Y%m%d%H%M%S")
+        self.schichten[key] = schicht
 
 
 # ein AS kann bei mehreren ASN arbeiten
@@ -140,6 +148,9 @@ class Schicht:
     def __str__(self):
         return self.asn.get_kuerzel() + " - " + self.beginn.strftime("%m/%d/%Y, %H:%M") + ' bis ' + \
                self.ende.strftime("%m/%d/%Y, %H:%M")
+
+    def get_beginn(self):
+        return self.beginn
 
 
 def neuer_as():
@@ -353,14 +364,13 @@ def alles_speichern(neu=0):
         files = [('Assistenten-Dateien', '*.dat')]
         dateiname = filedialog.asksaveasfile(filetypes=files, defaultextension=files)
         dateiname = dateiname.name
-        dateiname_zwischen = dateiname.split('.')
-        dateiname = dateiname_zwischen[0]
+        assistent.set_filepath(dateiname)
         assistent.__class__.assistent_is_loaded = 1
     else:
         dateiname = assistent.get_filepath()
-    db = shelve.open(dateiname)
-    db['assistent'] = assistent
-    db.close()
+    outfile = open(dateiname, 'wb')
+    pickle.dump(assistent, outfile)
+    outfile.close()
     if neu == 1:
         zeichne_hauptmenue()
     zeichne_hauptseite()
@@ -369,14 +379,12 @@ def alles_speichern(neu=0):
 def alles_laden():
     files = [('Assistenten-Dateien', '*.dat')]
     dateiname = filedialog.askopenfilename(filetypes=files, defaultextension=files)
-    dateiname_zwischen = dateiname.split('.')
-    dateiname = dateiname_zwischen[0]
-    # dateiname = "Test Beyer"
     if not dateiname == '':
         global assistent
         assistent.set_filepath(dateiname)
-        db = shelve.open(dateiname)
-        assistent = db['assistent']
+        infile = open(dateiname, 'rb')
+        assistent = pickle.load(infile)
+        infile.close()
         assistent.__class__.assistent_is_loaded = 1
         zeichne_hauptmenue()
         zeichne_hauptseite()
@@ -426,7 +434,9 @@ def zeichne_hauptmenue():
 def zeichne_hauptseite():
     global button_neu, button_oeffnen, assistent
 
-    def erstelle_navigation(nav):
+    def erstelle_navigation():
+        for widget in nav.winfo_children():
+            widget.destroy()
         vormonat = tk.Button(nav, text='einen Monat Zurück')
         aktuelles_datum = datetime.date.today()
         aktueller_monat = tk.Label(nav, text=aktuelles_datum.strftime("%B %Y"))
@@ -436,26 +446,29 @@ def zeichne_hauptseite():
         vormonat.grid(row=0, column=0)
         aktueller_monat.grid(row=0, column=1)
         naechster_monat.grid(row=0, column=2)
-        pass
 
-    def erstelle_tabelle(tabelle):
+    def erstelle_tabelle():
+        for widget in tabelle.winfo_children():
+            widget.destroy()
+        schichten = assistent.get_all_schichten()
+        print(schichten)
         test = tk.Label(tabelle, text='blubb')
         test.grid(row=0, column=0)
-        pass
 
-    if assistent.__class__.assistent_is_loaded == 1:
-        info_text.config(text="Hallo " + str(assistent))
-        info_text.pack()
-        button_oeffnen.pack_forget()
-        button_neu.pack_forget()
-
-    # 2 Frames Für Navigation und Tabelle
+    for widget in fenster.winfo_children():
+        widget.destroy()
     nav = tk.Frame(fenster)
-    erstelle_navigation(nav)
-    nav.pack()
     tabelle = tk.Frame(fenster)
-    erstelle_tabelle(tabelle)
+
+    if assistent.assistent_is_loaded == 1:
+        hallo = tk.Label(fenster, text="Hallo " + str(assistent))
+        hallo.pack()
+
+    erstelle_navigation()
+    nav.pack()
+    erstelle_tabelle()
     tabelle.pack()
+    # 2 Frames Für Navigation und Tabelle
 
 
 assistent = AS()
@@ -469,7 +482,6 @@ button_oeffnen = tk.Button(fenster, text="Gespeicherten Assistenten laden", comm
 button_oeffnen.pack()
 button_neu = tk.Button(fenster, text="Neuen Assistenten anlegen", command=neuer_as)
 button_neu.pack()
-
 
 print(assistent.get_all_schichten())
 
