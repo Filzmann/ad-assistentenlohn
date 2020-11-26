@@ -5,6 +5,7 @@ from tkinter import filedialog
 import pickle
 import datetime
 from tkcalendar import Calendar
+import copy
 
 
 class TimePicker(tk.Frame):
@@ -111,7 +112,8 @@ class AS(Person):
             ausgabe = {}
             for schicht in self.schichten.values():
                 beginn_akt_schicht = schicht.get_beginn()
-                if start <= beginn_akt_schicht < end:
+                end_akt_schicht = schicht.get_ende()
+                if start <= beginn_akt_schicht < end or start <= end_akt_schicht < end:
                     ausgabe[beginn_akt_schicht.strftime("%Y%m%d%H%M")] = schicht
             return ausgabe
 
@@ -167,11 +169,86 @@ class Schicht:
     def get_ende(self):
         return self.ende
 
+    def split_by_null_uhr(self):
+        ausgabe = []
+        if self.beginn.strftime("%Y%m%d") == self.ende.strftime("%Y%m%d"):
+            ausgabe.append(Schicht(self.beginn, self.ende, self.asn))
+        else:
+            rest = dict(start=self.beginn, ende=self.ende)
+            while rest['start'] <= rest['ende']:
+                r_start = rest['start']
+                neuer_start_rest_y = int(r_start.strftime('%Y'))
+                neuer_start_rest_m = int(r_start.strftime('%m'))
+                neuer_start_rest_d = int(r_start.strftime('%d'))
+                neuer_start_rest = datetime.datetime(neuer_start_rest_y, neuer_start_rest_m, neuer_start_rest_d + 1)
+                if neuer_start_rest <= rest['ende']:
+                    ausgabe.append(Schicht(rest['start'], neuer_start_rest, self.asn))
+                else:
+                    ausgabe.append(Schicht(rest['start'], rest['ende'], self.asn))
+
+                rest['start'] = neuer_start_rest
+
+        return ausgabe
+
     def set_ende(self, ende):
         self.ende = ende
 
     def get_asn(self):
         return self.asn
+
+    def berechne_stundenzahl(self):
+        diff = self.ende - self.beginn
+        sekunden = diff.total_seconds()
+        stunden = sekunden / 3600
+        return stunden
+
+
+class LohnDatensatz:
+    def __init__(self, erfahrungsstufe, grundlohn, zuschlaege):
+        self.erfahrungsstufe = erfahrungsstufe
+        self.eingruppierung = 5
+        self.grundlohn = grundlohn
+        self.zuschlaege = zuschlaege
+
+    def get_grundlohn(self):
+        return self.grundlohn
+
+    def get_erfahrungsstufe(self):
+        return self.erfahrungsstufe
+
+
+class LohnTabelle:
+    def __init__(self):
+        gueltig_ab = datetime.date(2020, 1, 1)
+        # EG5 Erfahrungsstufen hinzufügen
+        self.erfahrungsstufen = []
+        zuschlaege = {'nacht': 3.38, 'samstag': 3.38, 'sonnstag': 4.22,
+                      'feiertag': 22.80, 'wechselschicht': 0.63, 'WeihSyl': 5.72, 'Überstunde': 4.48}
+        self.erfahrungsstufen.append(LohnDatensatz(1, 14.92, zuschlaege))
+        self.erfahrungsstufen.append(LohnDatensatz(2, 16.18, zuschlaege))
+        self.erfahrungsstufen.append(LohnDatensatz(3, 16.89, zuschlaege))
+        self.erfahrungsstufen.append(LohnDatensatz(4, 17.56, zuschlaege))
+        self.erfahrungsstufen.append(LohnDatensatz(5, 18.11, zuschlaege))
+        self.erfahrungsstufen.append(LohnDatensatz(6, 18.47, zuschlaege))
+
+    def get_lohndatensatz_by_erfahrungsstufe(self, erfahrungsstufe):
+        for datensatz in self.erfahrungsstufen:
+            if datensatz.get_erfahrungsstufe() == erfahrungsstufe:
+                return datensatz
+
+    def get_grundlohn(self):
+        erfahrungsstufe = self.get_erfahrungsstufe()
+        ds = self.get_lohndatensatz_by_erfahrungsstufe(erfahrungsstufe)
+        return ds.get_grundlohn()
+
+    def get_erfahrungsstufe(self):
+        # einstieg mit 1
+        # nach 1 Jahr insgesamt 2
+        # nach 3 jahren insgesamt 3
+        # nach 6 jahren insg. 4
+        # nach 10 Jahren insg. 5
+        # nach 15 Jahren insg. 6
+        return 4
 
 
 def end_of_month(month, year):
@@ -228,14 +305,24 @@ def get_duration(then, now=datetime.datetime.now(), interval="default"):
     }[interval]
 
 
-def sort_schichten_by_day(schichten):
-    """bekommt ein dict von Schichten, und schickt ein dict von listen von Schichten zurück mit dem Tag(Int) als key"""
-    ausgabe = {}
-    for schicht in schichten.values():
-        tag = schicht.get_beginn().strftime('%d')
-        if tag not in ausgabe.values():
-            ausgabe[tag] = []
-        ausgabe[tag].append(schicht)
+def sort_und_berechne_schichten_by_day(schichten, monatjahr=datetime.date.today()):
+    """bekommt eine Liste von Schichten, und schickt eine Liste von Paaren von Tag, Schicht zurück """
+    monat = int(monatjahr.strftime('%m'))
+    jahr = int(monatjahr.strftime('%Y'))
+    anzahl_tage = int(end_of_month(monat, jahr).strftime('%d'))
+    ausgabe = []
+
+    for tag in range(1, anzahl_tage + 1):
+        tag_isset = 0
+        # TODO Monatsgrenzen anschauen
+        for schicht in schichten:
+            if tag == int(schicht.get_beginn().strftime('%d')):
+                paar = [tag, schicht]
+                ausgabe.append(paar)
+                tag_isset = 1
+        if tag_isset == 0:
+            ausgabe.append([tag, 'empty'])
+
     return ausgabe
 
 
@@ -517,41 +604,17 @@ def zeichne_hauptmenue():
     root.config(menu=menuleiste)
 
 
-def split_schichten_um_mitternacht(schichten):
+def split_schichten_um_mitternacht(splitschichten):
     """Diese Funktion teilt Nachtschichten und mehrtägige Schichten an der null Uhr Grenze auf
     Sie liefert Schichten in der Form eines dicts[YYYYmmddHHMM]->schicht zurück """
     # TODO implement
-
-    for schicht in schichten:
-        anfang = schichten[schicht].get_beginn()
-        ende = schichten[schicht].get_ende()
-        if anfang.strftime("%Y%m%d") == ende.strftime("%Y%m%d"):
-            pass
-        else:
-            anzahl_tage = get_duration(anfang, ende, 'days') + 1
-            startjahr = int(anfang.strftime('%Y'))
-            startmonat = int(anfang.strftime('%m'))
-            starttag = int(anfang.strftime("%d"))
-            zwischenspeicher_schicht = schichten[schicht]
-            for counter in range(0, anzahl_tage):
-                akt_tag_null_uhr = datetime.datetime(startjahr, startmonat, starttag + counter)
-                akt_tag_kurz_vor_schluss = \
-                    datetime.datetime(startjahr, startmonat, starttag + counter + 1, 0, 0, 0)\
-                    - datetime.timedelta(seconds=1)
-
-                akt_key = akt_tag_null_uhr.strftime('%Y%m%d%H%M')
-                schichten[akt_key] = zwischenspeicher_schicht.copy()
-                if counter == 0:
-                    schichten[akt_key].set_beginn(anfang)
-                    schichten[akt_key].set_ende(akt_tag_kurz_vor_schluss)
-                elif counter == anzahl_tage:
-                    schichten[akt_key].set_beginn(akt_tag_null_uhr)
-                    schichten[akt_key].set_ende(ende)
-                else:
-                    schichten[akt_key].set_beginn(akt_tag_null_uhr)
-                    schichten[akt_key].set_ende(akt_tag_kurz_vor_schluss)
-
-    return schichten
+    ausgabe = []
+    for schicht in splitschichten:
+        val = splitschichten[schicht]
+        liste = val.split_by_null_uhr()
+        for splitschicht in liste:
+            ausgabe.append(splitschicht)
+    return ausgabe
 
 
 def zeichne_hauptseite():
@@ -571,61 +634,88 @@ def zeichne_hauptseite():
         naechster_monat.grid(row=0, column=2)
 
     def erstelle_tabelle(monatjahr=datetime.date.today()):
-
         for tabwidget in tabelle.winfo_children():
             tabwidget.destroy()
-
-        # kopfzeile erstellen
-        tk.Label(tabelle, text='Tag', borderwidth=2, relief="solid", width=5).grid(row=0, column=0)
-        tk.Label(tabelle, text='von', borderwidth=2, relief="solid", width=20).grid(row=0, column=1)
-        tk.Label(tabelle, text='bis', borderwidth=2, relief="solid", width=20).grid(row=0, column=2)
-        tk.Label(tabelle, text='ASN', borderwidth=2, relief="solid", width=20).grid(row=0, column=3)
-
         monat = int(monatjahr.strftime('%m'))
         jahr = int(monatjahr.strftime('%Y'))
-
-        anzahl_tage = int(end_of_month(monat, jahr).strftime('%d'))
-        meine_tabelle = []
-        spaltenzahl = 4
-        for zeilennummer in range(1, anzahl_tage + 1):
-            zeile = []
-
-            for spaltennummer in range(1, spaltenzahl + 1):
-                if spaltennummer == 1:
-                    zeile = []
-                    width = 5
-                    inhalt = str(zeilennummer)
-                    print(inhalt)
-                else:
-                    inhalt = ''
-                    width = 20
-
-                zelle = tk.Entry(tabelle, width=width)
-                zelle.grid(row=zeilennummer, column=spaltennummer - 1)
-                zelle.delete(0, "end")
-                zelle.insert(0, inhalt)
-                zeile.append(zelle)
-
-            meine_tabelle.append(zeile)
-
         start = datetime.datetime(jahr, monat, 1, 0, 0, 0)
         end = datetime.datetime(jahr, monat + 1, 1, 0, 0, 0)
         schichten = assistent.get_all_schichten(start, end)
-        schichten_sortiert = split_schichten_um_mitternacht(schichten)
-        schichten_sortiert = sort_schichten_by_day(schichten)
+        # nicht die schichten des AS kaputtmachen, daher Kopie
+        schichten_copy = copy.deepcopy(schichten)
+        schichten_sortiert = split_schichten_um_mitternacht(schichten_copy)
+        schichten_sortiert = sort_und_berechne_schichten_by_day(schichten_sortiert)
 
-        for schicht in schichten_sortiert.keys():
-            meine_tabelle[int(schicht) - 1][1].delete(0, "end")
-            meine_tabelle[int(schicht) - 1][1].insert(0, schichten_sortiert[schicht][0].get_beginn().strftime('%H:%M'))
-            meine_tabelle[int(schicht) - 1][2].delete(0, "end")
-            meine_tabelle[int(schicht) - 1][2] \
-                .insert(0, schichten_sortiert[schicht][0].get_ende().strftime('%H:%M'))
-            meine_tabelle[int(schicht) - 1][3].delete(0, "end")
-            meine_tabelle[int(schicht) - 1][3].insert(0, schichten_sortiert[schicht][0].get_asn().get_kuerzel())
+        # Tabelle aufbauen
+        # kopfzeile erstellen
+        tk.Label(tabelle, text='Tag', borderwidth=1, relief="solid", width=6).grid(row=0, column=0, columnspan=2)
+        tk.Label(tabelle, text='von', borderwidth=1, relief="solid", width=5).grid(row=0, column=2)
+        tk.Label(tabelle, text='bis', borderwidth=1, relief="solid", width=5).grid(row=0, column=3)
+        tk.Label(tabelle, text='ASN', borderwidth=1, relief="solid", width=8).grid(row=0, column=4)
+        tk.Label(tabelle, text='Std', borderwidth=1, relief="solid", width=5).grid(row=0, column=5)
+        tk.Label(tabelle, text='Grundlohn', borderwidth=1, relief="solid", width=8).grid(row=0, column=6)
 
-            # die_schicht = schichten_am_tag[0]
-            # TODO Umgang mit mehreren Schichten an einem Tag
-        # print(die_schicht)
+        # körper
+        meine_tabelle = []
+        spaltenzahl = 7
+        zaehler = 0
+        for zeilendaten in schichten_sortiert:
+            zeile = []
+
+            zaehler += 1
+            for spaltennummer in range(0, spaltenzahl):
+                if spaltennummer == 0:
+                    zeile = []
+                    width = 4
+                    # TODO timezone checken
+                    inhalt = datetime.datetime(jahr, monat, zeilendaten[0], ).strftime('%a')
+
+                elif spaltennummer == 1:
+                    zeile = []
+                    width = 3
+                    inhalt = zeilendaten[0]
+                elif spaltennummer == 2:
+                    if zeilendaten[1] != 'empty':
+                        inhalt = zeilendaten[1].get_beginn().strftime('%H:%M')
+                    else:
+                        inhalt = ''
+                    width = 5
+                elif spaltennummer == 3:
+                    if zeilendaten[1] != 'empty':
+                        inhalt = zeilendaten[1].get_ende().strftime('%H:%M')
+                    else:
+                        inhalt = ''
+                    width = 5
+
+                elif spaltennummer == 4:
+                    if zeilendaten[1] != 'empty':
+                        inhalt = zeilendaten[1].get_asn().get_kuerzel()
+                    else:
+                        inhalt = ''
+                    width = 10
+
+                elif spaltennummer == 5:
+                    if zeilendaten[1] != 'empty':
+                        inhalt = str(zeilendaten[1].berechne_stundenzahl())
+                    else:
+                        inhalt = ''
+                    width = 5
+                elif spaltennummer == 6:
+                    if zeilendaten[1] != 'empty':
+                        print(lohntabelle.get_grundlohn())
+                        inhalt = "{:,.2f}€".format(round(zeilendaten[1].berechne_stundenzahl() * lohntabelle.get_grundlohn(),2))
+                    else:
+                        inhalt = ''
+                    width = 8
+
+                zelle = tk.Entry(tabelle, width=width)
+                zelle.grid(row=zaehler, column=spaltennummer)
+                zelle.delete(0, "end")
+                zelle.insert(0, inhalt)
+                zelle.config(state='readonly')
+                zeile.append(zelle)
+
+            meine_tabelle.append(zeile)
 
     for widget in fenster.winfo_children():
         widget.destroy()
@@ -644,6 +734,7 @@ def zeichne_hauptseite():
 
 
 assistent = AS()
+lohntabelle = LohnTabelle()
 root = tk.Tk()
 root.geometry('1000x1000')
 root.title("Dein Assistentenlohn")
