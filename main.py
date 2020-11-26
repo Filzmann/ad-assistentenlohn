@@ -46,9 +46,6 @@ class TimePicker(tk.Frame):
         return valid
 
 
-
-
-
 class Person:
     name = ""
     vorname = ""
@@ -105,11 +102,21 @@ class AS(Person):
     def get_asn_by_kuerzel(self, kuerzel):
         return self.asn[kuerzel]
 
-    # TODO Range hinzufügen
-    def get_all_schichten(self):
-        return self.schichten
+    def get_all_schichten(self, start=0, end=0):
+        """ wenn keine datetimes für start und end angegeben sind, werden alle Schichten ausgegeben,
+         ansonsten alle schichten, die größer als start und <= end sind """
+        if start == 0 and end == 0:
+            return self.schichten
+        else:
+            ausgabe = {}
+            for schicht in self.schichten.values():
+                beginn_akt_schicht = schicht.get_beginn()
+                if start <= beginn_akt_schicht < end:
+                    ausgabe[beginn_akt_schicht.strftime("%Y%m%d%H%M%S")] = schicht
+            return ausgabe
 
     def set_all_schichten(self, schichten):
+        """ Nimmt ein dict von Schichten entgegen und weist diese dem AS zu"""
         self.schichten = schichten
 
     def asn_dazu(self, asn):
@@ -153,6 +160,32 @@ class Schicht:
 
     def get_beginn(self):
         return self.beginn
+
+    def get_ende(self):
+        return self.ende
+
+    def get_asn(self):
+        return self.asn
+
+
+def end_of_month(month, year):
+    if month == 12:
+        month = 1
+        year += 1
+    else:
+        month += 1
+    return datetime.date(year, month, 1) - datetime.timedelta(days=1)
+
+
+def sort_schichten_by_day(schichten):
+    """bekommt ein dict von Schichten, und schickt ein dict von listen von Schichten zurück mit dem Tag(Int) als key"""
+    ausgabe = {}
+    for schicht in schichten.values():
+        tag = schicht.get_beginn().strftime('%d')
+        if tag not in ausgabe.values():
+            ausgabe[tag] = []
+        ausgabe[tag].append(schicht)
+    return ausgabe
 
 
 def neuer_as():
@@ -404,7 +437,7 @@ Version: 0.01\n\
 
 def zeichne_hauptmenue():
     # Menüleiste erstellen
-    menuleiste = tk.Menu(fenster)
+    menuleiste = tk.Menu(root)
 
     # Menü Datei und Help erstellen
     datei_menu = tk.Menu(menuleiste, tearoff=0)
@@ -430,15 +463,21 @@ def zeichne_hauptmenue():
     menuleiste.add_cascade(label="Bearbeiten", menu=bearbeiten_menu)
     menuleiste.add_cascade(label="Help", menu=help_menu)
     # Die Menüleiste mit den Menüeinträgen noch dem Fenster übergeben und fertig.
-    fenster.config(menu=menuleiste)
+    root.config(menu=menuleiste)
+
+
+def split_schichten_um_mitternacht(schichten):
+    """Diese Funktion teilt Nachtschichten und mehrtägige Schichten an der null Uhr Grenze auf"""
+    # TODO implement
+    return schichten
 
 
 def zeichne_hauptseite():
     global button_neu, button_oeffnen, assistent
 
     def erstelle_navigation():
-        for widget in nav.winfo_children():
-            widget.destroy()
+        for navwidget in nav.winfo_children():
+            navwidget.destroy()
         vormonat = tk.Button(nav, text='einen Monat Zurück')
         aktuelles_datum = datetime.date.today()
         aktueller_monat = tk.Label(nav, text=aktuelles_datum.strftime("%B %Y"))
@@ -450,31 +489,59 @@ def zeichne_hauptseite():
         naechster_monat.grid(row=0, column=2)
 
     def erstelle_tabelle(monatjahr=datetime.date.today()):
-        def end_of_month(month, year):
-            if month == 12:
-                month = 1
-                year += 1
-            else:
-                month += 1
-            return datetime.date(year, month, 1) - datetime.timedelta(days=1)
 
-        for widget in tabelle.winfo_children():
-            widget.destroy()
+        for tabwidget in tabelle.winfo_children():
+            tabwidget.destroy()
 
-        #kopfzeile erstellen
-        kopfzeile_spalte1 = tk.Label(tabelle, text='von', borderwidth=2, relief="solid", width=20).grid(row=0, column=0)
-        kopfzeile_spalte2 = tk.Label(tabelle, text='bis', borderwidth=2, relief="solid", width=20).grid(row=0, column=1)
-        kopfzeile_spalte3 = tk.Label(tabelle, text='ASN', borderwidth=2, relief="solid", width=20).grid(row=0, column=2)
-        schichten = assistent.get_all_schichten()
+        # kopfzeile erstellen
+        tk.Label(tabelle, text='Tag', borderwidth=2, relief="solid", width=5).grid(row=0, column=0)
+        tk.Label(tabelle, text='von', borderwidth=2, relief="solid", width=20).grid(row=0, column=1)
+        tk.Label(tabelle, text='bis', borderwidth=2, relief="solid", width=20).grid(row=0, column=2)
+        tk.Label(tabelle, text='ASN', borderwidth=2, relief="solid", width=20).grid(row=0, column=3)
+
         monat = int(monatjahr.strftime('%m'))
         jahr = int(monatjahr.strftime('%Y'))
-        anzahl_tage = int(end_of_month(monat, jahr).strftime('%d'))
-        tabelle_monat_schichten = []
-        spaltenzahl = 4
-        for zeilennummer in range(anzahl_tage):
-           for spaltennummer in range(spaltenzahl):
-               pass
 
+
+        anzahl_tage = int(end_of_month(monat, jahr).strftime('%d'))
+        meine_tabelle = []
+        spaltenzahl = 4
+        for zeilennummer in range(1, anzahl_tage + 1):
+            zeile = []
+
+            for spaltennummer in range(1, spaltenzahl + 1):
+                if spaltennummer == 1:
+                    zeile = []
+                    width = 5
+                    inhalt = str(zeilennummer)
+                else:
+                    inhalt = ''
+                    width = 20
+
+                zelle = tk.Entry(tabelle, width=width, textvariable=inhalt)
+                zelle.grid(row=zeilennummer, column=spaltennummer - 1)
+                zelle.insert(0, inhalt)
+                inhalt = ''
+                zeile.append(zelle)
+
+            meine_tabelle.append(zeile)
+
+        start = datetime.datetime(jahr, monat, 1, 0, 0, 0)
+        end = datetime.datetime(jahr, monat + 1, 1, 0, 0, 0)
+        schichten = assistent.get_all_schichten(start, end)
+        schichten_sortiert = sort_schichten_by_day(schichten)
+        schichten_sortiert = split_schichten_um_mitternacht(schichten_sortiert)
+        for schicht in schichten_sortiert.keys():
+            meine_tabelle[int(schicht)-1][1].delete(0, "end")
+            meine_tabelle[int(schicht)-1][1].insert(0, schichten_sortiert[schicht][0].get_beginn().strftime('%H:%M'))
+            meine_tabelle[int(schicht)-1][2].delete(0, "end")
+            meine_tabelle[int(schicht)-1][2].insert(0, schichten_sortiert[schicht][0].get_ende().strftime('%d.%m.%Y \n %H:%M'))
+            meine_tabelle[int(schicht)-1][3].delete(0, "end")
+            meine_tabelle[int(schicht)-1][3].insert(0, schichten_sortiert[schicht][0].get_asn().get_kuerzel())
+
+            #die_schicht = schichten_am_tag[0]
+            # TODO Umgang mit mehreren Schichten an einem Tag
+        #print(die_schicht)
 
     for widget in fenster.winfo_children():
         widget.destroy()
@@ -493,10 +560,12 @@ def zeichne_hauptseite():
 
 
 assistent = AS()
-fenster = tk.Tk()
-fenster.geometry('1000x1000')
-fenster.title("Dein Assistentenlohn")
+root = tk.Tk()
+root.geometry('1000x1000')
+root.title("Dein Assistentenlohn")
 
+fenster = tk.Frame(root)
+fenster.pack()
 info_text = tk.Label(fenster, text="Bitte erstelle oder öffne eine Assistenten-Datei")
 info_text.pack()
 button_oeffnen = tk.Button(fenster, text="Gespeicherten Assistenten laden", command=alles_laden)
