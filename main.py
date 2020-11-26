@@ -112,7 +112,7 @@ class AS(Person):
             for schicht in self.schichten.values():
                 beginn_akt_schicht = schicht.get_beginn()
                 if start <= beginn_akt_schicht < end:
-                    ausgabe[beginn_akt_schicht.strftime("%Y%m%d%H%M%S")] = schicht
+                    ausgabe[beginn_akt_schicht.strftime("%Y%m%d%H%M")] = schicht
             return ausgabe
 
     def set_all_schichten(self, schichten):
@@ -123,7 +123,7 @@ class AS(Person):
         self.asn[asn.get_kuerzel()] = asn
 
     def schicht_dazu(self, schicht):
-        key = schicht.get_beginn().strftime("%Y%m%d%H%M%S")
+        key = schicht.get_beginn().strftime("%Y%m%d%H%M")
         self.schichten[key] = schicht
 
 
@@ -161,8 +161,14 @@ class Schicht:
     def get_beginn(self):
         return self.beginn
 
+    def set_beginn(self, beginn):
+        self.beginn = beginn
+
     def get_ende(self):
         return self.ende
+
+    def set_ende(self, ende):
+        self.ende = ende
 
     def get_asn(self):
         return self.asn
@@ -175,6 +181,51 @@ def end_of_month(month, year):
     else:
         month += 1
     return datetime.date(year, month, 1) - datetime.timedelta(days=1)
+
+
+def get_duration(then, now=datetime.datetime.now(), interval="default"):
+    # Returns a duration as specified by variable interval
+    # Functions, except totalDuration, returns [quotient, remainder]
+
+    duration = now - then  # For build-in functions
+    duration_in_s = duration.total_seconds()
+
+    def years():
+        return divmod(duration_in_s, 31536000)  # Seconds in a year=31536000.
+
+    def days(secs=None):
+        return divmod(secs if secs is not None else duration_in_s, 86400)  # Seconds in a day = 86400
+
+    def hours(secs=None):
+        return divmod(secs if secs is not None else duration_in_s, 3600)  # Seconds in an hour = 3600
+
+    def minutes(secs=None):
+        return divmod(secs if secs is not None else duration_in_s, 60)  # Seconds in a minute = 60
+
+    def seconds(secs=None):
+        if secs is not None:
+            return divmod(secs, 1)
+        return duration_in_s
+
+    def total_duration():
+        y = years()
+        d = days(y[1])  # Use remainder to calculate next variable
+        h = hours(d[1])
+        m = minutes(h[1])
+        s = seconds(m[1])
+
+        return "Time between dates: {} years, {} days, {} hours, {} minutes and {} seconds".format(int(y[0]), int(d[0]),
+                                                                                                   int(h[0]), int(m[0]),
+                                                                                                   int(s[0]))
+
+    return {
+        'years': int(years()[0]),
+        'days': int(days()[0]),
+        'hours': int(hours()[0]),
+        'minutes': int(minutes()[0]),
+        'seconds': int(seconds()),
+        'default': total_duration()
+    }[interval]
 
 
 def sort_schichten_by_day(schichten):
@@ -467,8 +518,39 @@ def zeichne_hauptmenue():
 
 
 def split_schichten_um_mitternacht(schichten):
-    """Diese Funktion teilt Nachtschichten und mehrtägige Schichten an der null Uhr Grenze auf"""
+    """Diese Funktion teilt Nachtschichten und mehrtägige Schichten an der null Uhr Grenze auf
+    Sie liefert Schichten in der Form eines dicts[YYYYmmddHHMM]->schicht zurück """
     # TODO implement
+
+    for schicht in schichten:
+        anfang = schichten[schicht].get_beginn()
+        ende = schichten[schicht].get_ende()
+        if anfang.strftime("%Y%m%d") == ende.strftime("%Y%m%d"):
+            pass
+        else:
+            anzahl_tage = get_duration(anfang, ende, 'days') + 1
+            startjahr = int(anfang.strftime('%Y'))
+            startmonat = int(anfang.strftime('%m'))
+            starttag = int(anfang.strftime("%d"))
+            zwischenspeicher_schicht = schichten[schicht]
+            for counter in range(0, anzahl_tage):
+                akt_tag_null_uhr = datetime.datetime(startjahr, startmonat, starttag + counter)
+                akt_tag_kurz_vor_schluss = \
+                    datetime.datetime(startjahr, startmonat, starttag + counter + 1, 0, 0, 0)\
+                    - datetime.timedelta(seconds=1)
+
+                akt_key = akt_tag_null_uhr.strftime('%Y%m%d%H%M')
+                schichten[akt_key] = zwischenspeicher_schicht.copy()
+                if counter == 0:
+                    schichten[akt_key].set_beginn(anfang)
+                    schichten[akt_key].set_ende(akt_tag_kurz_vor_schluss)
+                elif counter == anzahl_tage:
+                    schichten[akt_key].set_beginn(akt_tag_null_uhr)
+                    schichten[akt_key].set_ende(ende)
+                else:
+                    schichten[akt_key].set_beginn(akt_tag_null_uhr)
+                    schichten[akt_key].set_ende(akt_tag_kurz_vor_schluss)
+
     return schichten
 
 
@@ -502,7 +584,6 @@ def zeichne_hauptseite():
         monat = int(monatjahr.strftime('%m'))
         jahr = int(monatjahr.strftime('%Y'))
 
-
         anzahl_tage = int(end_of_month(monat, jahr).strftime('%d'))
         meine_tabelle = []
         spaltenzahl = 4
@@ -514,14 +595,15 @@ def zeichne_hauptseite():
                     zeile = []
                     width = 5
                     inhalt = str(zeilennummer)
+                    print(inhalt)
                 else:
                     inhalt = ''
                     width = 20
 
-                zelle = tk.Entry(tabelle, width=width, textvariable=inhalt)
+                zelle = tk.Entry(tabelle, width=width)
                 zelle.grid(row=zeilennummer, column=spaltennummer - 1)
+                zelle.delete(0, "end")
                 zelle.insert(0, inhalt)
-                inhalt = ''
                 zeile.append(zelle)
 
             meine_tabelle.append(zeile)
@@ -529,19 +611,21 @@ def zeichne_hauptseite():
         start = datetime.datetime(jahr, monat, 1, 0, 0, 0)
         end = datetime.datetime(jahr, monat + 1, 1, 0, 0, 0)
         schichten = assistent.get_all_schichten(start, end)
+        schichten_sortiert = split_schichten_um_mitternacht(schichten)
         schichten_sortiert = sort_schichten_by_day(schichten)
-        schichten_sortiert = split_schichten_um_mitternacht(schichten_sortiert)
-        for schicht in schichten_sortiert.keys():
-            meine_tabelle[int(schicht)-1][1].delete(0, "end")
-            meine_tabelle[int(schicht)-1][1].insert(0, schichten_sortiert[schicht][0].get_beginn().strftime('%H:%M'))
-            meine_tabelle[int(schicht)-1][2].delete(0, "end")
-            meine_tabelle[int(schicht)-1][2].insert(0, schichten_sortiert[schicht][0].get_ende().strftime('%d.%m.%Y \n %H:%M'))
-            meine_tabelle[int(schicht)-1][3].delete(0, "end")
-            meine_tabelle[int(schicht)-1][3].insert(0, schichten_sortiert[schicht][0].get_asn().get_kuerzel())
 
-            #die_schicht = schichten_am_tag[0]
+        for schicht in schichten_sortiert.keys():
+            meine_tabelle[int(schicht) - 1][1].delete(0, "end")
+            meine_tabelle[int(schicht) - 1][1].insert(0, schichten_sortiert[schicht][0].get_beginn().strftime('%H:%M'))
+            meine_tabelle[int(schicht) - 1][2].delete(0, "end")
+            meine_tabelle[int(schicht) - 1][2] \
+                .insert(0, schichten_sortiert[schicht][0].get_ende().strftime('%H:%M'))
+            meine_tabelle[int(schicht) - 1][3].delete(0, "end")
+            meine_tabelle[int(schicht) - 1][3].insert(0, schichten_sortiert[schicht][0].get_asn().get_kuerzel())
+
+            # die_schicht = schichten_am_tag[0]
             # TODO Umgang mit mehreren Schichten an einem Tag
-        #print(die_schicht)
+        # print(die_schicht)
 
     for widget in fenster.winfo_children():
         widget.destroy()
