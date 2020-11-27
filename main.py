@@ -68,7 +68,8 @@ class AS(Person):
     count = 0
     assistent_is_loaded = 0
 
-    def __init__(self, name='', vorname='', email="keine@email.de", einstellungsdatum="01.01.1970"):
+    def __init__(self, name='', vorname='', email="keine@email.de",
+                 einstellungsdatum=datetime.datetime(1970, 1, 1, 0, 0, 0)):
         self.filepath = ''
         self.schichten = {}
         self.asn = {}
@@ -202,10 +203,6 @@ class Schicht:
         stunden = sekunden / 3600
         return stunden
 
-    def berechne_nachtstunden(self):
-        anfang = self.beginn.
-        ende = self.ende
-        #Fall 1, tagschicht
 
 class LohnDatensatz:
     def __init__(self, erfahrungsstufe, grundlohn, zuschlaege):
@@ -219,9 +216,6 @@ class LohnDatensatz:
 
     def get_erfahrungsstufe(self):
         return self.erfahrungsstufe
-
-    def get_zuschlag(self, key):
-        return self.zuschlaege[key]
 
 
 class LohnTabelle:
@@ -243,17 +237,15 @@ class LohnTabelle:
             if datensatz.get_erfahrungsstufe() == erfahrungsstufe:
                 return datensatz
 
-    def get_grundlohn(self):
-        erfahrungsstufe = self.get_erfahrungsstufe()
+    def get_grundlohn(self, datum):
+        erfahrungsstufe = self.get_erfahrungsstufe(datum)
         ds = self.get_lohndatensatz_by_erfahrungsstufe(erfahrungsstufe)
         return ds.get_grundlohn()
 
-    def get_zuschlag(self, key):
-        erfahrungsstufe = self.get_erfahrungsstufe()
-        ds = self.get_lohndatensatz_by_erfahrungsstufe(erfahrungsstufe)
-        return ds.get_zuschlag(key)
+    def get_erfahrungsstufe(self, datum=datetime.datetime.now()):
+        delta = datum - assistent.einstellungsdatum
+        # TODO implementieren
 
-    def get_erfahrungsstufe(self):
         # einstieg mit 1
         # nach 1 Jahr insgesamt 2
         # nach 3 jahren insgesamt 3
@@ -341,8 +333,10 @@ def sort_und_berechne_schichten_by_day(schichten, monatjahr=datetime.date.today(
 def neuer_as():
     def action_save_neuer_as():
         global assistent
+        einstellungsdatum_date_obj = datetime.datetime.strptime(form_neuer_as_einstellungsdatum_input.get_date(),
+                                                                '%m/%d/%y')
         assistent = AS(form_neuer_as_nachname_input.get(), form_neuer_as_vorname_input.get(),
-                       form_neuer_as_email_input.get(), form_neuer_as_einstellungsdatum_input.get_date())
+                       form_neuer_as_email_input.get(), einstellungsdatum_date_obj)
         assistent.__class__.assistent_is_loaded = 1
         alles_speichern(neu=1)
         fenster_neuer_as.destroy()
@@ -632,27 +626,54 @@ def split_schichten_um_mitternacht(splitschichten):
 def zeichne_hauptseite():
     global button_neu, button_oeffnen, assistent
 
-    def erstelle_navigation():
+    def erstelle_navigation(offset=0):
+        def monat_zurueck(offs):
+            offs -= 1
+            erstelle_navigation(offs)
+            jahrmonat = divmod(int(aktuelles_datum.strftime('%m')) + offset, 12)
+            jahroffset = jahrmonat[0]
+            monat = jahrmonat[1]
+            if monat == 0:
+                monat = 12
+            arbeitsdate = datetime.date(int(aktuelles_datum.strftime('%Y')) + jahroffset,
+                                        monat,
+                                        1)
+            erstelle_tabelle(arbeitsdate)
+
+        def monat_vor(offs):
+            offs += 1
+            erstelle_navigation(offs)
+            jahrmonat = divmod(int(aktuelles_datum.strftime('%m')) + offset, 12)
+            jahroffset = jahrmonat[0]
+            monat = jahrmonat[1]
+            if monat == 0:
+                monat = 12
+            arbeitsdate = datetime.date(int(aktuelles_datum.strftime('%Y')) + jahroffset,
+                                         monat,
+                                        1)
+            erstelle_tabelle(arbeitsdate)
+
         for navwidget in nav.winfo_children():
             navwidget.destroy()
-        vormonat = tk.Button(nav, text='einen Monat Zurück')
+
+        # offset = 0
+        vormonat = tk.Button(nav, text='einen Monat Zurück', command=lambda: monat_zurueck(offset))
         aktuelles_datum = datetime.date.today()
-        aktueller_monat = tk.Label(nav, text=aktuelles_datum.strftime("%B %Y"))
-        naechster_monat = tk.Button(nav, text='Nächster Monat')
+        jahrmonat = divmod(int(aktuelles_datum.strftime('%m')) + offset, 12)
+        jahroffset = jahrmonat[0]
+        monat = jahrmonat[1]
+        if monat == 0:
+            monat = 12
+        arbeitsdate = datetime.date(int(aktuelles_datum.strftime('%Y')) + jahroffset,
+                                    monat,
+                                    1)
+        aktueller_monat = tk.Label(nav, text=arbeitsdate.strftime("%B %Y"))
+        naechster_monat = tk.Button(nav, text='Nächster Monat', command=lambda: monat_vor(offset))
 
         # in den frame packen
         vormonat.grid(row=0, column=0)
         aktueller_monat.grid(row=0, column=1)
         naechster_monat.grid(row=0, column=2)
-
-    def erstelle_summenwidget():
-        for summenwidget_children in summenwidget.winfo_children():
-            summenwidget_children.destroy()
-        summe_grundlohn_label = tk.Label(summenwidget, text='Summe Grundlohn:' + str(summen['Grundlohn']))
-        summe_grundlohn_label.pack()
-        summe_grundlohn_label = tk.Label(summenwidget, text='Summe Assistenzstunden:' + str(summen['Assistenzstunden']))
-        summe_grundlohn_label.pack()
-
 
     def erstelle_tabelle(monatjahr=datetime.date.today()):
         for tabwidget in tabelle.winfo_children():
@@ -660,7 +681,14 @@ def zeichne_hauptseite():
         monat = int(monatjahr.strftime('%m'))
         jahr = int(monatjahr.strftime('%Y'))
         start = datetime.datetime(jahr, monat, 1, 0, 0, 0)
-        end = datetime.datetime(jahr, monat + 1, 1, 0, 0, 0)
+
+        jahrmonat = divmod(monat + 1, 12)
+        jahr += jahrmonat[0]
+        monat = jahrmonat[1]
+        if monat == 0:
+            monat = 12
+
+        end = datetime.datetime(jahr, monat, 1, 0, 0, 0)
         schichten = assistent.get_all_schichten(start, end)
         # nicht die schichten des AS kaputtmachen, daher Kopie
         schichten_copy = copy.deepcopy(schichten)
@@ -680,13 +708,13 @@ def zeichne_hauptseite():
         meine_tabelle = []
         spaltenzahl = 7
         zaehler = 0
-
+        width = 0
+        inhalt = ''
         for zeilendaten in schichten_sortiert:
             zeile = []
 
             zaehler += 1
             for spaltennummer in range(0, spaltenzahl):
-
                 if spaltennummer == 0:
                     zeile = []
                     width = 4
@@ -719,25 +747,18 @@ def zeichne_hauptseite():
 
                 elif spaltennummer == 5:
                     if zeilendaten[1] != 'empty':
-                        summen['Assistenzstunden'] += zeilendaten[1].berechne_stundenzahl()
+                        summen['arbeitsstunden'] += zeilendaten[1].berechne_stundenzahl()
                         inhalt = str(zeilendaten[1].berechne_stundenzahl())
                     else:
                         inhalt = ''
                     width = 5
                 elif spaltennummer == 6:
                     if zeilendaten[1] != 'empty':
-                        schichtlohn = round(zeilendaten[1].berechne_stundenzahl() * lohntabelle.get_grundlohn())
-                        summen['Grundlohn'] += schichtlohn
-                        inhalt = "{:,.2f}€".format(schichtlohn,2)
-                    else:
-                        inhalt = ''
-                    width = 8
-                elif spaltennummer == 7:
-                    if zeilendaten[1] != 'empty':
-                        print(lohntabelle.get_zuschlag('nacht'))
-                        anzahl_nachtstunden = zeilendaten[1].berechne_nachtstunden()
-                        summen['Grundlohn'] += schichtlohn
-                        inhalt = "{:,.2f}€".format(schichtlohn,2)
+                        schichtlohn = zeilendaten[1].berechne_stundenzahl() * lohntabelle.get_grundlohn(
+                            zeilendaten[1].beginn)
+                        summen['grundlohn'] += schichtlohn
+                        summen['grundlohn_nicht_addiert'] = lohntabelle.get_grundlohn(zeilendaten[1].beginn)
+                        inhalt = "{:,.2f}€".format(schichtlohn)
                     else:
                         inhalt = ''
                     width = 8
@@ -755,18 +776,37 @@ def zeichne_hauptseite():
         widget.destroy()
     nav = tk.Frame(fenster)
     tabelle = tk.Frame(fenster)
-    summenwidget = tk.Frame(fenster)
+    seitenleiste = tk.Frame(fenster)
 
     if assistent.assistent_is_loaded == 1:
         hallo = tk.Label(fenster, text="Hallo " + str(assistent))
-        hallo.pack()
-    summen = {'Grundlohn': 0, 'Assistenzstunden': 0}
+        hallo.grid(row=0, column=0)
+
+    def erstelle_seitenleiste():
+        arbeitsstunden = tk.Label(seitenleiste, text="Arbeitsstunden:", borderwidth=2, relief="groove")
+        arbeitsstunden.grid(row=0, column=0)
+        arbeitsstunden_value = tk.Label(seitenleiste, text=summen['arbeitsstunden'], borderwidth=2, relief="groove")
+        arbeitsstunden_value.grid(row=0, column=1)
+        # TODO wechsel der Erfahrungsstufe beachten
+        stundenlohn = tk.Label(seitenleiste, text="Stundenlohn:", borderwidth=2, relief="groove")
+        stundenlohn.grid(row=1, column=0)
+        stundenlohn_value = tk.Label(seitenleiste, text=summen['grundlohn_nicht_addiert'], borderwidth=2,
+                                     relief="groove")
+        stundenlohn_value.grid(row=1, column=1)
+        lohn_arbeitsstunden = tk.Label(seitenleiste, text="Stundenlohn ohne Zuschläge:", borderwidth=2, relief="groove")
+        lohn_arbeitsstunden.grid(row=2, column=0)
+        arbeitsstunden_value = tk.Label(seitenleiste, text=summen['grundlohn'], borderwidth=2, relief="groove")
+        arbeitsstunden_value.grid(row=2, column=1)
+
+    summen = {'arbeitsstunden': 0, 'grundlohn': 0, 'grundlohn_nicht_addiert': 0}
+
     erstelle_navigation()
-    nav.pack()
+    nav.grid(row=1, column=0)
     erstelle_tabelle()
-    tabelle.pack()
-    erstelle_summenwidget()
-    summenwidget.pack(side='right')
+    tabelle.grid(row=2, column=0)
+    erstelle_seitenleiste()
+    seitenleiste.grid(row=1, column=1, rowspan=2)
+
     # 2 Frames Für Navigation und Tabelle
 
 
@@ -779,10 +819,10 @@ root.title("Dein Assistentenlohn")
 fenster = tk.Frame(root)
 fenster.pack()
 info_text = tk.Label(fenster, text="Bitte erstelle oder öffne eine Assistenten-Datei")
-info_text.pack()
+info_text.grid(row=0, column=0, columnspan=2)
 button_oeffnen = tk.Button(fenster, text="Gespeicherten Assistenten laden", command=alles_laden)
-button_oeffnen.pack()
+button_oeffnen.grid(row=1, column=0)
 button_neu = tk.Button(fenster, text="Neuen Assistenten anlegen", command=neuer_as)
-button_neu.pack()
+button_neu.grid(row=1, column=1)
 
 fenster.mainloop()
