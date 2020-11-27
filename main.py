@@ -202,6 +202,10 @@ class Schicht:
         stunden = sekunden / 3600
         return stunden
 
+    def berechne_nachtstunden(self):
+        anfang = self.beginn.
+        ende = self.ende
+        #Fall 1, tagschicht
 
 class LohnDatensatz:
     def __init__(self, erfahrungsstufe, grundlohn, zuschlaege):
@@ -215,6 +219,9 @@ class LohnDatensatz:
 
     def get_erfahrungsstufe(self):
         return self.erfahrungsstufe
+
+    def get_zuschlag(self, key):
+        return self.zuschlaege[key]
 
 
 class LohnTabelle:
@@ -240,6 +247,11 @@ class LohnTabelle:
         erfahrungsstufe = self.get_erfahrungsstufe()
         ds = self.get_lohndatensatz_by_erfahrungsstufe(erfahrungsstufe)
         return ds.get_grundlohn()
+
+    def get_zuschlag(self, key):
+        erfahrungsstufe = self.get_erfahrungsstufe()
+        ds = self.get_lohndatensatz_by_erfahrungsstufe(erfahrungsstufe)
+        return ds.get_zuschlag(key)
 
     def get_erfahrungsstufe(self):
         # einstieg mit 1
@@ -633,6 +645,15 @@ def zeichne_hauptseite():
         aktueller_monat.grid(row=0, column=1)
         naechster_monat.grid(row=0, column=2)
 
+    def erstelle_summenwidget():
+        for summenwidget_children in summenwidget.winfo_children():
+            summenwidget_children.destroy()
+        summe_grundlohn_label = tk.Label(summenwidget, text='Summe Grundlohn:' + str(summen['Grundlohn']))
+        summe_grundlohn_label.pack()
+        summe_grundlohn_label = tk.Label(summenwidget, text='Summe Assistenzstunden:' + str(summen['Assistenzstunden']))
+        summe_grundlohn_label.pack()
+
+
     def erstelle_tabelle(monatjahr=datetime.date.today()):
         for tabwidget in tabelle.winfo_children():
             tabwidget.destroy()
@@ -659,11 +680,13 @@ def zeichne_hauptseite():
         meine_tabelle = []
         spaltenzahl = 7
         zaehler = 0
+
         for zeilendaten in schichten_sortiert:
             zeile = []
 
             zaehler += 1
             for spaltennummer in range(0, spaltenzahl):
+
                 if spaltennummer == 0:
                     zeile = []
                     width = 4
@@ -696,14 +719,25 @@ def zeichne_hauptseite():
 
                 elif spaltennummer == 5:
                     if zeilendaten[1] != 'empty':
+                        summen['Assistenzstunden'] += zeilendaten[1].berechne_stundenzahl()
                         inhalt = str(zeilendaten[1].berechne_stundenzahl())
                     else:
                         inhalt = ''
                     width = 5
                 elif spaltennummer == 6:
                     if zeilendaten[1] != 'empty':
-                        print(lohntabelle.get_grundlohn())
-                        inhalt = "{:,.2f}€".format(round(zeilendaten[1].berechne_stundenzahl() * lohntabelle.get_grundlohn(),2))
+                        schichtlohn = round(zeilendaten[1].berechne_stundenzahl() * lohntabelle.get_grundlohn())
+                        summen['Grundlohn'] += schichtlohn
+                        inhalt = "{:,.2f}€".format(schichtlohn,2)
+                    else:
+                        inhalt = ''
+                    width = 8
+                elif spaltennummer == 7:
+                    if zeilendaten[1] != 'empty':
+                        print(lohntabelle.get_zuschlag('nacht'))
+                        anzahl_nachtstunden = zeilendaten[1].berechne_nachtstunden()
+                        summen['Grundlohn'] += schichtlohn
+                        inhalt = "{:,.2f}€".format(schichtlohn,2)
                     else:
                         inhalt = ''
                     width = 8
@@ -721,15 +755,18 @@ def zeichne_hauptseite():
         widget.destroy()
     nav = tk.Frame(fenster)
     tabelle = tk.Frame(fenster)
+    summenwidget = tk.Frame(fenster)
 
     if assistent.assistent_is_loaded == 1:
         hallo = tk.Label(fenster, text="Hallo " + str(assistent))
         hallo.pack()
-
+    summen = {'Grundlohn': 0, 'Assistenzstunden': 0}
     erstelle_navigation()
     nav.pack()
     erstelle_tabelle()
     tabelle.pack()
+    erstelle_summenwidget()
+    summenwidget.pack(side='right')
     # 2 Frames Für Navigation und Tabelle
 
 
