@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import filedialog
-# import shelve
 import pickle
 import datetime
 from tkcalendar import Calendar
@@ -78,7 +77,7 @@ class AS(Person):
         self.einstellungsdatum = einstellungsdatum
         self.__class__.count += 1
         self.festeSchichten = {}
-        self.urlaub = {}
+        self.urlaub = []
         self.arbeitsunfaehig = {}
 
     def __del__(self):
@@ -105,33 +104,45 @@ class AS(Person):
     def get_all_schichten(self, start=0, end=0):
         """ wenn keine datetimes für start und end angegeben sind, werden alle Schichten ausgegeben,
          ansonsten alle schichten, die größer als start und <= end sind """
+        ausgabe = {}
         if start == 0 and end == 0:
-            return self.schichten
+            ausgabe = self.schichten
         else:
-            ausgabe = {}
             for schicht in self.schichten.values():
-                beginn_akt_schicht = schicht.get_beginn()
-                end_akt_schicht = schicht.get_ende()
+                beginn_akt_schicht = schicht.beginn
+                end_akt_schicht = schicht.ende
                 if start <= beginn_akt_schicht < end or start <= end_akt_schicht < end:
                     ausgabe[beginn_akt_schicht.strftime("%Y%m%d%H%M")] = schicht
-            return ausgabe
+        return ausgabe
 
     def delete_schicht(self, schicht='', key=''):
         if key != '' or schicht != '':
             if key == '':
                 key = schicht.beginn.strftime('%Y%m%d%H%M')
-            del (self.schichten, key)
+            del self.schichten[key]
 
     def set_all_schichten(self, schichten):
         """ Nimmt ein dict von Schichten entgegen und weist diese dem AS zu"""
         self.schichten = schichten
 
     def asn_dazu(self, asn):
-        self.asn[asn.get_kuerzel()] = asn
+        self.asn[asn.kuerzel] = asn
 
     def schicht_dazu(self, schicht):
-        key = schicht.get_beginn().strftime("%Y%m%d%H%M")
+        key = schicht.beginn.strftime("%Y%m%d%H%M")
         self.schichten[key] = schicht
+
+    def urlaub_dazu(self, urlaub):
+        self.urlaub.append(urlaub)
+
+    def get_urlaub(self, pruefzeitraum_beginn=0, pruefzeitraum_ende=0):
+        # TODO beschränke Zeitraum
+        return self.urlaub
+
+    def check_urlaub(self, datum):
+        for urlaub  in self.urlaub:
+            if urlaub.beginn <= datum <= urlaub.ende:
+                return 1
 
 
 # ein AS kann bei mehreren ASN arbeiten
@@ -164,27 +175,22 @@ class Schicht:
         self.stundenzahl = self.berechne_stundenzahl()
         self.stundenlohn = lohntabelle.get_grundlohn(self.beginn)
         self.schichtlohn = self.stundenzahl * self.stundenlohn
+        self.wechselschichtzulage = lohntabelle.get_zuschlag('Wechselschicht', beginn)
+        self.wechselschichtzulage_schicht = self.wechselschichtzulage * self.stundenzahl
         self.nachtstunden = self.berechne_anzahl_nachtstunden()
-        self.nachtzuschlag = lohntabelle.get_zuschlag('nacht', beginn)
+        self.nachtzuschlag = lohntabelle.get_zuschlag('Nacht', beginn)
         self.nachtzuschlag_schicht = self.nachtstunden * self.nachtzuschlag
+        self.zuschlaege = self.berechne_sa_so_weisil_feiertagszuschlaege()
+        self.ist_kurzfristig = 0
+        self.ist_ausfallgeld = 0
         if self.check_mehrtaegig() == 1:
             self.teilschichten = self.split_by_null_uhr()
         else:
             self.teilschichten = []
-        print('blubb')
 
     def __str__(self):
         return self.asn.get_kuerzel() + " - " + self.beginn.strftime("%m/%d/%Y, %H:%M") + ' bis ' + \
                self.ende.strftime("%m/%d/%Y, %H:%M")
-
-    def get_beginn(self):
-        return self.beginn
-
-    def set_beginn(self, beginn):
-        self.beginn = beginn
-
-    def get_ende(self):
-        return self.ende
 
     def check_mehrtaegig(self):
         pseudoende = self.ende - datetime.timedelta(minutes=2)
@@ -218,12 +224,6 @@ class Schicht:
 
     def add_original_schicht(self, schicht):
         self.original_schicht = schicht
-
-    def set_ende(self, ende):
-        self.ende = ende
-
-    def get_asn(self):
-        return self.asn
 
     def berechne_stundenzahl(self):
         diff = self.ende - self.beginn
@@ -272,11 +272,109 @@ class Schicht:
                 nachtstunden += get_duration(teilschicht.beginn, teilschicht.ende, 'minutes') / 60
         return nachtstunden
 
-    def berechne_sa_so_feiertagszuschlaege(self):
+    def berechne_sa_so_weisil_feiertagszuschlaege(self):
+        feiertagsstunden = 0
+        feiertagsarray = {}
+        if self.check_feiertag() != '':
+            if self.check_mehrtaegig() == 1:
+                for teilschicht in self.teilschichten:
+                    if teilschicht.check_feiertag() != '':
+                        feiertagsstunden += teilschicht.berechne_stundenzahl
+            else:
+                feiertagsstunden = self.berechne_stundenzahl()
 
-        pass
+            zuschlag = lohntabelle.get_zuschlag(schichtdatum=self.beginn, zuschlag='Feiertag')
+            feiertagsarray = {'zuschlagsgrund': 'Feiertag',
+                              'stunden_gesamt': feiertagsstunden,
+                              'stunden_steuerfrei': feiertagsstunden,
+                              'stunden_steuerpflichtig': 0,
+                              'zuschlag_pro_stunde': zuschlag,
+                              'zuschlag_schicht': feiertagsstunden * zuschlag,
+                              'add_info': self.check_feiertag()
+                              }
+        elif self.beginn.weekday() == 6:
+            feiertagsstunden = self.berechne_stundenzahl()
+            zuschlag = lohntabelle.get_zuschlag(zuschlag='Sonntag', schichtdatum=self.beginn)
+            feiertagsarray = {'zuschlagsgrund': 'Sonntag',
+                              'stunden_gesamt': feiertagsstunden,
+                              'stunden_steuerfrei': feiertagsstunden,
+                              'stunden_steuerpflichtig': 0,
+                              'zuschlag_pro_stunde': zuschlag,
+                              'zuschlag_schicht': feiertagsstunden * zuschlag,
+                              'add_info': ''
+                              }
+        elif self.beginn.weekday() == 5:
+            dreizehn_uhr = datetime.datetime(self.beginn.year, self.beginn.month, self.beginn.day, 13, 0, 0)
+            einundzwanzig_uhr = datetime.datetime(self.beginn.year, self.beginn.month, self.beginn.day, 21, 0, 0)
 
-    def check_feiertag(self, bundesland="berlin"):
+            if self.beginn < dreizehn_uhr:
+                if self.ende < dreizehn_uhr:
+                    feiertagsstunden = 0
+                elif dreizehn_uhr < self.ende <= einundzwanzig_uhr:
+                    feiertagsstunden = get_duration(self.ende, dreizehn_uhr)
+                else:  # self.ende > einundzwanzig_uhr:
+                    feiertagsstunden = 8  # 21 - 13
+            elif dreizehn_uhr <= self.beginn < einundzwanzig_uhr:
+                if self.ende < einundzwanzig_uhr:
+                    feiertagsstunden = self.berechne_stundenzahl()
+                elif self.ende > einundzwanzig_uhr:
+                    feiertagsstunden = get_duration(einundzwanzig_uhr, self.beginn)
+            else:
+                feiertagsstunden = 0
+
+            zuschlag = lohntabelle.get_zuschlag(zuschlag='Samstag', schichtdatum=self.beginn)
+            feiertagsarray = {'zuschlagsgrund': 'Samstag',
+                              'stunden_gesamt': feiertagsstunden,
+                              'stunden_steuerfrei': 0,
+                              'stunden_steuerpflichtig': feiertagsstunden,
+                              'zuschlag_pro_stunde': zuschlag,
+                              'zuschlag_schicht': float(feiertagsstunden) * zuschlag,
+                              'add_info': '13:00 - 21:00 Uhr'
+                              }
+        elif datetime.date(self.beginn.year, self.beginn.month, self.beginn.day) == \
+                datetime.date(self.beginn.year, 12, 24) or \
+                datetime.date(self.beginn.year, self.beginn.month, self.beginn.day) == \
+                datetime.date(self.beginn.year, 12, 24):
+            if datetime.date(self.beginn.year, self.beginn.month, self.beginn.day) == \
+                    datetime.date(self.beginn.year, 12, 24):
+                zuschlagsgrund = 'Heiligabend'
+            if datetime.date(self.beginn.year, self.beginn.month, self.beginn.day) == \
+                    datetime.date(self.beginn.year, 12, 31):
+                zuschlagsgrund = 'Silvester'
+
+            sechsuhr = datetime.datetime(self.beginn.year, self.beginn.month, self.beginn.day, 6, 0, 0)
+            vierzehn_uhr = datetime.datetime(self.beginn.year, self.beginn.month, self.beginn.day, 14, 0, 0)
+
+            if self.beginn < sechsuhr:
+                if self.ende <= sechsuhr:
+                    feiertagsstunden_steuerfrei = feiertagsstunden_steuerpflichtig = 0
+                elif sechsuhr < self.ende <= vierzehn_uhr:
+                    feiertagsstunden_steuerpflichtig = get_duration(self.ende, sechsuhr, 'hours')
+                    feiertagsstunden_steuerfrei = 0
+                elif vierzehn_uhr < self.ende:
+                    feiertagsstunden_steuerpflichtig = 8
+                    feiertagsstunden_steuerfrei = get_duration(vierzehn_uhr, self.ende, 'hours')
+            elif sechsuhr <= self.beginn:
+                if self.ende <= vierzehn_uhr:
+                    feiertagsstunden_steuerpflichtig = get_duration(self.ende, self.beginn, 'hours')
+                    feiertagsstunden_steuerfrei = 0
+                elif vierzehn_uhr < self.ende:
+                    feiertagsstunden_steuerpflichtig = get_duration(vierzehn_uhr, self.beginn, 'hours')
+                    feiertagsstunden_steuerfrei = get_duration(self.ende, vierzehn_uhr, 'hours')
+
+            zuschlag = lohntabelle.get_zuschlag(zuschlag='WeiSil', schichtdatum=self.beginn)
+            feiertagsstunden = feiertagsstunden_steuerfrei + feiertagsstunden_steuerpflichtig
+            feiertagsarray = {'zuschlagsgrund': zuschlagsgrund,
+                              'stunden_gesamt': feiertagsstunden,
+                              'stunden_steuerfrei': feiertagsstunden_steuerfrei,
+                              'stunden_steuerpflichtig': feiertagsstunden_steuerpflichtig,
+                              'zuschlag_pro_stunde': zuschlag,
+                              'zuschlag_schicht': feiertagsstunden * zuschlag,
+                              'add_info': '13:00 - 21:00 Uhr'
+                              }
+        return feiertagsarray
+
+    def check_feiertag(self):
         jahr = self.beginn.year
         feiertage = []
         feiertag = {'name': 'Neujahr', 'd': 1, 'm': 1}
@@ -314,13 +412,12 @@ class Schicht:
         feiertage.append(feiertag)
 
         for feiertag in feiertage:
-            if self.beginn == datetime.datetime(self.beginn.year, feiertag['m'], feiertag['d']):
-                return feiertag['name']
+            if self.beginn.day == feiertag['d'] and self.beginn.month == feiertag['m']:
+                ausgabe = feiertag['name']
+                break
             else:
-                return ''
-
-
-
+                ausgabe = ''
+        return ausgabe
 
     @staticmethod
     def berechne_ostern(jahr):
@@ -340,9 +437,22 @@ class Schicht:
 
         tmp = OG + OE  # das Osterdatum als Tages des März, also 32 entspricht 1. April
         if tmp > 31:  # Monat erhöhen, tmp=tag erniedriegen
-            m = tmp / 31
-            tmp -= 31
+            m = int(tmp / 31)
+            tmp = int(round(tmp) - 31)
         return datetime.date(jahr, 3 + m, tmp)
+
+
+class Urlaub:
+    def __init__(self, beginn, ende, status='notiert'):
+        self.beginn = beginn
+        self.ende = ende
+        # status 3 Möglichkeiten: notiert, beantragt, genehmigt
+        self.status = status
+        self.stundenzahl = self.berechne_stundenzahl()
+
+    def berechne_stundenzahl(self):
+        # todo durchschnittliche Stundenzahl aus letzten ausgefüllten 6 Monaten
+        return 5
 
 
 class LohnDatensatz:
@@ -361,17 +471,16 @@ class LohnDatensatz:
 
 class LohnTabelle:
     def __init__(self):
-        gueltig_ab = datetime.date(2020, 1, 1)
         # EG5 Erfahrungsstufen hinzufügen
         self.erfahrungsstufen = []
-        zuschlaege = {'nacht': 3.38, 'samstag': 3.38, 'sonnstag': 4.22,
-                      'feiertag': 22.80, 'wechselschicht': 0.63, 'WeihSyl': 5.72, 'Überstunde': 4.48}
-        self.erfahrungsstufen.append(LohnDatensatz(1, 14.92, zuschlaege))
-        self.erfahrungsstufen.append(LohnDatensatz(2, 16.18, zuschlaege))
-        self.erfahrungsstufen.append(LohnDatensatz(3, 16.89, zuschlaege))
-        self.erfahrungsstufen.append(LohnDatensatz(4, 17.56, zuschlaege))
-        self.erfahrungsstufen.append(LohnDatensatz(5, 18.11, zuschlaege))
-        self.erfahrungsstufen.append(LohnDatensatz(6, 18.47, zuschlaege))
+        self.zuschlaege = {'Nacht': 3.38, 'Samstag': 3.38, 'Sonntag': 4.22,
+                           'Feiertag': 22.80, 'Wechselschicht': 0.63, 'WeihSyl': 5.72, 'Überstunde': 4.48}
+        self.erfahrungsstufen.append(LohnDatensatz(1, 14.92, self.zuschlaege))
+        self.erfahrungsstufen.append(LohnDatensatz(2, 16.18, self.zuschlaege))
+        self.erfahrungsstufen.append(LohnDatensatz(3, 16.89, self.zuschlaege))
+        self.erfahrungsstufen.append(LohnDatensatz(4, 17.56, self.zuschlaege))
+        self.erfahrungsstufen.append(LohnDatensatz(5, 18.11, self.zuschlaege))
+        self.erfahrungsstufen.append(LohnDatensatz(6, 18.47, self.zuschlaege))
 
     def get_lohndatensatz_by_erfahrungsstufe(self, erfahrungsstufe):
         for datensatz in self.erfahrungsstufen:
@@ -479,7 +588,7 @@ def sort_und_berechne_schichten_by_day(schichten, monatjahr=datetime.date.today(
         tag_isset = 0
         # TODO Monatsgrenzen anschauen
         for schicht in schichten:
-            if tag == int(schicht.get_beginn().strftime('%d')):
+            if tag == int(schicht.beginn.strftime('%d')):
                 paar = [tag, schicht]
                 ausgabe.append(paar)
                 tag_isset = 1
@@ -532,7 +641,6 @@ def neuer_as():
 def neue_schicht():
     # TODO allgemeine show-hide funktion
     def tag_nacht_reise(value, label, button):
-        # print(value)
         if value == 3:
             label.grid()
             button.grid()
@@ -570,7 +678,7 @@ def neue_schicht():
             form_neuer_asn_stadt_label.grid_remove()
             form_neuer_asn_stadt_input.grid_remove()
 
-    def action_save_neue_schicht():
+    def action_save_neue_schicht(undneu=0):
         global assistent
 
         startdatum = form_neue_schicht_startdatum_input.get_date().split('/')
@@ -579,6 +687,7 @@ def neue_schicht():
                                    int(form_neue_schicht_startzeit_input.minstr.get()))
 
         # ende der Schicht bestimmen. Fälle: Tagschicht, Nachtschicht, Reise
+        # todo minstring darf nicht mehr als 59 sein. kann durch ungeduldiges tippen passieren entry validieren
         if fenster_neue_schicht.v.get() == 1:  # Tagschicht
             ende = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]),
                                      int(form_neue_schicht_endzeit_input.hourstr.get()),
@@ -601,12 +710,12 @@ def neue_schicht():
         else:
             asn = assistent.get_asn_by_kuerzel(variable.get())
         # Schicht erstellen und zum Assistenten stopfen
-        # print(assistent)
         schicht = Schicht(beginn, ende, asn)
-        # print(schicht)
         assistent.schicht_dazu(schicht)
         alles_speichern()
         fenster_neue_schicht.destroy()
+        if undneu == 1:
+            neue_schicht()
 
     fenster_neue_schicht = tk.Toplevel(fenster)
     form_neue_schicht_headline = tk.Label(fenster_neue_schicht, text="Schichten eintragen")
@@ -663,6 +772,8 @@ def neue_schicht():
                                               command=action_save_neue_schicht)
     form_neue_schicht_exit_button = tk.Button(fenster_neue_schicht, text="Abbrechen",
                                               command=fenster_neue_schicht.destroy)
+    form_neue_schicht_saveandnew_button = tk.Button(fenster_neue_schicht, text="Daten speichern und neu",
+                                                    command=lambda: action_save_neue_schicht(undneu=1))
 
     # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
 
@@ -692,6 +803,74 @@ def neue_schicht():
     form_neue_schicht_asn_dropdown.grid(row=5, column=1)
     form_neue_schicht_save_button.grid(row=15, column=0)
     form_neue_schicht_exit_button.grid(row=15, column=1)
+    form_neue_schicht_saveandnew_button.grid(row=15, column=2)
+
+
+def neuer_urlaub():
+    # TODO allgemeine show-hide funktion
+
+    def action_save_neuer_urlaub(undneu=0):
+        global assistent
+
+        startdatum = form_neuer_urlaub_startdatum_input.get_date().split('/')
+        beginn = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]), 0, 0)
+        enddatum = form_neuer_urlaub_enddatum_input.get_date().split('/')
+        # urlaub geht bis 23:59 am letzten Tag
+        ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]), 23, 59)
+        status = fenster_neuer_urlaub.urlaubsstatus.get()
+
+        # Schicht erstellen und zum Assistenten stopfen
+        urlaub = Urlaub(beginn, ende, status)
+        assistent.urlaub_dazu(urlaub)
+        alles_speichern()
+        fenster_neuer_urlaub.destroy()
+        if undneu == 1:
+            neuer_urlaub()
+
+    fenster_neuer_urlaub = tk.Toplevel(fenster)
+    form_neuer_urlaub_headline = tk.Label(fenster_neuer_urlaub, text="Urlaub eintragen")
+    form_neuer_urlaub_startdatum_label = tk.Label(fenster_neuer_urlaub, text="von")
+    form_neuer_urlaub_startdatum_input = Calendar(fenster_neuer_urlaub, date_pattern='MM/dd/yyyy')
+    form_neuer_urlaub_enddatum_label = tk.Label(fenster_neuer_urlaub, text="bis")
+    form_neuer_urlaub_enddatum_input = Calendar(fenster_neuer_urlaub, date_pattern='MM/dd/yyyy')
+    fenster_neuer_urlaub.urlaubsstatus = tk.StringVar()
+    fenster_neuer_urlaub.urlaubsstatus.set('notiert')
+    form_neuer_urlaub_status_label = tk.Label(fenster_neuer_urlaub, text="Status")
+    form_neuer_urlaub_status_input_radio1 = \
+        tk.Radiobutton(fenster_neuer_urlaub, text="notiert", padx=20,
+                       variable=fenster_neuer_urlaub.urlaubsstatus, value='notiert')
+    form_neuer_urlaub_status_input_radio2 = \
+        tk.Radiobutton(fenster_neuer_urlaub, text="beantragt", padx=20,
+                       variable=fenster_neuer_urlaub.urlaubsstatus, value='beantragt')
+    form_neuer_urlaub_status_input_radio3 = \
+        tk.Radiobutton(fenster_neuer_urlaub, text="genehmigt", padx=20,
+                       variable=fenster_neuer_urlaub.urlaubsstatus, value='genehmigt')
+
+    form_neuer_urlaub_save_button = tk.Button(fenster_neuer_urlaub, text="Daten speichern",
+                                              command=action_save_neuer_urlaub)
+    form_neuer_urlaub_exit_button = tk.Button(fenster_neuer_urlaub, text="Abbrechen",
+                                              command=fenster_neuer_urlaub.destroy)
+    form_neuer_urlaub_saveandnew_button = tk.Button(fenster_neuer_urlaub, text="Daten speichern und neu",
+                                                    command=lambda: action_save_neuer_urlaub(undneu=1))
+
+    # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
+
+    # ins Fenster packen
+    form_neuer_urlaub_headline.grid(row=0, column=0, columnspan=4)
+    form_neuer_urlaub_startdatum_label.grid(row=1, column=0)
+    form_neuer_urlaub_startdatum_input.grid(row=1, column=1, columnspan=2)
+    form_neuer_urlaub_enddatum_label.grid(row=1, column=3)
+    form_neuer_urlaub_enddatum_input.grid(row=1, column=4)
+
+    form_neuer_urlaub_status_label.grid(row=3, column=0)
+
+    form_neuer_urlaub_status_input_radio1.grid(row=3, column=1)
+    form_neuer_urlaub_status_input_radio2.grid(row=3, column=2)
+    form_neuer_urlaub_status_input_radio3.grid(row=3, column=3)
+
+    form_neuer_urlaub_save_button.grid(row=15, column=0)
+    form_neuer_urlaub_exit_button.grid(row=15, column=1)
+    form_neuer_urlaub_saveandnew_button.grid(row=15, column=2)
 
 
 def alles_speichern(neu=0):
@@ -757,6 +936,7 @@ def zeichne_hauptmenue():
     datei_menu.add_command(label="Exit", command=fenster.quit)
 
     bearbeiten_menu.add_command(label="Schicht eintragen", command=neue_schicht)
+    bearbeiten_menu.add_command(label="Urlaub eintragen", command=neuer_urlaub)
 
     help_menu.add_command(label="Info!", command=action_get_info_dialog)
 
@@ -780,6 +960,11 @@ def split_schichten_um_mitternacht(schichten):
     return ausgabe
 
 
+def kill_schicht(key):
+    assistent.delete_schicht(key=key)
+    zeichne_hauptseite()
+
+
 def zeichne_hauptseite():
     global button_neu, button_oeffnen, assistent
 
@@ -788,11 +973,13 @@ def zeichne_hauptseite():
             offs -= 1
             erstelle_navigation(offs)
             erstelle_tabelle(offs)
+            erstelle_seitenleiste()
 
         def monat_vor(offs):
             offs += 1
             erstelle_navigation(offs)
             erstelle_tabelle(offs)
+            erstelle_seitenleiste()
 
         for navwidget in nav.winfo_children():
             navwidget.destroy()
@@ -814,26 +1001,50 @@ def zeichne_hauptseite():
         aktueller_monat.grid(row=0, column=1)
         naechster_monat.grid(row=0, column=2)
 
+    def verschiebe_monate(offset, datum=datetime.datetime.now()):
+        arbeitsmonat = datum.month + offset
+        tmp = divmod(arbeitsmonat, 12)
+        offset_arbeitsjahr = tmp[0]
+        arbeitsmonat = tmp[1]
+        if arbeitsmonat == 0:
+            arbeitsmonat = 12
+            offset_arbeitsjahr -= 1
+        if offset_arbeitsjahr < 0:
+            # modulo einer negativen Zahl ist ein Arschloch..hoffentlich stimmts
+            # TODO eventuell jahr korrigieren? Testen, was passiert
+            arbeitsmonat = 12 - arbeitsmonat
+        arbeitsjahr = datum.year + offset_arbeitsjahr
+        arbeitsdatum = datetime.datetime(arbeitsjahr, arbeitsmonat, 1, 0, 0, 0)
+        return arbeitsdatum
+
     def erstelle_tabelle(offs=0):
         for tabwidget in tabelle.winfo_children():
             tabwidget.destroy()
 
-        aktuelles_datum = datetime.date.today()
-        erstelle_tabelle_jahrmonat = divmod(int(aktuelles_datum.strftime('%m')) + offs, 12)
-        monat = erstelle_tabelle_jahrmonat[1]
-        jahr = int(aktuelles_datum.strftime('%Y')) + erstelle_tabelle_jahrmonat[0]
-        if monat == 0:
-            monat = 12
-        start = arbeitsdatum = datetime.datetime(jahr, monat, 1, 0, 0, 0)
+        zuschlaege = {}
+        for zuschlag_name in lohntabelle.zuschlaege.keys():
+            zuschlaege[zuschlag_name] = {
+                'stunden_gesamt': 0,
+                'zuschlaege_gesamt': 0,
+                'stunden_steuerfrei': 0,
+                'stunden_steuerpflichtig': 0,
+                'zuschlag_pro_stunde': 0,
+            }
 
-        jahrmonat = divmod(monat + 1, 12)
-        endjahr = jahr + jahrmonat[0]
-        endmonat = jahrmonat[1]
-        if endmonat == 0:
-            endmonat = 12
-        end = datetime.datetime(endjahr, endmonat, 1, 0, 0, 0)
+        tabelle.summen = {'arbeitsstunden': 0,
+                          'grundlohn': 0,
+                          'grundlohn_pro_stunde': 0,
+                          'nachtstunden': 0,
+                          'nachtzuschlag': 0,
+                          'nachtzuschlag_pro_stunde': 0,
+                          'wechselschichtzulage': 0,
+                          'wechselschichtzulage_pro_stunde': 0,
+                          'zuschlaege': zuschlaege
+                          }
+
+        arbeitsdatum = start = verschiebe_monate(offs)
+        end = verschiebe_monate(1, arbeitsdatum)
         schichten = assistent.get_all_schichten(start, end)
-        # nicht die schichten des AS kaputtmachen, daher Kopie
         schichten_sortiert = split_schichten_um_mitternacht(schichten)
         schichten_sortiert = sort_und_berechne_schichten_by_day(schichten_sortiert, arbeitsdatum)
 
@@ -846,11 +1057,14 @@ def zeichne_hauptseite():
         tk.Label(tabelle, text='Std', borderwidth=1, relief="solid", width=5).grid(row=0, column=15)
         tk.Label(tabelle, text='Grundlohn', borderwidth=1, relief="solid", width=8).grid(row=0, column=16)
         tk.Label(tabelle, text='NachtStd', borderwidth=1, relief="solid", width=8).grid(row=0, column=17)
-        tk.Label(tabelle, text='Nachtzuschlag', borderwidth=1, relief="solid", width=10).grid(row=0, column=18)
+        tk.Label(tabelle, text='Nachtzu.', borderwidth=1, relief="solid", width=8).grid(row=0, column=18)
+        tk.Label(tabelle, text='Zuschlaege', borderwidth=1, relief="solid", width=18).grid(row=0, column=19,
+                                                                                           columnspan=2)
+        tk.Label(tabelle, text='Wechsel', borderwidth=1, relief="solid", width=8).grid(row=0, column=21)
 
         # körper
         meine_tabelle = []
-        spaltenzahl = 19
+        spaltenzahl = 22
         zaehler = 0
         width = 0
         inhalt = ''
@@ -867,6 +1081,11 @@ def zeichne_hauptseite():
                 elif spaltennummer == 1:
                     text = 'del'
                     command = 'kill'
+                    if zeilendaten[1] != 'empty':
+                        if zeilendaten[1].original_schicht != "root":
+                            key_string = zeilendaten[1].original_schicht
+                        else:
+                            key_string = zeilendaten[1].beginn.strftime('%Y%m%d%H%M')
                     image = "images/del.png"
 
                 elif 1 < spaltennummer < 10:
@@ -876,7 +1095,7 @@ def zeichne_hauptseite():
                     zeile = []
                     width = 4
                     # TODO timezone checken
-                    inhalt = datetime.datetime(jahr, monat, zeilendaten[0]).strftime('%a')
+                    inhalt = datetime.datetime(arbeitsdatum.year, arbeitsdatum.month, zeilendaten[0]).strftime('%a')
 
                 elif spaltennummer == 11:
                     zeile = []
@@ -896,7 +1115,10 @@ def zeichne_hauptseite():
                     width = 5
 
                 elif spaltennummer == 14:
-                    if zeilendaten[1] != 'empty':
+                    if assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
+                                                                arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                        inhalt = 'Urlaub'
+                    elif zeilendaten[1] != 'empty':
                         inhalt = zeilendaten[1].asn.kuerzel
                     else:
                         inhalt = ''
@@ -904,7 +1126,7 @@ def zeichne_hauptseite():
 
                 elif spaltennummer == 15:
                     if zeilendaten[1] != 'empty':
-                        summen['arbeitsstunden'] += zeilendaten[1].stundenzahl
+                        tabelle.summen['arbeitsstunden'] += zeilendaten[1].stundenzahl
                         inhalt = str(zeilendaten[1].berechne_stundenzahl())
                     else:
                         inhalt = ''
@@ -912,8 +1134,8 @@ def zeichne_hauptseite():
                 elif spaltennummer == 16:
                     if zeilendaten[1] != 'empty':
                         schichtlohn = zeilendaten[1].schichtlohn
-                        summen['grundlohn'] += zeilendaten[1].schichtlohn
-                        summen['grundlohn_pro_stunde'] = zeilendaten[1].stundenlohn
+                        tabelle.summen['grundlohn'] += zeilendaten[1].schichtlohn
+                        tabelle.summen['grundlohn_pro_stunde'] = zeilendaten[1].stundenlohn
                         inhalt = "{:,.2f}€".format(schichtlohn)
                     else:
                         inhalt = ''
@@ -921,7 +1143,7 @@ def zeichne_hauptseite():
                 elif spaltennummer == 17:
                     if zeilendaten[1] != 'empty':
                         nachtstunden = zeilendaten[1].nachtstunden
-                        summen['nachtstunden'] += nachtstunden
+                        tabelle.summen['nachtstunden'] += nachtstunden
                         inhalt = str(nachtstunden)
                     else:
                         inhalt = ''
@@ -929,16 +1151,50 @@ def zeichne_hauptseite():
                 elif spaltennummer == 18:
                     if zeilendaten[1] != 'empty':
                         nachtzuschlag_schicht = zeilendaten[1].nachtzuschlag_schicht
-                        summen['nachtzuschlag'] += zeilendaten[1].nachtzuschlag_schicht
-                        summen['nachtzuschlag_pro_stunde'] = zeilendaten[1].nachtzuschlag
+                        tabelle.summen['nachtzuschlag'] += zeilendaten[1].nachtzuschlag_schicht
+                        tabelle.summen['nachtzuschlag_pro_stunde'] = zeilendaten[1].nachtzuschlag
                         inhalt = "{:,.2f}€".format(nachtzuschlag_schicht)
                     else:
                         inhalt = ''
                     width = 8
+                elif spaltennummer == 19:
+                    if zeilendaten[1] != 'empty' and zeilendaten[1].zuschlaege != {}:
+                        grund = zeilendaten[1].zuschlaege['zuschlagsgrund']
+                        zuschlag_stunden = zeilendaten[1].zuschlaege['stunden_gesamt']
+                        tabelle.summen['zuschlaege'][grund]['stunden_gesamt'] \
+                            += zuschlag_stunden
+                        inhalt = str(zuschlag_stunden) + ' ' + zeilendaten[1].zuschlaege['zuschlagsgrund']
+                    else:
+                        inhalt = ''
+                    width = 15
+                elif spaltennummer == 20:
+                    if zeilendaten[1] != 'empty' and zeilendaten[1].zuschlaege != {}:
+                        grund = zeilendaten[1].zuschlaege['zuschlagsgrund']
+                        zuschlag_schicht = zeilendaten[1].zuschlaege['zuschlag_schicht']
+                        tabelle.summen['zuschlaege'][grund]['zuschlaege_gesamt'] \
+                            += zuschlag_schicht
+                        tabelle.summen['zuschlaege'][grund]['zuschlag_pro_stunde'] = \
+                            zeilendaten[1].zuschlaege['zuschlag_pro_stunde']
+                        inhalt = "{:,.2f}€".format(zuschlag_schicht)
+                    else:
+                        inhalt = ''
+                    width = 8
+                elif spaltennummer == 21:
+                    if zeilendaten[1] != 'empty':
+                        tabelle.summen['wechselschichtzulage'] += zeilendaten[1].wechselschichtzulage_schicht
+                        tabelle.summen['wechselschichtzulage_pro_stunde'] = zeilendaten[1].wechselschichtzulage
+                        inhalt = "{:,.2f}€".format(zeilendaten[1].wechselschichtzulage_schicht)
+                    else:
+                        inhalt = ''
+                    width = 8
+
                 if spaltennummer < 10:
                     if zeilendaten[1] != 'empty':
                         if text != '':
-                            zelle = tk.Button(tabelle, text=text, command=command)
+                            if command == 'kill':
+                                zelle = tk.Button(tabelle, text=text, command=lambda: kill_schicht(key_string))
+                            elif command == 'edit':
+                                zelle = tk.Button(tabelle, text=text)
                             zelle.image = tk.PhotoImage(file=image, width=16, height=16)
                             zelle.config(image=zelle.image, width=16, height=16)
                             zelle.grid(row=zaehler, column=spaltennummer)
@@ -965,47 +1221,135 @@ def zeichne_hauptseite():
         hallo.grid(row=0, column=0)
 
     def erstelle_seitenleiste():
+        for slwidget in seitenleiste.winfo_children():
+            slwidget.destroy()
+
+        # Header
+        header = tk.Label(seitenleiste, text="Bezeichung", borderwidth=2, relief="groove")
+        header.grid(row=0, column=0)
+        header = tk.Label(seitenleiste, text="Stunden", borderwidth=2, relief="groove")
+        header.grid(row=0, column=1)
+        header = tk.Label(seitenleiste, text="pro Stunde", borderwidth=2, relief="groove")
+        header.grid(row=0, column=2)
+        header = tk.Label(seitenleiste, text="Gesamt", borderwidth=2, relief="groove")
+        header.grid(row=0, column=3)
+
+        bruttolohn = 0
+
         arbeitsstunden = tk.Label(seitenleiste, text="Arbeitsstunden:", borderwidth=2, relief="groove")
-        arbeitsstunden.grid(row=0, column=0)
-        arbeitsstunden_value = tk.Label(seitenleiste, text=summen['arbeitsstunden'], borderwidth=2, relief="groove")
-        arbeitsstunden_value.grid(row=0, column=1)
+        arbeitsstunden.grid(row=1, column=0)
+        arbeitsstunden_value = tk.Label(seitenleiste,
+                                        text="{:,.2f}".format(round(tabelle.summen['arbeitsstunden'], 2)),
+                                        borderwidth=2, relief="groove")
+        arbeitsstunden_value.grid(row=1, column=1)
         # TODO wechsel der Erfahrungsstufe beachten
 
-        stundenlohn = tk.Label(seitenleiste, text="Stundenlohn:", borderwidth=2, relief="groove")
-        stundenlohn.grid(row=1, column=0)
-        stundenlohn_value = tk.Label(seitenleiste, text=summen['grundlohn_pro_stunde'], borderwidth=2,
+        stundenlohn_value = tk.Label(seitenleiste,
+                                     text="{:,.2f}€".format(round(tabelle.summen['grundlohn_pro_stunde'], 2)),
+                                     borderwidth=2,
                                      relief="groove")
-        stundenlohn_value.grid(row=1, column=1)
+        stundenlohn_value.grid(row=1, column=2)
 
-        lohn_arbeitsstunden = tk.Label(seitenleiste, text="Lohn ohne Zuschläge:", borderwidth=2, relief="groove")
-        lohn_arbeitsstunden.grid(row=2, column=0)
-        arbeitsstunden_value = tk.Label(seitenleiste, text=summen['grundlohn'], borderwidth=2, relief="groove")
-        arbeitsstunden_value.grid(row=2, column=1)
+        bruttolohn += tabelle.summen['grundlohn']
+        arbeitsstunden_value = tk.Label(seitenleiste,
+                                        text="{:,.2f}€".format(round(tabelle.summen['grundlohn'], 2)),
+                                        borderwidth=2, relief="groove")
+        arbeitsstunden_value.grid(row=1, column=3)
 
         nachtstunden = tk.Label(seitenleiste, text="Nachtstunden:", borderwidth=2, relief="groove")
-        nachtstunden.grid(row=3, column=0)
-        nachtstunden_value = tk.Label(seitenleiste, text=summen['nachtstunden'], borderwidth=2,
+        nachtstunden.grid(row=2, column=0)
+        nachtstunden_value = tk.Label(seitenleiste,
+                                      text="{:,.2f}".format(round(tabelle.summen['nachtstunden'], 2)),
+                                      borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=3, column=1)
+        nachtstunden_value.grid(row=2, column=1)
 
-        nachtstunden = tk.Label(seitenleiste, text="Nachtzuschlag pro Stunde:", borderwidth=2, relief="groove")
-        nachtstunden.grid(row=4, column=0)
-        nachtstunden_value = tk.Label(seitenleiste, text=summen['nachtzuschlag_pro_stunde'], borderwidth=2,
+        nachtstunden_value = tk.Label(seitenleiste,
+                                      text="{:,.2f}€".format(round(tabelle.summen['nachtzuschlag_pro_stunde'], 2)),
+                                      borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=4, column=1)
+        nachtstunden_value.grid(row=2, column=2)
 
-        nachtstunden = tk.Label(seitenleiste, text="Nachtzuschläg:", borderwidth=2, relief="groove")
-        nachtstunden.grid(row=5, column=0)
-        nachtstunden_value = tk.Label(seitenleiste, text=summen['nachtzuschlag'], borderwidth=2,
+        nachtstunden_value = tk.Label(seitenleiste,
+                                      text="{:,.2f}€".format(round(tabelle.summen['nachtzuschlag'], 2)),
+                                      borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=5, column=1)
+        nachtstunden_value.grid(row=2, column=3)
+        bruttolohn += tabelle.summen['nachtzuschlag']
+        rowcounter = 2
+        for zuschlagsgrund in tabelle.summen['zuschlaege']:
+            if tabelle.summen['zuschlaege'][zuschlagsgrund]['stunden_gesamt'] > 0:
+                zuschl = tabelle.summen['zuschlaege'][zuschlagsgrund]
+                rowcounter += 1
+                nachtstunden = tk.Label(seitenleiste, text="Zuschlag " + zuschlagsgrund, borderwidth=2, relief="groove")
+                nachtstunden.grid(row=rowcounter, column=0)
 
-    summen = {'arbeitsstunden': 0,
-              'grundlohn': 0,
-              'grundlohn_pro_stunde': 0,
-              'nachtstunden': 0,
-              'nachtzuschlag': 0,
-              'nachtzuschlag_pro_stunde': 0}
+                nachtstunden_value = tk.Label(seitenleiste,
+                                              text="{:,.2f}".format(round(zuschl['stunden_gesamt'], 2)),
+                                              borderwidth=2,
+                                              relief="groove")
+                nachtstunden_value.grid(row=rowcounter, column=1)
+
+                nachtstunden_value = tk.Label(seitenleiste,
+                                              text="{:,.2f}€".format(round(zuschl['zuschlag_pro_stunde'], 2)),
+                                              borderwidth=2,
+                                              relief="groove")
+                nachtstunden_value.grid(row=rowcounter, column=2)
+
+                nachtstunden_value = tk.Label(seitenleiste,
+                                              text="{:,.2f}€".format(round(zuschl['zuschlaege_gesamt'], 2)),
+                                              borderwidth=2,
+                                              relief="groove")
+                nachtstunden_value.grid(row=rowcounter, column=3)
+                bruttolohn += zuschl['zuschlaege_gesamt']
+
+        rowcounter += 1
+        nachtstunden = tk.Label(seitenleiste, text="Wechselschichtzulage:", borderwidth=2, relief="groove")
+        nachtstunden.grid(row=2, column=0)
+        nachtstunden_value = tk.Label(seitenleiste,
+                                      text="{:,.2f}".format(round(tabelle.summen['arbeitsstunden'], 2)),
+                                      borderwidth=2,
+                                      relief="groove")
+        nachtstunden_value.grid(row=2, column=1)
+
+        nachtstunden_value = tk.Label(seitenleiste,
+                                      text="{:,.2f}€".format(
+                                          round(tabelle.summen['wechselschichtzulage_pro_stunde'], 2)),
+                                      borderwidth=2,
+                                      relief="groove")
+        nachtstunden_value.grid(row=2, column=2)
+
+        nachtstunden_value = tk.Label(seitenleiste,
+                                      text="{:,.2f}€".format(round(tabelle.summen['wechselschichtzulage'], 2)),
+                                      borderwidth=2,
+                                      relief="groove")
+        nachtstunden_value.grid(row=2, column=3)
+        bruttolohn += tabelle.summen['nachtzuschlag']
+
+        rowcounter += 1
+        nachtstunden = tk.Label(seitenleiste, text="Summe = Bruttolohn", borderwidth=2, relief="groove")
+        nachtstunden.grid(row=rowcounter, column=0)
+
+        nachtstunden_value = tk.Label(seitenleiste,
+                                      text="{:,.2f}€".format(round(bruttolohn, 2)),
+                                      borderwidth=2,
+                                      relief="groove")
+        nachtstunden_value.grid(row=rowcounter, column=3)
+
+        # TODO besseren Paltz für Kappung finden
+        if tabelle.summen['wechselschichtzulage'] >= 105:
+            tabelle.summen['wechselschichtzulage'] = 105
+            rowcounter += 1
+            nachtstunden = tk.Label(seitenleiste,
+                                    text="Übersteigt die Wechselschitzulage 105€ wird auf diesen Betrag gekappt",
+                                    borderwidth=2, relief="groove", columnspan=3)
+            nachtstunden.grid(row=2, column=0)
+            nachtstunden_value = tk.Label(seitenleiste,
+                                          text="{:,.2f}".format(105),
+                                          borderwidth=2,
+                                          relief="groove")
+            nachtstunden_value.grid(row=2, column=3)
+        bruttolohn += tabelle.summen['wechselschichtzulage']
 
     erstelle_navigation()
     nav.grid(row=1, column=0)
