@@ -140,7 +140,7 @@ class AS(Person):
         return self.urlaub
 
     def check_urlaub(self, datum):
-        for urlaub  in self.urlaub:
+        for urlaub in self.urlaub:
             if urlaub.beginn <= datum <= urlaub.ende:
                 return 1
 
@@ -274,7 +274,11 @@ class Schicht:
 
     def berechne_sa_so_weisil_feiertagszuschlaege(self):
         feiertagsstunden = 0
+        feiertagsstunden_steuerfrei = 0
+        feiertagsstunden_steuerpflichtig = 0
         feiertagsarray = {}
+        zuschlagsgrund = ''
+
         if self.check_feiertag() != '':
             if self.check_mehrtaegig() == 1:
                 for teilschicht in self.teilschichten:
@@ -377,46 +381,55 @@ class Schicht:
     def check_feiertag(self):
         jahr = self.beginn.year
         feiertage = []
-        feiertag = {'name': 'Neujahr', 'd': 1, 'm': 1}
+        feiertag = {'name': 'Neujahr', 'd': 1, 'm': 1, 'Y': 0}
         feiertage.append(feiertag)
-        feiertag = {'name': 'Internationaler Frauentag', 'd': 8, 'm': 3}
+        feiertag = {'name': 'Internationaler Frauentag', 'd': 8, 'm': 3, 'Y': 0}
         feiertage.append(feiertag)
-        feiertag = {'name': 'Tag der Arbeit', 'd': 1, 'm': 5}
+        feiertag = {'name': 'Tag der Arbeit', 'd': 1, 'm': 5, 'Y': 0}
         feiertage.append(feiertag)
-        feiertag = {'name': 'Tag der deutschen Einheit', 'd': 3, 'm': 10}
+        feiertag = {'name': 'Tag der deutschen Einheit', 'd': 3, 'm': 10, 'Y': 0}
         feiertage.append(feiertag)
-        feiertag = {'name': '1. Weihnachtsfeiertagt', 'd': 25, 'm': 12}
+        feiertag = {'name': '1. Weihnachtsfeiertagt', 'd': 25, 'm': 12, 'Y': 0}
         feiertage.append(feiertag)
-        feiertag = {'name': '2. Weihnachtsfeiertag', 'd': 26, 'm': 12}
+        feiertag = {'name': '2. Weihnachtsfeiertag', 'd': 26, 'm': 12, 'Y': 0}
+        feiertage.append(feiertag)
+        feiertag = {'name': 'Tag der Befreiung', 'd': 26, 'm': 12, 'Y': 2020}
         feiertage.append(feiertag)
 
         # kein Feiertag in Berlin TODO Prio = 1000, andere Bundesländer
         ostersonntag = self.berechne_ostern(jahr)
         karfreitag = ostersonntag - datetime.timedelta(days=2)
-        feiertag = {'name': 'Karfreitag', 'd': int(karfreitag.strftime('%d')), 'm': int(karfreitag.strftime('%d'))}
+        feiertag = {'name': 'Karfreitag', 'd': int(karfreitag.strftime('%d')),
+                    'm': int(karfreitag.strftime('%d')), 'Y': 0}
         feiertage.append(feiertag)
         ostermontag = ostersonntag + datetime.timedelta(days=1)
-        feiertag = {'name': 'Ostermontag', 'd': int(ostermontag.strftime('%d')), 'm': int(ostermontag.strftime('%d'))}
+        feiertag = {'name': 'Ostermontag', 'd': int(ostermontag.strftime('%d')),
+                    'm': int(ostermontag.strftime('%d')), 'Y': 0}
         feiertage.append(feiertag)
         himmelfahrt = ostersonntag + datetime.timedelta(days=40)
         feiertag = {'name': 'Christi Himmelfahrt', 'd': int(himmelfahrt.strftime('%d')),
-                    'm': int(himmelfahrt.strftime('%d'))}
+                    'm': int(himmelfahrt.strftime('%d')), 'Y': 0}
         feiertage.append(feiertag)
         pfingstsonntag = ostersonntag + datetime.timedelta(days=49)
         feiertag = {'name': 'Pfingstsonntag', 'd': int(pfingstsonntag.strftime('%d')),
-                    'm': int(pfingstsonntag.strftime('%d'))}
+                    'm': int(pfingstsonntag.strftime('%d')), 'Y': 0}
         feiertage.append(feiertag)
         pfingstmontag = ostersonntag + datetime.timedelta(days=50)
         feiertag = {'name': 'Pfingstmontag', 'd': int(pfingstmontag.strftime('%d')),
-                    'm': int(pfingstmontag.strftime('%d'))}
+                    'm': int(pfingstmontag.strftime('%d')), 'Y': 0}
         feiertage.append(feiertag)
-
+        ausgabe = ''
         for feiertag in feiertage:
-            if self.beginn.day == feiertag['d'] and self.beginn.month == feiertag['m']:
-                ausgabe = feiertag['name']
-                break
-            else:
-                ausgabe = ''
+            if feiertag['Y'] > 0:
+                if feiertag['Y'] == self.beginn.year \
+                        and self.beginn.day == feiertag['d'] \
+                        and self.beginn.month == feiertag['m']:
+                    ausgabe = feiertag['name']
+                    break
+            elif feiertag['Y'] == 0:
+                if self.beginn.day == feiertag['d'] and self.beginn.month == feiertag['m']:
+                    ausgabe = feiertag['name']
+                    break
         return ausgabe
 
     @staticmethod
@@ -448,11 +461,11 @@ class Urlaub:
         self.ende = ende
         # status 3 Möglichkeiten: notiert, beantragt, genehmigt
         self.status = status
-        self.stundenzahl = self.berechne_stundenzahl()
+        self.stundenzahl = self.berechne_durchschnittliche_stundenzahl_pro_tag()
 
-    def berechne_stundenzahl(self):
+    def berechne_durchschnittliche_stundenzahl_pro_tag(self):
         # todo durchschnittliche Stundenzahl aus letzten ausgefüllten 6 Monaten
-        return 5
+        return 6
 
 
 class LohnDatensatz:
@@ -1018,6 +1031,7 @@ def zeichne_hauptseite():
         return arbeitsdatum
 
     def erstelle_tabelle(offs=0):
+        command = text = zelle = image = ''
         for tabwidget in tabelle.winfo_children():
             tabwidget.destroy()
 
@@ -1125,14 +1139,25 @@ def zeichne_hauptseite():
                     width = 10
 
                 elif spaltennummer == 15:
-                    if zeilendaten[1] != 'empty':
+                    if assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
+                                                                arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                        ustunden=assistent.urlaub.berechne_durchschnittliche_stundenzahl_pro_tag()
+                        inhalt = ustunden
+                        tabelle.summen['arbeitsstunden'] += ustunden
+                    elif zeilendaten[1] != 'empty':
                         tabelle.summen['arbeitsstunden'] += zeilendaten[1].stundenzahl
                         inhalt = str(zeilendaten[1].berechne_stundenzahl())
                     else:
                         inhalt = ''
                     width = 5
                 elif spaltennummer == 16:
-                    if zeilendaten[1] != 'empty':
+                    if assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
+                                                                arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                        ulohn = assistent.urlaub.ulohn_pro_tag
+                        ulohn_pro_stunde = ulohn_pro_stunde
+                        inhalt = ustunden
+                        tabelle.summen['arbeitsstunden'] += ustunden
+                    elif zeilendaten[1] != 'empty':
                         schichtlohn = zeilendaten[1].schichtlohn
                         tabelle.summen['grundlohn'] += zeilendaten[1].schichtlohn
                         tabelle.summen['grundlohn_pro_stunde'] = zeilendaten[1].stundenlohn
