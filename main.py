@@ -78,7 +78,7 @@ class AS(Person):
         self.__class__.count += 1
         self.festeSchichten = {}
         self.urlaub = []
-        self.arbeitsunfaehig = {}
+        self.au = []
 
     def __del__(self):
         self.__class__.count -= 1
@@ -142,7 +142,15 @@ class AS(Person):
     def check_urlaub(self, datum):
         for urlaub in self.urlaub:
             if urlaub.beginn <= datum <= urlaub.ende:
-                return 1
+                return urlaub
+
+    def au_dazu(self, au):
+        self.au.append(au)
+
+    def check_au(self, datum):
+        for au in self.au:
+            if au.beginn <= datum <= au.ende:
+                return au
 
 
 # ein AS kann bei mehreren ASN arbeiten
@@ -162,6 +170,7 @@ class ASN(Person):
         return self.kuerzel
 
 
+# ToDo Klassen schicht, Urlaub, Krank als hierarchische Klassen vereinen schicht erbt von urlaub erbt von au
 class Schicht:
     beginn = datetime
     end = datetime
@@ -183,6 +192,10 @@ class Schicht:
         self.zuschlaege = self.berechne_sa_so_weisil_feiertagszuschlaege()
         self.ist_kurzfristig = 0
         self.ist_ausfallgeld = 0
+        self.ist_assistententreffen = 0
+        self. ist_pcg = 0
+        self.ist_schulung = 0
+
         if self.check_mehrtaegig() == 1:
             self.teilschichten = self.split_by_null_uhr()
         else:
@@ -462,6 +475,24 @@ class Urlaub:
         # status 3 Möglichkeiten: notiert, beantragt, genehmigt
         self.status = status
         self.stundenzahl = self.berechne_durchschnittliche_stundenzahl_pro_tag()
+        # todo Änderung des Stundensatzes während des Urlaubes
+        self.ulohn_pro_stunde = lohntabelle.get_grundlohn(self.beginn)
+        self.ulohn_pro_tag = self.stundenzahl * self.ulohn_pro_stunde
+
+    def berechne_durchschnittliche_stundenzahl_pro_tag(self):
+        # todo durchschnittliche Stundenzahl aus letzten ausgefüllten 6 Monaten
+        return 6
+
+
+class Arbeitsunfaehigkeit:
+    def __init__(self, beginn, ende):
+        self.beginn = beginn
+        self.ende = ende
+
+        self.stundenzahl = self.berechne_durchschnittliche_stundenzahl_pro_tag()
+        # todo Änderung des Stundensatzes während des Urlaubes
+        self.aulohn_pro_stunde = lohntabelle.get_grundlohn(self.beginn)
+        self.aulohn_pro_tag = self.stundenzahl * self.aulohn_pro_stunde
 
     def berechne_durchschnittliche_stundenzahl_pro_tag(self):
         # todo durchschnittliche Stundenzahl aus letzten ausgefüllten 6 Monaten
@@ -487,7 +518,7 @@ class LohnTabelle:
         # EG5 Erfahrungsstufen hinzufügen
         self.erfahrungsstufen = []
         self.zuschlaege = {'Nacht': 3.38, 'Samstag': 3.38, 'Sonntag': 4.22,
-                           'Feiertag': 22.80, 'Wechselschicht': 0.63, 'WeihSyl': 5.72, 'Überstunde': 4.48}
+                           'Feiertag': 22.80, 'Wechselschicht': 0.63, 'WeiSil': 5.72, 'Überstunde': 4.48}
         self.erfahrungsstufen.append(LohnDatensatz(1, 14.92, self.zuschlaege))
         self.erfahrungsstufen.append(LohnDatensatz(2, 16.18, self.zuschlaege))
         self.erfahrungsstufen.append(LohnDatensatz(3, 16.89, self.zuschlaege))
@@ -886,6 +917,60 @@ def neuer_urlaub():
     form_neuer_urlaub_saveandnew_button.grid(row=15, column=2)
 
 
+def neue_arbeitsunfaehigkeit():
+    # TODO allgemeine show-hide funktion
+
+    def action_save_neue_arbeitsunfaehigkeit(undneu=0):
+        global assistent
+
+        startdatum = form_neue_arbeitsunfaehigkeit_startdatum_input.get_date().split('/')
+        beginn = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]), 0, 0)
+        enddatum = form_neue_arbeitsunfaehigkeit_enddatum_input.get_date().split('/')
+        # urlaub geht bis 23:59 am letzten Tag
+        ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]), 23, 59)
+        status = fenster_neue_arbeitsunfaehigkeit.urlaubsstatus.get()
+
+        # Schicht erstellen und zum Assistenten stopfen
+        au = Arbeitsunfaehigkeit(beginn, ende, status)
+        assistent.au_dazu(au)
+        alles_speichern()
+        fenster_neue_arbeitsunfaehigkeit.destroy()
+        if undneu == 1:
+            neue_arbeitsunfaehigkeit()
+
+    fenster_neue_arbeitsunfaehigkeit = tk.Toplevel(fenster)
+    form_neue_arbeitsunfaehigkeit_headline = tk.Label(fenster_neue_arbeitsunfaehigkeit, text="AU/krank eintragen")
+    form_neue_arbeitsunfaehigkeit_startdatum_label = tk.Label(fenster_neue_arbeitsunfaehigkeit, text="von")
+    form_neue_arbeitsunfaehigkeit_startdatum_input = Calendar(fenster_neue_arbeitsunfaehigkeit,
+                                                              date_pattern='MM/dd/yyyy')
+    form_neue_arbeitsunfaehigkeit_enddatum_label = tk.Label(fenster_neue_arbeitsunfaehigkeit, text="bis")
+    form_neue_arbeitsunfaehigkeit_enddatum_input = Calendar(fenster_neue_arbeitsunfaehigkeit, date_pattern='MM/dd/yyyy')
+    fenster_neue_arbeitsunfaehigkeit.urlaubsstatus = tk.StringVar()
+    fenster_neue_arbeitsunfaehigkeit.urlaubsstatus.set('notiert')
+
+    form_neue_arbeitsunfaehigkeit_save_button = tk.Button(fenster_neue_arbeitsunfaehigkeit, text="Daten speichern",
+                                                          command=action_save_neue_arbeitsunfaehigkeit)
+    form_neue_arbeitsunfaehigkeit_exit_button = tk.Button(fenster_neue_arbeitsunfaehigkeit, text="Abbrechen",
+                                                          command=fenster_neue_arbeitsunfaehigkeit.destroy)
+    form_neue_arbeitsunfaehigkeit_saveandnew_button = tk.Button(fenster_neue_arbeitsunfaehigkeit,
+                                                                text="Daten speichern und neu",
+                                                                command=lambda: action_save_neue_arbeitsunfaehigkeit(
+                                                                    undneu=1))
+
+    # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
+
+    # ins Fenster packen
+    form_neue_arbeitsunfaehigkeit_headline.grid(row=0, column=0, columnspan=4)
+    form_neue_arbeitsunfaehigkeit_startdatum_label.grid(row=1, column=0)
+    form_neue_arbeitsunfaehigkeit_startdatum_input.grid(row=1, column=1, columnspan=2)
+    form_neue_arbeitsunfaehigkeit_enddatum_label.grid(row=1, column=3)
+    form_neue_arbeitsunfaehigkeit_enddatum_input.grid(row=1, column=4)
+
+    form_neue_arbeitsunfaehigkeit_save_button.grid(row=15, column=0)
+    form_neue_arbeitsunfaehigkeit_exit_button.grid(row=15, column=1)
+    form_neue_arbeitsunfaehigkeit_saveandnew_button.grid(row=15, column=2)
+
+
 def alles_speichern(neu=0):
     global assistent
     # TODO File picker
@@ -950,6 +1035,7 @@ def zeichne_hauptmenue():
 
     bearbeiten_menu.add_command(label="Schicht eintragen", command=neue_schicht)
     bearbeiten_menu.add_command(label="Urlaub eintragen", command=neuer_urlaub)
+    bearbeiten_menu.add_command(label="AU/krank eintragen", command=neue_arbeitsunfaehigkeit)
 
     help_menu.add_command(label="Info!", command=action_get_info_dialog)
 
@@ -1129,8 +1215,11 @@ def zeichne_hauptseite():
                     width = 5
 
                 elif spaltennummer == 14:
-                    if assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
-                                                                arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                    if assistent.check_au(datetime.datetime(arbeitsdatum.year,
+                                                            arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                        inhalt = 'AU'
+                    elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
+                                                                  arbeitsdatum.month, zeilendaten[0], 0, 1)):
                         inhalt = 'Urlaub'
                     elif zeilendaten[1] != 'empty':
                         inhalt = zeilendaten[1].asn.kuerzel
@@ -1139,9 +1228,18 @@ def zeichne_hauptseite():
                     width = 10
 
                 elif spaltennummer == 15:
-                    if assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
-                                                                arbeitsdatum.month, zeilendaten[0], 0, 1)):
-                        ustunden=assistent.urlaub.berechne_durchschnittliche_stundenzahl_pro_tag()
+                    if assistent.check_au(datetime.datetime(arbeitsdatum.year,
+                                                            arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                        au = assistent.check_au(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
+                                                                  zeilendaten[0], 0, 1))
+                        austunden = au.berechne_durchschnittliche_stundenzahl_pro_tag()
+                        inhalt = austunden
+                        tabelle.summen['arbeitsstunden'] += austunden
+                    elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
+                                                                  arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                        urlaub = assistent.check_urlaub(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
+                                                                          zeilendaten[0], 0, 1))
+                        ustunden = urlaub.berechne_durchschnittliche_stundenzahl_pro_tag()
                         inhalt = ustunden
                         tabelle.summen['arbeitsstunden'] += ustunden
                     elif zeilendaten[1] != 'empty':
@@ -1151,12 +1249,24 @@ def zeichne_hauptseite():
                         inhalt = ''
                     width = 5
                 elif spaltennummer == 16:
-                    if assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
+                    if assistent.check_au(datetime.datetime(arbeitsdatum.year,
                                                                 arbeitsdatum.month, zeilendaten[0], 0, 1)):
-                        ulohn = assistent.urlaub.ulohn_pro_tag
-                        ulohn_pro_stunde = ulohn_pro_stunde
-                        inhalt = ustunden
-                        tabelle.summen['arbeitsstunden'] += ustunden
+                        urlaub = assistent.check_au(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
+                                                                          zeilendaten[0], 0, 1))
+                        aulohn = au.aulohn_pro_tag
+                        aulohn_pro_stunde = au.aulohn_pro_stunde
+                        tabelle.summen['grundlohn'] += aulohn
+                        tabelle.summen['grundlohn_pro_stunde'] = aulohn_pro_stunde
+                        inhalt = "{:,.2f}€".format(aulohn)
+                    elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
+                                                                arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                        urlaub = assistent.check_urlaub(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
+                                                                          zeilendaten[0], 0, 1))
+                        ulohn = urlaub.ulohn_pro_tag
+                        ulohn_pro_stunde = urlaub.ulohn_pro_stunde
+                        tabelle.summen['grundlohn'] += ulohn
+                        tabelle.summen['grundlohn_pro_stunde'] = ulohn_pro_stunde
+                        inhalt = "{:,.2f}€".format(ulohn)
                     elif zeilendaten[1] != 'empty':
                         schichtlohn = zeilendaten[1].schichtlohn
                         tabelle.summen['grundlohn'] += zeilendaten[1].schichtlohn
