@@ -135,10 +135,6 @@ class AS(Person):
     def urlaub_dazu(self, urlaub):
         self.urlaub.append(urlaub)
 
-    def get_urlaub(self, pruefzeitraum_beginn=0, pruefzeitraum_ende=0):
-        # TODO beschränke Zeitraum
-        return self.urlaub
-
     def check_urlaub(self, datum):
         for urlaub in self.urlaub:
             if urlaub.beginn <= datum <= urlaub.ende:
@@ -193,7 +189,7 @@ class Schicht:
         self.ist_kurzfristig = 0
         self.ist_ausfallgeld = 0
         self.ist_assistententreffen = 0
-        self. ist_pcg = 0
+        self.ist_pcg = 0
         self.ist_schulung = 0
 
         if self.check_mehrtaegig() == 1:
@@ -354,10 +350,10 @@ class Schicht:
                 datetime.date(self.beginn.year, 12, 24):
             if datetime.date(self.beginn.year, self.beginn.month, self.beginn.day) == \
                     datetime.date(self.beginn.year, 12, 24):
-                zuschlagsgrund = 'Heiligabend'
+                zuschlagsgrund = '24/31.12'
             if datetime.date(self.beginn.year, self.beginn.month, self.beginn.day) == \
                     datetime.date(self.beginn.year, 12, 31):
-                zuschlagsgrund = 'Silvester'
+                zuschlagsgrund = '24/31.12'
 
             sechsuhr = datetime.datetime(self.beginn.year, self.beginn.month, self.beginn.day, 6, 0, 0)
             vierzehn_uhr = datetime.datetime(self.beginn.year, self.beginn.month, self.beginn.day, 14, 0, 0)
@@ -376,10 +372,10 @@ class Schicht:
                     feiertagsstunden_steuerpflichtig = get_duration(self.ende, self.beginn, 'hours')
                     feiertagsstunden_steuerfrei = 0
                 elif vierzehn_uhr < self.ende:
-                    feiertagsstunden_steuerpflichtig = get_duration(vierzehn_uhr, self.beginn, 'hours')
-                    feiertagsstunden_steuerfrei = get_duration(self.ende, vierzehn_uhr, 'hours')
+                    feiertagsstunden_steuerpflichtig = get_duration(self.beginn, vierzehn_uhr, 'hours')
+                    feiertagsstunden_steuerfrei = get_duration(vierzehn_uhr, self.ende, 'hours')
 
-            zuschlag = lohntabelle.get_zuschlag(zuschlag='WeiSil', schichtdatum=self.beginn)
+            zuschlag = lohntabelle.get_zuschlag(zuschlag='24/31.12', schichtdatum=self.beginn)
             feiertagsstunden = feiertagsstunden_steuerfrei + feiertagsstunden_steuerpflichtig
             feiertagsarray = {'zuschlagsgrund': zuschlagsgrund,
                               'stunden_gesamt': feiertagsstunden,
@@ -518,7 +514,7 @@ class LohnTabelle:
         # EG5 Erfahrungsstufen hinzufügen
         self.erfahrungsstufen = []
         self.zuschlaege = {'Nacht': 3.38, 'Samstag': 3.38, 'Sonntag': 4.22,
-                           'Feiertag': 22.80, 'Wechselschicht': 0.63, 'WeiSil': 5.72, 'Überstunde': 4.48}
+                           'Feiertag': 22.80, 'Wechselschicht': 0.63, '24/31.12': 5.72, 'Überstunde': 4.48}
         self.erfahrungsstufen.append(LohnDatensatz(1, 14.92, self.zuschlaege))
         self.erfahrungsstufen.append(LohnDatensatz(2, 16.18, self.zuschlaege))
         self.erfahrungsstufen.append(LohnDatensatz(3, 16.89, self.zuschlaege))
@@ -812,6 +808,13 @@ def neue_schicht():
     form_neuer_asn_plz_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
     form_neuer_asn_stadt_label = tk.Label(fenster_neue_schicht, text="Stadt")
     form_neuer_asn_stadt_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
+
+    form_neue_schicht_ist_at = tk.Checkbutton(fenster_neue_schicht, text="AT")
+    form_neue_schicht_ist_pcg = tk.Checkbutton(fenster_neue_schicht, text="PCG")
+    form_neue_schicht_ist_rb = tk.Checkbutton(fenster_neue_schicht, text="Kurzfristig (RB/BSD)")
+    form_neue_schicht_ist_afg = tk.Checkbutton(fenster_neue_schicht, text="Ausfallgeld")
+
+
     form_neue_schicht_save_button = tk.Button(fenster_neue_schicht, text="Daten speichern",
                                               command=action_save_neue_schicht)
     form_neue_schicht_exit_button = tk.Button(fenster_neue_schicht, text="Abbrechen",
@@ -845,6 +848,10 @@ def neue_schicht():
                     form_neue_schicht_enddatum_label)
     form_neue_schicht_asn_label.grid(row=5, column=0)
     form_neue_schicht_asn_dropdown.grid(row=5, column=1)
+    form_neue_schicht_ist_at.grid(row=12, column=0)
+    form_neue_schicht_ist_pcg.grid(row=12, column=1)
+    form_neue_schicht_ist_rb.grid(row=12, column=2)
+    form_neue_schicht_ist_afg.grid(row=12, column=3)
     form_neue_schicht_save_button.grid(row=15, column=0)
     form_neue_schicht_exit_button.grid(row=15, column=1)
     form_neue_schicht_saveandnew_button.grid(row=15, column=2)
@@ -926,12 +933,11 @@ def neue_arbeitsunfaehigkeit():
         startdatum = form_neue_arbeitsunfaehigkeit_startdatum_input.get_date().split('/')
         beginn = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]), 0, 0)
         enddatum = form_neue_arbeitsunfaehigkeit_enddatum_input.get_date().split('/')
-        # urlaub geht bis 23:59 am letzten Tag
+        # au geht bis 23:59 am letzten Tag
         ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]), 23, 59)
-        status = fenster_neue_arbeitsunfaehigkeit.urlaubsstatus.get()
 
-        # Schicht erstellen und zum Assistenten stopfen
-        au = Arbeitsunfaehigkeit(beginn, ende, status)
+        # au erstellen und zum Assistenten stopfen
+        au = Arbeitsunfaehigkeit(beginn, ende)
         assistent.au_dazu(au)
         alles_speichern()
         fenster_neue_arbeitsunfaehigkeit.destroy()
@@ -1250,16 +1256,16 @@ def zeichne_hauptseite():
                     width = 5
                 elif spaltennummer == 16:
                     if assistent.check_au(datetime.datetime(arbeitsdatum.year,
-                                                                arbeitsdatum.month, zeilendaten[0], 0, 1)):
-                        urlaub = assistent.check_au(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
-                                                                          zeilendaten[0], 0, 1))
+                                                            arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                        au = assistent.check_au(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
+                                                                  zeilendaten[0], 0, 1))
                         aulohn = au.aulohn_pro_tag
                         aulohn_pro_stunde = au.aulohn_pro_stunde
                         tabelle.summen['grundlohn'] += aulohn
                         tabelle.summen['grundlohn_pro_stunde'] = aulohn_pro_stunde
                         inhalt = "{:,.2f}€".format(aulohn)
                     elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
-                                                                arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                                                                  arbeitsdatum.month, zeilendaten[0], 0, 1)):
                         urlaub = assistent.check_urlaub(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
                                                                           zeilendaten[0], 0, 1))
                         ulohn = urlaub.ulohn_pro_tag
