@@ -166,6 +166,20 @@ class ASN(Person):
         return self.kuerzel
 
 
+class EB(Person):
+    def __init__(self, name, vorname, email):
+        self.name = name
+        self.vorname = vorname
+        self.email = email
+
+
+class PFK(Person):
+    def __init__(self, name, vorname, email):
+        self.name = name
+        self.vorname = vorname
+        self.email = email
+
+
 # ToDo Klassen schicht, Urlaub, Krank als hierarchische Klassen vereinen schicht erbt von urlaub erbt von au
 class Schicht:
     beginn = datetime
@@ -182,6 +196,8 @@ class Schicht:
         self.schichtlohn = self.stundenzahl * self.stundenlohn
         self.wechselschichtzulage = lohntabelle.get_zuschlag('Wechselschicht', beginn)
         self.wechselschichtzulage_schicht = self.wechselschichtzulage * self.stundenzahl
+        self.orgazulage = lohntabelle.get_zuschlag('Orga', beginn)
+        self.orgazulage_schicht = self.orgazulage * self.stundenzahl
         self.nachtstunden = self.berechne_anzahl_nachtstunden()
         self.nachtzuschlag = lohntabelle.get_zuschlag('Nacht', beginn)
         self.nachtzuschlag_schicht = self.nachtstunden * self.nachtzuschlag
@@ -514,7 +530,8 @@ class LohnTabelle:
         # EG5 Erfahrungsstufen hinzufügen
         self.erfahrungsstufen = []
         self.zuschlaege = {'Nacht': 3.38, 'Samstag': 3.38, 'Sonntag': 4.22,
-                           'Feiertag': 22.80, 'Wechselschicht': 0.63, '24/31.12': 5.72, 'Überstunde': 4.48}
+                           'Feiertag': 22.80, 'Wechselschicht': 0.63, 'Orga': 0.20, '24/31.12': 5.72,
+                           'Überstunde': 4.48}
         self.erfahrungsstufen.append(LohnDatensatz(1, 14.92, self.zuschlaege))
         self.erfahrungsstufen.append(LohnDatensatz(2, 16.18, self.zuschlaege))
         self.erfahrungsstufen.append(LohnDatensatz(3, 16.89, self.zuschlaege))
@@ -814,7 +831,6 @@ def neue_schicht():
     form_neue_schicht_ist_rb = tk.Checkbutton(fenster_neue_schicht, text="Kurzfristig (RB/BSD)")
     form_neue_schicht_ist_afg = tk.Checkbutton(fenster_neue_schicht, text="Ausfallgeld")
 
-
     form_neue_schicht_save_button = tk.Button(fenster_neue_schicht, text="Daten speichern",
                                               command=action_save_neue_schicht)
     form_neue_schicht_exit_button = tk.Button(fenster_neue_schicht, text="Abbrechen",
@@ -1027,6 +1043,7 @@ def zeichne_hauptmenue():
 
     # Menü Datei und Help erstellen
     datei_menu = tk.Menu(menuleiste, tearoff=0)
+    eintragen_menu = tk.Menu(menuleiste, tearoff=0)
     bearbeiten_menu = tk.Menu(menuleiste, tearoff=0)
     help_menu = tk.Menu(menuleiste, tearoff=0)
 
@@ -1039,15 +1056,18 @@ def zeichne_hauptmenue():
     datei_menu.add_separator()  # Fügt eine Trennlinie hinzu
     datei_menu.add_command(label="Exit", command=fenster.quit)
 
-    bearbeiten_menu.add_command(label="Schicht eintragen", command=neue_schicht)
-    bearbeiten_menu.add_command(label="Urlaub eintragen", command=neuer_urlaub)
-    bearbeiten_menu.add_command(label="AU/krank eintragen", command=neue_arbeitsunfaehigkeit)
+    eintragen_menu.add_command(label="Schicht eintragen", command=neue_schicht)
+    eintragen_menu.add_command(label="Urlaub eintragen", command=neuer_urlaub)
+    eintragen_menu.add_command(label="AU/krank eintragen", command=neue_arbeitsunfaehigkeit)
+
+    bearbeiten_menu.add_command(label="ASN bearbeiten", command=zeichne_fenster_bearbeite_asn)
 
     help_menu.add_command(label="Info!", command=action_get_info_dialog)
 
     # Nun fügen wir die Menüs (Datei und Help) der Menüleiste als
     # "Drop-Down-Menü" hinzu
     menuleiste.add_cascade(label="Datei", menu=datei_menu)
+    menuleiste.add_cascade(label="Eintragen", menu=eintragen_menu)
     menuleiste.add_cascade(label="Bearbeiten", menu=bearbeiten_menu)
     menuleiste.add_cascade(label="Help", menu=help_menu)
     # Die Menüleiste mit den Menüeinträgen noch dem Fenster übergeben und fertig.
@@ -1145,6 +1165,8 @@ def zeichne_hauptseite():
                           'nachtzuschlag_pro_stunde': 0,
                           'wechselschichtzulage': 0,
                           'wechselschichtzulage_pro_stunde': 0,
+                          'orga': 0,
+                          'orga_pro_stunde': 0,
                           'zuschlaege': zuschlaege
                           }
 
@@ -1167,10 +1189,11 @@ def zeichne_hauptseite():
         tk.Label(tabelle, text='Zuschlaege', borderwidth=1, relief="solid", width=18).grid(row=0, column=19,
                                                                                            columnspan=2)
         tk.Label(tabelle, text='Wechsel', borderwidth=1, relief="solid", width=8).grid(row=0, column=21)
+        tk.Label(tabelle, text='Orga', borderwidth=1, relief="solid", width=8).grid(row=0, column=22)
 
         # körper
         meine_tabelle = []
-        spaltenzahl = 22
+        spaltenzahl = 23
         zaehler = 0
         width = 0
         inhalt = ''
@@ -1329,6 +1352,15 @@ def zeichne_hauptseite():
                         inhalt = ''
                     width = 8
 
+                elif spaltennummer == 22:
+                    if zeilendaten[1] != 'empty':
+                        tabelle.summen['orga'] += zeilendaten[1].orgazulage_schicht
+                        tabelle.summen['orga_pro_stunde'] = zeilendaten[1].orgazulage
+                        inhalt = "{:,.2f}€".format(zeilendaten[1].orgazulage_schicht)
+                    else:
+                        inhalt = ''
+                    width = 8
+
                 if spaltennummer < 10:
                     if zeilendaten[1] != 'empty':
                         if text != '':
@@ -1367,7 +1399,7 @@ def zeichne_hauptseite():
 
         # Header
         header = tk.Label(seitenleiste, text="Bezeichung", borderwidth=2, relief="groove")
-        header.grid(row=0, column=0)
+        header.grid(row=0, column=0, sticky='w')
         header = tk.Label(seitenleiste, text="Stunden", borderwidth=2, relief="groove")
         header.grid(row=0, column=1)
         header = tk.Label(seitenleiste, text="pro Stunde", borderwidth=2, relief="groove")
@@ -1378,44 +1410,44 @@ def zeichne_hauptseite():
         bruttolohn = 0
 
         arbeitsstunden = tk.Label(seitenleiste, text="Arbeitsstunden:", borderwidth=2, relief="groove")
-        arbeitsstunden.grid(row=1, column=0)
+        arbeitsstunden.grid(row=1, column=0, sticky='w')
         arbeitsstunden_value = tk.Label(seitenleiste,
                                         text="{:,.2f}".format(round(tabelle.summen['arbeitsstunden'], 2)),
                                         borderwidth=2, relief="groove")
-        arbeitsstunden_value.grid(row=1, column=1)
+        arbeitsstunden_value.grid(row=1, column=1, sticky='e')
         # TODO wechsel der Erfahrungsstufe beachten
 
         stundenlohn_value = tk.Label(seitenleiste,
                                      text="{:,.2f}€".format(round(tabelle.summen['grundlohn_pro_stunde'], 2)),
                                      borderwidth=2,
                                      relief="groove")
-        stundenlohn_value.grid(row=1, column=2)
+        stundenlohn_value.grid(row=1, column=2, sticky='e')
 
         bruttolohn += tabelle.summen['grundlohn']
         arbeitsstunden_value = tk.Label(seitenleiste,
                                         text="{:,.2f}€".format(round(tabelle.summen['grundlohn'], 2)),
                                         borderwidth=2, relief="groove")
-        arbeitsstunden_value.grid(row=1, column=3)
+        arbeitsstunden_value.grid(row=1, column=3, sticky='e')
 
         nachtstunden = tk.Label(seitenleiste, text="Nachtstunden:", borderwidth=2, relief="groove")
-        nachtstunden.grid(row=2, column=0)
+        nachtstunden.grid(row=2, column=0, sticky='w')
         nachtstunden_value = tk.Label(seitenleiste,
                                       text="{:,.2f}".format(round(tabelle.summen['nachtstunden'], 2)),
                                       borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=2, column=1)
+        nachtstunden_value.grid(row=2, column=1, sticky='e')
 
         nachtstunden_value = tk.Label(seitenleiste,
                                       text="{:,.2f}€".format(round(tabelle.summen['nachtzuschlag_pro_stunde'], 2)),
                                       borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=2, column=2)
+        nachtstunden_value.grid(row=2, column=2, sticky='e')
 
         nachtstunden_value = tk.Label(seitenleiste,
                                       text="{:,.2f}€".format(round(tabelle.summen['nachtzuschlag'], 2)),
                                       borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=2, column=3)
+        nachtstunden_value.grid(row=2, column=3, sticky='e')
         bruttolohn += tabelle.summen['nachtzuschlag']
         rowcounter = 2
         for zuschlagsgrund in tabelle.summen['zuschlaege']:
@@ -1423,74 +1455,95 @@ def zeichne_hauptseite():
                 zuschl = tabelle.summen['zuschlaege'][zuschlagsgrund]
                 rowcounter += 1
                 nachtstunden = tk.Label(seitenleiste, text="Zuschlag " + zuschlagsgrund, borderwidth=2, relief="groove")
-                nachtstunden.grid(row=rowcounter, column=0)
+                nachtstunden.grid(row=rowcounter, column=0, sticky='w')
 
                 nachtstunden_value = tk.Label(seitenleiste,
                                               text="{:,.2f}".format(round(zuschl['stunden_gesamt'], 2)),
                                               borderwidth=2,
                                               relief="groove")
-                nachtstunden_value.grid(row=rowcounter, column=1)
+                nachtstunden_value.grid(row=rowcounter, column=1, sticky='e')
 
                 nachtstunden_value = tk.Label(seitenleiste,
                                               text="{:,.2f}€".format(round(zuschl['zuschlag_pro_stunde'], 2)),
                                               borderwidth=2,
                                               relief="groove")
-                nachtstunden_value.grid(row=rowcounter, column=2)
+                nachtstunden_value.grid(row=rowcounter, column=2, sticky='e')
 
                 nachtstunden_value = tk.Label(seitenleiste,
                                               text="{:,.2f}€".format(round(zuschl['zuschlaege_gesamt'], 2)),
                                               borderwidth=2,
                                               relief="groove")
-                nachtstunden_value.grid(row=rowcounter, column=3)
+                nachtstunden_value.grid(row=rowcounter, column=3, sticky='e')
                 bruttolohn += zuschl['zuschlaege_gesamt']
 
         rowcounter += 1
         nachtstunden = tk.Label(seitenleiste, text="Wechselschichtzulage:", borderwidth=2, relief="groove")
-        nachtstunden.grid(row=2, column=0)
+        nachtstunden.grid(row=rowcounter, column=0, sticky='w')
         nachtstunden_value = tk.Label(seitenleiste,
                                       text="{:,.2f}".format(round(tabelle.summen['arbeitsstunden'], 2)),
                                       borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=2, column=1)
+        nachtstunden_value.grid(row=rowcounter, column=1, sticky='e')
 
         nachtstunden_value = tk.Label(seitenleiste,
                                       text="{:,.2f}€".format(
                                           round(tabelle.summen['wechselschichtzulage_pro_stunde'], 2)),
                                       borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=2, column=2)
+        nachtstunden_value.grid(row=rowcounter, column=2, sticky='e')
 
         nachtstunden_value = tk.Label(seitenleiste,
                                       text="{:,.2f}€".format(round(tabelle.summen['wechselschichtzulage'], 2)),
                                       borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=2, column=3)
+        nachtstunden_value.grid(row=rowcounter, column=3, sticky='e')
         bruttolohn += tabelle.summen['nachtzuschlag']
+        # TODO besseren Paltz für Kappung finden
+        rowcounter += 1
+        if tabelle.summen['wechselschichtzulage'] >= 105:
+            tabelle.summen['wechselschichtzulage'] = 105
+            nachtstunden = tk.Label(seitenleiste,
+                                    text="Übersteigt die Wechselschitzulage 105€ wird auf diesen Betrag gekappt",
+                                    borderwidth=2, relief="groove", columnspan=3)
+            nachtstunden.grid(row=rowcounter, column=0, sticky='w')
+            nachtstunden_value = tk.Label(seitenleiste,
+                                          text="{:,.2f}".format(105),
+                                          borderwidth=2,
+                                          relief="groove")
+            nachtstunden_value.grid(row=rowcounter, column=3, sticky='e')
+            bruttolohn += tabelle.summen['wechselschichtzulage']
 
         rowcounter += 1
+        nachtstunden = tk.Label(seitenleiste, text="Organisationszulage:", borderwidth=2, relief="groove")
+        nachtstunden.grid(row=rowcounter, column=0, sticky='w')
+        nachtstunden_value = tk.Label(seitenleiste,
+                                      text="{:,.2f}".format(round(tabelle.summen['arbeitsstunden'], 2)),
+                                      borderwidth=2,
+                                      relief="groove")
+        nachtstunden_value.grid(row=rowcounter, column=1, sticky='e')
+
+        nachtstunden_value = tk.Label(seitenleiste,
+                                      text="{:,.2f}€".format(
+                                          round(tabelle.summen['orga_pro_stunde'], 2)),
+                                      borderwidth=2,
+                                      relief="groove")
+        nachtstunden_value.grid(row=rowcounter, column=2, sticky='e')
+
+        nachtstunden_value = tk.Label(seitenleiste,
+                                      text="{:,.2f}€".format(round(tabelle.summen['orga'], 2)),
+                                      borderwidth=2,
+                                      relief="groove")
+        nachtstunden_value.grid(row=rowcounter, column=3, sticky='e')
+        bruttolohn += tabelle.summen['nachtzuschlag']
+        rowcounter += 1
         nachtstunden = tk.Label(seitenleiste, text="Summe = Bruttolohn", borderwidth=2, relief="groove")
-        nachtstunden.grid(row=rowcounter, column=0)
+        nachtstunden.grid(row=rowcounter, column=0, sticky='w')
 
         nachtstunden_value = tk.Label(seitenleiste,
                                       text="{:,.2f}€".format(round(bruttolohn, 2)),
                                       borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=rowcounter, column=3)
-
-        # TODO besseren Paltz für Kappung finden
-        if tabelle.summen['wechselschichtzulage'] >= 105:
-            tabelle.summen['wechselschichtzulage'] = 105
-            rowcounter += 1
-            nachtstunden = tk.Label(seitenleiste,
-                                    text="Übersteigt die Wechselschitzulage 105€ wird auf diesen Betrag gekappt",
-                                    borderwidth=2, relief="groove", columnspan=3)
-            nachtstunden.grid(row=2, column=0)
-            nachtstunden_value = tk.Label(seitenleiste,
-                                          text="{:,.2f}".format(105),
-                                          borderwidth=2,
-                                          relief="groove")
-            nachtstunden_value.grid(row=2, column=3)
-        bruttolohn += tabelle.summen['wechselschichtzulage']
+        nachtstunden_value.grid(row=rowcounter, column=3, sticky='e')
 
     erstelle_navigation()
     nav.grid(row=1, column=0)
@@ -1502,10 +1555,161 @@ def zeichne_hauptseite():
     # 2 Frames Für Navigation und Tabelle
 
 
+def zeichne_fenster_bearbeite_asn():
+    fenster_edit_asn = tk.Toplevel(fenster)
+
+    def zeichne_asn_auswahl():
+        def choose_asn(event):
+            listeAusgewaehlt = select_asn.curselection()
+            itemAusgewaehlt = listeAusgewaehlt[0]
+            kuerzelAusgewaehlt = select_asn.get(itemAusgewaehlt)
+            zeichne_asn_edit_form(kuerzelAusgewaehlt)
+
+        auswahlframe = tk.Frame(fenster_edit_asn)
+        auswahlframe.grid(row=0, column=0)
+        options = list(assistent.get_all_asn().keys())
+
+        # select_asn = tk.OptionMenu(auswahlframe, variable, *options, command=choose_asn, height=100)
+        select_asn = tk.Listbox(auswahlframe, selectmode='single')
+        select_asn.insert('end', 'Neuer ASN')
+        for val in options:
+            select_asn.insert('end', val)
+        select_asn.bind('<<ListboxSelect>>', choose_asn)
+        yScroll = tk.Scrollbar(master=auswahlframe, orient='vertical')
+        select_asn.config(yscrollcommand=yScroll.set)
+        yScroll.config(command=select_asn.yview)
+
+        select_asn.pack()
+
+    def zeichne_asn_edit_form(kuerzel):
+        def edit_eb(value):
+            if value == 'Neue EB':
+                form_edit_eb_vorname_label.grid(row=2, column=4)
+                form_edit_eb_vorname_input.grid(row=2, column=5)
+                form_edit_eb_nachname_label.grid(row=3, column=4)
+                form_edit_eb_nachname_input.grid(row=3, column=5)
+                form_edit_eb_email_label.grid(row=4, column=4)
+                form_edit_eb_email_input.grid(row=4, column=5)
+            else:
+                form_edit_eb_vorname_label.grid_remove()
+                form_edit_eb_vorname_input.grid_remove()
+                form_edit_eb_nachname_label.grid_remove()
+                form_edit_eb_nachname_input.grid_remove()
+                form_edit_eb_email_label.grid_remove()
+                form_edit_eb_email_input.grid_remove()
+
+        def edit_pfk(value):
+            if value == 'Neue PFK':
+                form_edit_pfk_vorname_label.grid(row=7, column=4)
+                form_edit_pfk_vorname_input.grid(row=7, column=5)
+                form_edit_pfk_nachname_label.grid(row=8, column=4)
+                form_edit_pfk_nachname_input.grid(row=8, column=5)
+                form_edit_pfk_email_label.grid(row=9, column=4)
+                form_edit_pfk_email_input.grid(row=9, column=5)
+            else:
+                form_edit_pfk_vorname_label.grid_remove()
+                form_edit_pfk_vorname_input.grid_remove()
+                form_edit_pfk_nachname_label.grid_remove()
+                form_edit_pfk_nachname_input.grid_remove()
+                form_edit_pfk_email_label.grid_remove()
+                form_edit_pfk_email_input.grid_remove()
+
+        editframe = tk.Frame(fenster_edit_asn)
+        if kuerzel != 'Neuer ASN':
+            asn = assistent.get_asn_by_kuerzel(kuerzel)
+
+        form_edit_asn_kuerzel_label = tk.Label(editframe, text="Kürzel")
+        form_edit_asn_kuerzel_input = tk.Entry(editframe, bd=5, width=40)
+        form_edit_asn_vorname_label = tk.Label(editframe, text="Vorname")
+        form_edit_asn_vorname_input = tk.Entry(editframe, bd=5, width=40)
+        form_edit_asn_nachname_label = tk.Label(editframe, text="Nachname")
+        form_edit_asn_nachname_input = tk.Entry(editframe, bd=5, width=40)
+        form_edit_asn_strasse_label = tk.Label(editframe, text="Straße/Hausnummer")
+        form_edit_asn_strasse_input = tk.Entry(editframe, bd=5, width=40)
+        form_edit_asn_hausnummer_input = tk.Entry(editframe, bd=5, width=10)
+        form_edit_asn_plz_label = tk.Label(editframe, text="Postleitzahl")
+        form_edit_asn_plz_input = tk.Entry(editframe, bd=5, width=40)
+        form_edit_asn_stadt_label = tk.Label(editframe, text="Stadt")
+        form_edit_asn_stadt_input = tk.Entry(editframe, bd=5, width=40)
+
+        # eb
+        form_edit_asn_eb_label = tk.Label(editframe, text="Einsatzbegleitung")
+        # grundsätzliche Optionen für Dropdown
+        ebs = ['Carmen', 'Susanne']
+        option_list = ["Neue EB", *ebs]
+
+        variable = tk.StringVar()
+        variable.set(option_list[0])
+        form_edit_asn_eb_dropdown = tk.OptionMenu(editframe, variable, *option_list, command=edit_eb)
+
+        form_edit_eb_vorname_label = tk.Label(editframe, text="Vorname")
+        form_edit_eb_vorname_input = tk.Entry(editframe, bd=5, width=40)
+        form_edit_eb_nachname_label = tk.Label(editframe, text="Nachname")
+        form_edit_eb_nachname_input = tk.Entry(editframe, bd=5, width=40)
+        form_edit_eb_email_label = tk.Label(editframe, text="Email")
+        form_edit_eb_email_input = tk.Entry(editframe, bd=5, width=40)
+        
+        # pfk
+        form_edit_asn_pfk_label = tk.Label(editframe, text="Pflegefachkraft")
+        # grundsätzliche Optionen für Dropdown
+        pfks = ['Andre', 'Charlotte']
+        option_list = ["Neue PFK", *pfks]
+
+        variable = tk.StringVar()
+        variable.set(option_list[0])
+        form_edit_asn_pfk_dropdown = tk.OptionMenu(editframe, variable, *option_list, command=edit_pfk)
+
+        form_edit_pfk_vorname_label = tk.Label(editframe, text="Vorname")
+        form_edit_pfk_vorname_input = tk.Entry(editframe, bd=5, width=40)
+        form_edit_pfk_nachname_label = tk.Label(editframe, text="Nachname")
+        form_edit_pfk_nachname_input = tk.Entry(editframe, bd=5, width=40)
+        form_edit_pfk_email_label = tk.Label(editframe, text="Email")
+        form_edit_pfk_email_input = tk.Entry(editframe, bd=5, width=40)
+
+        if kuerzel == 'Neuer ASN':
+            form_edit_asn_kuerzel_input.insert(0, '')
+            form_edit_asn_vorname_input.insert(0, '')
+            form_edit_asn_nachname_input.insert(0, '')
+            form_edit_asn_strasse_input.insert(0, '')
+            form_edit_asn_hausnummer_input.insert(0, '')
+            form_edit_asn_plz_input.insert(0, '')
+            form_edit_asn_stadt_input.insert(0, '')
+        else:
+            form_edit_asn_kuerzel_input.insert(0, asn.kuerzel)
+            form_edit_asn_vorname_input.insert(0, asn.vorname)
+            form_edit_asn_nachname_input.insert(0, asn.name)
+            form_edit_asn_strasse_input.insert(0, asn.strasse)
+            form_edit_asn_hausnummer_input.insert(0, asn.hausnummer)
+            form_edit_asn_plz_input.insert(0, asn.plz)
+            form_edit_asn_stadt_input.insert(0, asn.stadt)
+
+        editframe.grid(row=0, column=1)
+        form_edit_asn_kuerzel_label.grid(row=0, column=0)
+        form_edit_asn_kuerzel_input.grid(row=0, column=1)
+        form_edit_asn_vorname_label.grid(row=1, column=0)
+        form_edit_asn_vorname_input.grid(row=1, column=1)
+        form_edit_asn_nachname_label.grid(row=2, column=0)
+        form_edit_asn_nachname_input.grid(row=2, column=1)
+        form_edit_asn_strasse_label.grid(row=3, column=0)
+        form_edit_asn_strasse_input.grid(row=3, column=1)
+        form_edit_asn_hausnummer_input.grid(row=3, column=2)
+        form_edit_asn_plz_label.grid(row=4, column=0)
+        form_edit_asn_plz_input.grid(row=4, column=1)
+        form_edit_asn_stadt_label.grid(row=5, column=0)
+        form_edit_asn_stadt_input.grid(row=5, column=1)
+
+        form_edit_asn_pfk_label.grid(row=0, column=4)
+        form_edit_asn_eb_dropdown.grid(row=1, column=4)
+        form_edit_asn_pfk_label.grid(row=5, column=4)
+        form_edit_asn_pfk_dropdown.grid(row=6, column=4)
+
+    zeichne_asn_auswahl()
+
+
 assistent = AS()
 lohntabelle = LohnTabelle()
 root = tk.Tk()
-root.geometry('1000x1000')
+root.geometry('1200x1000')
 root.title("Dein Assistentenlohn")
 
 fenster = tk.Frame(root)
