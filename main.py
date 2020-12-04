@@ -161,6 +161,7 @@ class ASN(Person):
         self.hausnummer = hausnummer
         self.plz = plz
         self.stadt = stadt
+        self.schicht_templates = []
 
     def get_kuerzel(self):
         return self.kuerzel
@@ -1582,37 +1583,25 @@ def zeichne_fenster_bearbeite_asn():
         select_asn.pack()
 
     def zeichne_asn_edit_form(kuerzel):
+        def zeichne_feste_schichten_form(frame):
+            headline = tk.Label(frame, text='Feste Schichten erstellen/bearbeiten')
+            headline.pack()
+
+        def zeichne_schicht_templates_form(frame):
+            headline = tk.Label(frame, text='Schichtvorlagen erstellen/bearbeiten')
+            headline.pack()
+
         def edit_eb(value):
             if value == 'Neue EB':
-                form_edit_eb_vorname_label.grid(row=2, column=4)
-                form_edit_eb_vorname_input.grid(row=2, column=5)
-                form_edit_eb_nachname_label.grid(row=3, column=4)
-                form_edit_eb_nachname_input.grid(row=3, column=5)
-                form_edit_eb_email_label.grid(row=4, column=4)
-                form_edit_eb_email_input.grid(row=4, column=5)
-            else:
-                form_edit_eb_vorname_label.grid_remove()
-                form_edit_eb_vorname_input.grid_remove()
-                form_edit_eb_nachname_label.grid_remove()
-                form_edit_eb_nachname_input.grid_remove()
-                form_edit_eb_email_label.grid_remove()
-                form_edit_eb_email_input.grid_remove()
+                form_edit_eb_email_input.insert(0, '')
+                form_edit_eb_vorname_input.insert(0, '')
+                form_edit_eb_nachname_input.insert(0, '')
 
         def edit_pfk(value):
             if value == 'Neue PFK':
-                form_edit_pfk_vorname_label.grid(row=7, column=4)
-                form_edit_pfk_vorname_input.grid(row=7, column=5)
-                form_edit_pfk_nachname_label.grid(row=8, column=4)
-                form_edit_pfk_nachname_input.grid(row=8, column=5)
-                form_edit_pfk_email_label.grid(row=9, column=4)
-                form_edit_pfk_email_input.grid(row=9, column=5)
-            else:
-                form_edit_pfk_vorname_label.grid_remove()
-                form_edit_pfk_vorname_input.grid_remove()
-                form_edit_pfk_nachname_label.grid_remove()
-                form_edit_pfk_nachname_input.grid_remove()
-                form_edit_pfk_email_label.grid_remove()
-                form_edit_pfk_email_input.grid_remove()
+                form_edit_pfk_email_input.insert(0, '')
+                form_edit_pfk_vorname_input.insert(0, '')
+                form_edit_pfk_nachname_input.insert(0, '')
 
         editframe = tk.Frame(fenster_edit_asn)
         if kuerzel != 'Neuer ASN':
@@ -1634,10 +1623,8 @@ def zeichne_fenster_bearbeite_asn():
 
         # eb
         form_edit_asn_eb_label = tk.Label(editframe, text="Einsatzbegleitung")
-        # grundsätzliche Optionen für Dropdown
-        ebs = ['Carmen', 'Susanne']
+        ebs = []
         option_list = ["Neue EB", *ebs]
-
         variable = tk.StringVar()
         variable.set(option_list[0])
         form_edit_asn_eb_dropdown = tk.OptionMenu(editframe, variable, *option_list, command=edit_eb)
@@ -1648,11 +1635,10 @@ def zeichne_fenster_bearbeite_asn():
         form_edit_eb_nachname_input = tk.Entry(editframe, bd=5, width=40)
         form_edit_eb_email_label = tk.Label(editframe, text="Email")
         form_edit_eb_email_input = tk.Entry(editframe, bd=5, width=40)
-        
+
         # pfk
         form_edit_asn_pfk_label = tk.Label(editframe, text="Pflegefachkraft")
-        # grundsätzliche Optionen für Dropdown
-        pfks = ['Andre', 'Charlotte']
+        pfks = []
         option_list = ["Neue PFK", *pfks]
 
         variable = tk.StringVar()
@@ -1666,6 +1652,23 @@ def zeichne_fenster_bearbeite_asn():
         form_edit_pfk_email_label = tk.Label(editframe, text="Email")
         form_edit_pfk_email_input = tk.Entry(editframe, bd=5, width=40)
 
+        # Büros
+        form_edit_asn_buero_label = tk.Label(editframe, text="Zuständiges Einsatzbüro")
+        # grundsätzliche Optionen für Dropdown
+
+        # TODO in Klassen überführen
+        option_list = ['Nordost', 'West', 'Süd']
+
+        variable = tk.StringVar()
+        variable.set(option_list[0])
+        form_edit_asn_buero_dropdown = tk.OptionMenu(editframe, variable, *option_list)
+
+        form_edit_asn_feste_schichten = tk.Frame(editframe)
+        zeichne_feste_schichten_form(form_edit_asn_feste_schichten)
+        form_edit_asn_schicht_templates = tk.Frame(editframe)
+        zeichne_schicht_templates_form(form_edit_asn_schicht_templates)
+
+        # befüllen
         if kuerzel == 'Neuer ASN':
             form_edit_asn_kuerzel_input.insert(0, '')
             form_edit_asn_vorname_input.insert(0, '')
@@ -1683,6 +1686,7 @@ def zeichne_fenster_bearbeite_asn():
             form_edit_asn_plz_input.insert(0, asn.plz)
             form_edit_asn_stadt_input.insert(0, asn.stadt)
 
+        # positionieren
         editframe.grid(row=0, column=1)
         form_edit_asn_kuerzel_label.grid(row=0, column=0)
         form_edit_asn_kuerzel_input.grid(row=0, column=1)
@@ -1698,10 +1702,30 @@ def zeichne_fenster_bearbeite_asn():
         form_edit_asn_stadt_label.grid(row=5, column=0)
         form_edit_asn_stadt_input.grid(row=5, column=1)
 
-        form_edit_asn_pfk_label.grid(row=0, column=4)
+        form_edit_asn_eb_label.grid(row=0, column=4)
         form_edit_asn_eb_dropdown.grid(row=1, column=4)
         form_edit_asn_pfk_label.grid(row=5, column=4)
         form_edit_asn_pfk_dropdown.grid(row=6, column=4)
+
+        form_edit_pfk_vorname_label.grid(row=7, column=4)
+        form_edit_pfk_vorname_input.grid(row=7, column=5)
+        form_edit_pfk_nachname_label.grid(row=8, column=4)
+        form_edit_pfk_nachname_input.grid(row=8, column=5)
+        form_edit_pfk_email_label.grid(row=9, column=4)
+        form_edit_pfk_email_input.grid(row=9, column=5)
+
+        form_edit_eb_vorname_label.grid(row=2, column=4)
+        form_edit_eb_vorname_input.grid(row=2, column=5)
+        form_edit_eb_nachname_label.grid(row=3, column=4)
+        form_edit_eb_nachname_input.grid(row=3, column=5)
+        form_edit_eb_email_label.grid(row=4, column=4)
+        form_edit_eb_email_input.grid(row=4, column=5)
+
+        form_edit_asn_buero_label.grid(row=7, column=0)
+        form_edit_asn_buero_dropdown.grid(row=7, column=1)
+
+        form_edit_asn_feste_schichten.grid(row=10, column=0)
+        form_edit_asn_schicht_templates.grid(row=10, column=4)
 
     zeichne_asn_auswahl()
 
