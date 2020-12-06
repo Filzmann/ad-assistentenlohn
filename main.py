@@ -76,9 +76,11 @@ class AS(Person):
         self.email = email
         self.einstellungsdatum = einstellungsdatum
         self.__class__.count += 1
-        self.festeSchichten = {}
+        self.festeSchichten = []
         self.urlaub = []
         self.au = []
+        self.eb_liste = []
+        self.pfk_liste = []
 
     def __del__(self):
         self.__class__.count -= 1
@@ -148,6 +150,27 @@ class AS(Person):
             if au.beginn <= datum <= au.ende:
                 return au
 
+    def get_eb_by_string(self, string):
+        data = string.split()
+        for eb in self.eb_liste:
+            if eb.vorname == data[0]:
+                # print(len(data))
+                if len(data) > 1:
+                    if data[1] == eb.name:
+                        return eb
+                else:
+                    return eb
+
+    # TODO optimieren
+    def get_pfk_by_string(self, string):
+        data = string.split()
+        for pfk in self.pfk_liste:
+            if pfk.vorname == data[0]:
+                if len(data) > 1:
+                    if pfk.name == data[1]:
+                        return pfk
+                return pfk
+
 
 # ein AS kann bei mehreren ASN arbeiten
 class ASN(Person):
@@ -162,6 +185,8 @@ class ASN(Person):
         self.plz = plz
         self.stadt = stadt
         self.schicht_templates = []
+        self.eb = EB('', '', '')
+        self.pfk = PFK('', '', '')
 
     def get_kuerzel(self):
         return self.kuerzel
@@ -173,12 +198,18 @@ class EB(Person):
         self.vorname = vorname
         self.email = email
 
+    def __str__(self):
+        return self.vorname + ' ' + self.name
+
 
 class PFK(Person):
     def __init__(self, name, vorname, email):
         self.name = name
         self.vorname = vorname
         self.email = email
+
+    def __str__(self):
+        return self.vorname + ' ' + self.name
 
 
 # ToDo Klassen schicht, Urlaub, Krank als hierarchische Klassen vereinen schicht erbt von urlaub erbt von au
@@ -1046,6 +1077,7 @@ def zeichne_hauptmenue():
     datei_menu = tk.Menu(menuleiste, tearoff=0)
     eintragen_menu = tk.Menu(menuleiste, tearoff=0)
     bearbeiten_menu = tk.Menu(menuleiste, tearoff=0)
+    taxes_menu = tk.Menu(menuleiste, tearoff=0)
     help_menu = tk.Menu(menuleiste, tearoff=0)
 
     # Beim Klick auf Datei oder auf Help sollen nun weitere Einträge erscheinen.
@@ -1063,6 +1095,9 @@ def zeichne_hauptmenue():
 
     bearbeiten_menu.add_command(label="ASN bearbeiten", command=zeichne_fenster_bearbeite_asn)
 
+    taxes_menu.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand")
+    taxes_menu.add_command(label="Berechne Fahrtzeiten für Reisekosten")
+
     help_menu.add_command(label="Info!", command=action_get_info_dialog)
 
     # Nun fügen wir die Menüs (Datei und Help) der Menüleiste als
@@ -1070,6 +1105,7 @@ def zeichne_hauptmenue():
     menuleiste.add_cascade(label="Datei", menu=datei_menu)
     menuleiste.add_cascade(label="Eintragen", menu=eintragen_menu)
     menuleiste.add_cascade(label="Bearbeiten", menu=bearbeiten_menu)
+    menuleiste.add_cascade(label="Einkommenssteuer", menu=taxes_menu)
     menuleiste.add_cascade(label="Help", menu=help_menu)
     # Die Menüleiste mit den Menüeinträgen noch dem Fenster übergeben und fertig.
     root.config(menu=menuleiste)
@@ -1583,25 +1619,155 @@ def zeichne_fenster_bearbeite_asn():
         select_asn.pack()
 
     def zeichne_asn_edit_form(kuerzel):
+        def save_asn_edit_form(skuerzel):
+            # Stammdaten speichern
+            vname = form_edit_asn_vorname_input.get()
+            name = form_edit_asn_nachname_input.get()
+            strasse = form_edit_asn_strasse_input.get()
+            hnr = form_edit_asn_hausnummer_input.get()
+            plz = form_edit_asn_plz_input.get()
+            stadt = form_edit_asn_stadt_input.get()
+            neues_kuerzel = form_edit_asn_kuerzel_input.get()
+
+            if skuerzel == 'Neuer ASN':
+                s_asn = ASN(name, vname, neues_kuerzel, strasse, hnr, plz, stadt)
+            else:
+                s_asn = assistent.get_asn_by_kuerzel(skuerzel)
+                s_asn.vorname = vname
+                s_asn.name = name
+                s_asn.strasse = strasse
+                s_asn.hausnummer = hnr
+                s_asn.stadt = stadt
+                s_asn.plz = plz
+            # eb, pfk und büro
+            if form_edit_eb_nachname_input.get() != '' \
+                    or form_edit_eb_vorname_input.get() != '' \
+                    or form_edit_eb_email_input.get() != '':
+                if selected_eb.get() == "Neue EB":
+                    # neue EB
+                    s_asn.eb = EB(name=form_edit_eb_nachname_input.get(),
+                                  vorname=form_edit_eb_vorname_input.get(),
+                                  email=form_edit_eb_email_input.get())
+                elif assistent.get_eb_by_string(selected_eb.get()) == s_asn.eb:
+                    # aktuelle eb bearbeiten
+                    s_asn.eb.name = form_edit_eb_nachname_input.get()
+                    s_asn.eb.vorname = form_edit_eb_vorname_input.get()
+                    s_asn.eb.email = form_edit_eb_email_input.get()
+                else:
+                    # andere eb aus Liste zuweisen
+
+                    s_asn.eb = assistent.get_eb_by_string(selected_eb.get())
+
+                if s_asn.eb not in assistent.eb_liste:
+                    assistent.eb_liste.append(s_asn.eb)
+
+            if form_edit_pfk_nachname_input.get() != '' \
+                    or form_edit_pfk_vorname_input.get() != '' \
+                    or form_edit_pfk_email_input.get() != '':
+                if selected_pfk.get() == "Neue PFK":
+                    # neue PFK
+                    s_asn.pfk = PFK(name=form_edit_pfk_nachname_input.get(),
+                                    vorname=form_edit_pfk_vorname_input.get(),
+                                    email=form_edit_pfk_email_input.get())
+                elif assistent.get_pfk_by_string(selected_pfk.get()) == s_asn.pfk:
+                    # aktuelle PFK verändern
+                    s_asn.pfk.name = form_edit_pfk_nachname_input.get()
+                    s_asn.pfk.vorname = form_edit_pfk_vorname_input.get()
+                    s_asn.pfk.email = form_edit_pfk_email_input.get()
+                else:
+                    # andere pfk aus Liste zuweisen
+                    s_asn.pfk = assistent.get_pfk_by_string(selected_pfk.get())
+
+                if s_asn.pfk not in assistent.eb_liste:
+                    assistent.pfk_liste.append(s_asn.pfk)
+            s_asn.buero = selected_buero.get()
+            alles_speichern()
+            zeichne_fenster_bearbeite_asn()
+
         def zeichne_feste_schichten_form(frame):
+            def save_feste_schicht():
+                if gewaehlter_tag.get() != 'Auswählen':
+                    wochentag = gewaehlter_tag.get()
+                    startzeit_stunde = int(form_edit_feste_schichten_startzeit_input.hourstr.get())
+                    startzeit_minute = int(form_edit_feste_schichten_startzeit_input.minstr.get())
+                    endzeit_stunde = int(form_edit_feste_schichten_startzeit_input.hourstr.get())
+                    endzeit_minute = int(form_edit_feste_schichten_startzeit_input.minstr.get())
+                    s_feste_schicht = {'asn': kuerzel,
+                                       'wochentag': wochentag,
+                                       'start': datetime.time(startzeit_stunde, startzeit_minute, 0),
+                                       'ende': datetime.time(endzeit_stunde, endzeit_minute, 0)}
+                    assistent.festeSchichten.append(s_feste_schicht)
+                    zeichne_feste_schichten_form(frame)
+
+            for child in frame.winfo_children():
+                child.destroy()
+
             headline = tk.Label(frame, text='Feste Schichten erstellen/bearbeiten')
-            headline.pack()
+            headline.grid(row=0, column=0, columnspan=3)
+            jeden = tk.Label(frame, text="Jeden")
+            jeden.grid(row=1, column=0)
+            wochentage = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag', 'Auswählen']
+            gewaehlter_tag = tk.StringVar()
+            gewaehlter_tag.set(wochentage[7])
+            form_wochentage_dropdown = tk.OptionMenu(frame, gewaehlter_tag, *wochentage)
+            form_wochentage_dropdown.grid(row=1, column=1)
+            von = tk.Label(frame, text="Von")
+            von.grid(row=2, column=0)
+            form_edit_feste_schichten_startzeit_input = TimePicker(frame)
+            form_edit_feste_schichten_startzeit_input.grid(row=2, column=1)
+            bis = tk.Label(frame, text="bis")
+            bis.grid(row=3, column=0)
+            form_edit_feste_schichten_endzeit_input = TimePicker(frame)
+            form_edit_feste_schichten_endzeit_input.grid(row=3, column=1)
+            form_edit_feste_schichten_schichtliste = tk.Frame(frame)
+            form_edit_feste_schichten_schichtliste.grid(row=1, column=3, rowspan=3)
+
+            rowcounter = 0
+            for feste_schicht in assistent.festeSchichten:
+                if feste_schicht['asn'] == kuerzel:
+                    text = feste_schicht['wochentag'] + ', '
+                    text += feste_schicht['start'].strftime("%H:%M") + ' - '
+                    text += feste_schicht['ende'].strftime("%H:%M")
+                    eintrag = tk.Label(form_edit_feste_schichten_schichtliste, text=text)
+                    eintrag.grid(row=rowcounter, column=0)
+
+            form_edit_feste_schichten_submit_button = tk.Button(frame, text='feste Schicht hinzufügen',
+                                                                command=save_feste_schicht())
+            form_edit_feste_schichten_submit_button.grid(row=4, column=1, columnspan=2)
 
         def zeichne_schicht_templates_form(frame):
             headline = tk.Label(frame, text='Schichtvorlagen erstellen/bearbeiten')
-            headline.pack()
+            headline.grid(row=0, column=0, columnspan=2)
+            bezeichner = tk.Label(frame, text="Bezeichner (z.B. \"Frühschicht\")")
+            bezeichner.grid(row=1, column=0)
+            form_edit_templates_bezeichner = tk.Entry(frame)
+            form_edit_templates_bezeichner.grid(row=1, column=1)
+            von = tk.Label(frame, text="Von")
+            von.grid(row=2, column=0)
+            form_edit_templates_startzeit_input = TimePicker(frame)
+            form_edit_templates_startzeit_input.grid(row=2, column=1)
+            bis = tk.Label(frame, text="bis")
+            bis.grid(row=3, column=0)
+            form_edit_templates_endzeit_input = TimePicker(frame)
+            form_edit_templates_endzeit_input.grid(row=3, column=1)
 
-        def edit_eb(value):
-            if value == 'Neue EB':
-                form_edit_eb_email_input.insert(0, '')
-                form_edit_eb_vorname_input.insert(0, '')
-                form_edit_eb_nachname_input.insert(0, '')
+        def change_eb(eb):
+            form_edit_eb_vorname_input.delete(0, 'end')
+            form_edit_eb_nachname_input.delete(0, 'end')
+            form_edit_eb_email_input.delete(0, 'end')
+            if eb != 'Neue EB':
+                form_edit_eb_vorname_input.insert(0, eb.vorname)
+                form_edit_eb_nachname_input.insert(0, eb.name)
+                form_edit_eb_email_input.insert(0, eb.email)
 
-        def edit_pfk(value):
-            if value == 'Neue PFK':
-                form_edit_pfk_email_input.insert(0, '')
-                form_edit_pfk_vorname_input.insert(0, '')
-                form_edit_pfk_nachname_input.insert(0, '')
+        def change_pfk(pfk):
+            form_edit_pfk_vorname_input.delete(0, 'end')
+            form_edit_pfk_nachname_input.delete(0, 'end')
+            form_edit_pfk_email_input.delete(0, 'end')
+            if pfk != 'Neue PFK':
+                form_edit_pfk_vorname_input.insert(0, pfk.vorname)
+                form_edit_pfk_nachname_input.insert(0, pfk.name)
+                form_edit_pfk_email_input.insert(0, pfk.email)
 
         editframe = tk.Frame(fenster_edit_asn)
         if kuerzel != 'Neuer ASN':
@@ -1609,6 +1775,7 @@ def zeichne_fenster_bearbeite_asn():
 
         form_edit_asn_kuerzel_label = tk.Label(editframe, text="Kürzel")
         form_edit_asn_kuerzel_input = tk.Entry(editframe, bd=5, width=40)
+
         form_edit_asn_vorname_label = tk.Label(editframe, text="Vorname")
         form_edit_asn_vorname_input = tk.Entry(editframe, bd=5, width=40)
         form_edit_asn_nachname_label = tk.Label(editframe, text="Nachname")
@@ -1623,11 +1790,18 @@ def zeichne_fenster_bearbeite_asn():
 
         # eb
         form_edit_asn_eb_label = tk.Label(editframe, text="Einsatzbegleitung")
-        ebs = []
+        ebs = assistent.eb_liste
         option_list = ["Neue EB", *ebs]
-        variable = tk.StringVar()
-        variable.set(option_list[0])
-        form_edit_asn_eb_dropdown = tk.OptionMenu(editframe, variable, *option_list, command=edit_eb)
+        selected_eb = tk.StringVar()
+        if kuerzel != "Neuer ASN":
+            if asn.eb.name == '' and asn.eb.vorname == '':
+                selected_eb.set("Neue EB")
+            else:
+                selected_eb.set(asn.eb)
+        else:
+            selected_eb.set("Neue EB")
+
+        form_edit_asn_eb_dropdown = tk.OptionMenu(editframe, selected_eb, *option_list, command=change_eb)
 
         form_edit_eb_vorname_label = tk.Label(editframe, text="Vorname")
         form_edit_eb_vorname_input = tk.Entry(editframe, bd=5, width=40)
@@ -1638,12 +1812,19 @@ def zeichne_fenster_bearbeite_asn():
 
         # pfk
         form_edit_asn_pfk_label = tk.Label(editframe, text="Pflegefachkraft")
-        pfks = []
+        pfks = assistent.pfk_liste
         option_list = ["Neue PFK", *pfks]
 
-        variable = tk.StringVar()
-        variable.set(option_list[0])
-        form_edit_asn_pfk_dropdown = tk.OptionMenu(editframe, variable, *option_list, command=edit_pfk)
+        selected_pfk = tk.StringVar()
+        if kuerzel == "Neue PFK":
+            if asn.pfk.name == '' and asn.pfk.vorname == '':
+                selected_pfk.set("Neue PFK")
+            else:
+                selected_pfk.set(asn.pfk)
+        else:
+            selected_pfk.set("Neue PFK")
+
+        form_edit_asn_pfk_dropdown = tk.OptionMenu(editframe, selected_pfk, *option_list, command=change_pfk)
 
         form_edit_pfk_vorname_label = tk.Label(editframe, text="Vorname")
         form_edit_pfk_vorname_input = tk.Entry(editframe, bd=5, width=40)
@@ -1657,16 +1838,21 @@ def zeichne_fenster_bearbeite_asn():
         # grundsätzliche Optionen für Dropdown
 
         # TODO in Klassen überführen
-        option_list = ['Nordost', 'West', 'Süd']
+        option_list = ['Bitte auswählen', 'Nordost', 'West', 'Süd']
 
-        variable = tk.StringVar()
-        variable.set(option_list[0])
-        form_edit_asn_buero_dropdown = tk.OptionMenu(editframe, variable, *option_list)
+        selected_buero = tk.StringVar()
+        selected_buero.set(option_list[0])
+        form_edit_asn_buero_dropdown = tk.OptionMenu(editframe, selected_buero, *option_list)
 
         form_edit_asn_feste_schichten = tk.Frame(editframe)
         zeichne_feste_schichten_form(form_edit_asn_feste_schichten)
         form_edit_asn_schicht_templates = tk.Frame(editframe)
         zeichne_schicht_templates_form(form_edit_asn_schicht_templates)
+
+        form_edit_asn_save_button = tk.Button(editframe, text="Daten speichern",
+                                              command=lambda: save_asn_edit_form(kuerzel))
+        form_neue_schicht_exit_button = tk.Button(editframe, text="Abbrechen",
+                                                  command=fenster_edit_asn.destroy)
 
         # befüllen
         if kuerzel == 'Neuer ASN':
@@ -1679,12 +1865,21 @@ def zeichne_fenster_bearbeite_asn():
             form_edit_asn_stadt_input.insert(0, '')
         else:
             form_edit_asn_kuerzel_input.insert(0, asn.kuerzel)
+            form_edit_asn_kuerzel_input.config(state='disabled')
             form_edit_asn_vorname_input.insert(0, asn.vorname)
             form_edit_asn_nachname_input.insert(0, asn.name)
             form_edit_asn_strasse_input.insert(0, asn.strasse)
             form_edit_asn_hausnummer_input.insert(0, asn.hausnummer)
             form_edit_asn_plz_input.insert(0, asn.plz)
             form_edit_asn_stadt_input.insert(0, asn.stadt)
+            # eb
+            form_edit_eb_vorname_input.insert(0, asn.eb.vorname)
+            form_edit_eb_nachname_input.insert(0, asn.eb.name)
+            form_edit_eb_email_input.insert(0, asn.eb.email)
+            # pfk
+            form_edit_pfk_vorname_input.insert(0, asn.pfk.vorname)
+            form_edit_pfk_nachname_input.insert(0, asn.pfk.name)
+            form_edit_pfk_email_input.insert(0, asn.pfk.email)
 
         # positionieren
         editframe.grid(row=0, column=1)
@@ -1724,8 +1919,11 @@ def zeichne_fenster_bearbeite_asn():
         form_edit_asn_buero_label.grid(row=7, column=0)
         form_edit_asn_buero_dropdown.grid(row=7, column=1)
 
-        form_edit_asn_feste_schichten.grid(row=10, column=0)
-        form_edit_asn_schicht_templates.grid(row=10, column=4)
+        form_edit_asn_feste_schichten.grid(row=10, column=0, columnspan=2)
+        form_edit_asn_schicht_templates.grid(row=10, column=4, columnspan=2)
+
+        form_edit_asn_save_button.grid(row=15, column=0, columnspan=2)
+        form_neue_schicht_exit_button.grid(row=15, column=3, columnspan=2)
 
     zeichne_asn_auswahl()
 
