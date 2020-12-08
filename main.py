@@ -615,6 +615,7 @@ class LohnTabelle:
 
 class FesteSchichtForm(tk.Frame):
 
+
     def __init__(self, parent, asn):
         super().__init__(parent)
         self.asn = asn
