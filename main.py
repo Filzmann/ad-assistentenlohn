@@ -155,7 +155,6 @@ class AS(Person):
         data = string.split()
         for eb in self.eb_liste:
             if eb.vorname == data[0]:
-                # print(len(data))
                 if len(data) > 1:
                     if data[1] == eb.name:
                         return eb
@@ -614,7 +613,29 @@ class LohnTabelle:
 
 
 class FesteSchichtForm(tk.Frame):
+    class FesteSchichtTabelle(tk.Frame):
 
+        def __init__(self, parent, asn):
+            global assistent
+            super().__init__(parent)
+            self.asn = asn
+            self.draw()
+
+        def draw(self):
+            for child in self.winfo_children():
+                child.destroy()
+            rowcounter = 0
+            eintrag = tk.Label(self, text='Deine festen Schichten\nin diesem Einsatz')
+            eintrag.grid(row=rowcounter, column=0)
+            rowcounter += 1
+            for feste_schicht in assistent.festeSchichten:
+                if feste_schicht['asn'] == self.asn.kuerzel:
+                    text = feste_schicht['wochentag'] + ', '
+                    text += feste_schicht['start'].strftime("%H:%M") + ' - '
+                    text += feste_schicht['ende'].strftime("%H:%M")
+                    eintrag = tk.Label(self, text=text)
+                    eintrag.grid(row=rowcounter, column=0)
+                    rowcounter += 1
 
     def __init__(self, parent, asn):
         super().__init__(parent)
@@ -636,35 +657,108 @@ class FesteSchichtForm(tk.Frame):
         bis.grid(row=3, column=0)
         self.endzeit_input = TimePicker(self)
         self.endzeit_input.grid(row=3, column=1)
-        schichtliste = tk.Frame(self)
-        schichtliste.grid(row=1, column=3, rowspan=3)
-
-        rowcounter = 0
-        for feste_schicht in assistent.festeSchichten:
-            if feste_schicht['asn'] == self.asn:
-                text = feste_schicht['wochentag'] + ', '
-                text += feste_schicht['start'].strftime("%H:%M") + ' - '
-                text += feste_schicht['ende'].strftime("%H:%M")
-                eintrag = tk.Label(schichtliste, text=text)
-                eintrag.grid(row=rowcounter, column=0)
-
+        self.schichtliste = self.FesteSchichtTabelle(self, asn)
+        self.schichtliste.grid(row=1, column=3, rowspan=3)
         submit_button = tk.Button(self, text='feste Schicht hinzufügen',
-                                  command=self.save_feste_schicht())
+                                  command=self.save_feste_schicht)
         submit_button.grid(row=4, column=1, columnspan=2)
 
     def save_feste_schicht(self):
+        global assistent
         if self.gewaehlter_tag.get() != 'Auswählen':
             wochentag = self.gewaehlter_tag.get()
             startzeit_stunde = int(self.startzeit_input.hourstr.get())
             startzeit_minute = int(self.startzeit_input.minstr.get())
             endzeit_stunde = int(self.endzeit_input.hourstr.get())
             endzeit_minute = int(self.endzeit_input.minstr.get())
-            s_feste_schicht = {'asn': self.asn,
+            s_feste_schicht = {'asn': self.asn.kuerzel,
                                'wochentag': wochentag,
                                'start': datetime.time(startzeit_stunde, startzeit_minute, 0),
                                'ende': datetime.time(endzeit_stunde, endzeit_minute, 0)}
             assistent.festeSchichten.append(s_feste_schicht)
-            # zeichne_feste_schichten_form(self)
+            self.schichtliste.draw()
+            alles_speichern()
+
+
+class SchichtTemplateForm(tk.Frame):
+    class TemplateTabelle(tk.Frame):
+
+        def __init__(self, parent, asn):
+            global assistent
+            super().__init__(parent)
+            self.asn = asn
+            self.draw()
+
+        def draw(self):
+            for child in self.winfo_children():
+                child.destroy()
+            rowcounter = 0
+            eintrag = tk.Label(self, text='Deine Vorlagen\nfür diesem Einsatz')
+            eintrag.grid(row=rowcounter, column=0)
+            rowcounter += 1
+            for template in self.asn.schicht_templates:
+                text = template['bezeichner'] + ': '
+                text += template['start'].strftime("%H:%M") + ' - '
+                text += template['ende'].strftime("%H:%M")
+                eintrag = tk.Label(self, text=text)
+                eintrag.grid(row=rowcounter, column=0)
+                rowcounter += 1
+
+    def __init__(self, parent, asn):
+        self.asn = asn
+        super().__init__(parent)
+        headline = tk.Label(self, text='Schichtvorlagen erstellen/bearbeiten')
+        headline.grid(row=0, column=0, columnspan=2)
+        bezeichner = tk.Label(self, text="Bezeichner (z.B. \"Frühschicht\")")
+        bezeichner.grid(row=1, column=0)
+        self.bezeichner = tk.Entry(self)
+        self.bezeichner.grid(row=1, column=1)
+        von = tk.Label(self, text="Von")
+        von.grid(row=2, column=0)
+        self.startzeit_input = TimePicker(self)
+        self.startzeit_input.grid(row=2, column=1)
+        bis = tk.Label(self, text="bis")
+        bis.grid(row=3, column=0)
+        self.endzeit_input = TimePicker(self)
+        self.endzeit_input.grid(row=3, column=1)
+        self.templateliste = self.TemplateTabelle(self, asn=asn)
+        self.templateliste.grid(row=1, column=3, rowspan=3)
+
+        submit_button = tk.Button(self, text='Schichtvorlage hinzufügen',
+                                  command=self.save_schicht_template)
+        submit_button.grid(row=4, column=1, columnspan=2)
+
+    def save_schicht_template(self):
+        bezeichner = self.bezeichner.get()
+        startzeit_stunde = int(self.startzeit_input.hourstr.get())
+        startzeit_minute = int(self.startzeit_input.minstr.get())
+        endzeit_stunde = int(self.endzeit_input.hourstr.get())
+        endzeit_minute = int(self.endzeit_input.minstr.get())
+        s_feste_schicht = {'bezeichner': bezeichner,
+                           'start': datetime.time(startzeit_stunde, startzeit_minute, 0),
+                           'ende': datetime.time(endzeit_stunde, endzeit_minute, 0)}
+        self.asn.schicht_templates.append(s_feste_schicht)
+        self.templateliste.draw()
+        # zeichne_feste_schichten_form(self)
+
+
+class AsnStammdatenForm(tk.Frame):
+    def __init__(self, parent, asn):
+        self.asn = asn
+        super().__init__(parent)
+        kuerzel_label = tk.Label(self, text="Kürzel")
+        self.kuerzel_input = tk.Entry(self, bd=5, width=40)
+        vorname_label = tk.Label(self, text="Vorname")
+        self.vorname_input = tk.Entry(self, bd=5, width=40)
+        nachname_label = tk.Label(self, text="Nachname")
+        self.nachname_input = tk.Entry(self, bd=5, width=40)
+        strasse_label = tk.Label(self, text="Straße/Hausnummer")
+        self.strasse_input = tk.Entry(self, bd=5, width=40)
+        self.hausnummer_input = tk.Entry(self, bd=5, width=10)
+        plz_label = tk.Label(self, text="Postleitzahl")
+        self.plz_input = tk.Entry(self, bd=5, width=40)
+        stadt_label = tk.Label(self, text="Stadt")
+        self.stadt_input = tk.Entry(self, bd=5, width=40)
 
 
 def end_of_month(month, year):
@@ -1652,10 +1746,10 @@ def zeichne_fenster_bearbeite_asn():
 
     def zeichne_asn_auswahl():
         def choose_asn(event):
-            listeAusgewaehlt = select_asn.curselection()
-            itemAusgewaehlt = listeAusgewaehlt[0]
-            kuerzelAusgewaehlt = select_asn.get(itemAusgewaehlt)
-            zeichne_asn_edit_form(kuerzelAusgewaehlt)
+            auswahlframe.listeAusgewaehlt = select_asn.curselection()
+            auswahlframe.itemAusgewaehlt = auswahlframe.listeAusgewaehlt[0]
+            auswahlframe.kuerzelAusgewaehlt = select_asn.get(auswahlframe.itemAusgewaehlt)
+            zeichne_asn_edit_form(auswahlframe.kuerzelAusgewaehlt)
 
         auswahlframe = tk.Frame(fenster_edit_asn)
         auswahlframe.grid(row=0, column=0)
@@ -1738,73 +1832,6 @@ def zeichne_fenster_bearbeite_asn():
             s_asn.buero = selected_buero.get()
             alles_speichern()
             zeichne_fenster_bearbeite_asn()
-
-        def zeichne_feste_schichten_form(frame):
-            def save_feste_schicht():
-                if gewaehlter_tag.get() != 'Auswählen':
-                    wochentag = gewaehlter_tag.get()
-                    startzeit_stunde = int(form_edit_feste_schichten_startzeit_input.hourstr.get())
-                    startzeit_minute = int(form_edit_feste_schichten_startzeit_input.minstr.get())
-                    endzeit_stunde = int(form_edit_feste_schichten_startzeit_input.hourstr.get())
-                    endzeit_minute = int(form_edit_feste_schichten_startzeit_input.minstr.get())
-                    s_feste_schicht = {'asn': kuerzel,
-                                       'wochentag': wochentag,
-                                       'start': datetime.time(startzeit_stunde, startzeit_minute, 0),
-                                       'ende': datetime.time(endzeit_stunde, endzeit_minute, 0)}
-                    assistent.festeSchichten.append(s_feste_schicht)
-                    zeichne_feste_schichten_form(frame)
-
-            for child in frame.winfo_children():
-                child.destroy()
-
-            headline = tk.Label(frame, text='Feste Schichten erstellen/bearbeiten')
-            headline.grid(row=0, column=0, columnspan=3)
-            jeden = tk.Label(frame, text="Jeden")
-            jeden.grid(row=1, column=0)
-            wochentage = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag', 'Auswählen']
-            gewaehlter_tag = tk.StringVar()
-            gewaehlter_tag.set(wochentage[7])
-            form_wochentage_dropdown = tk.OptionMenu(frame, gewaehlter_tag, *wochentage)
-            form_wochentage_dropdown.grid(row=1, column=1)
-            von = tk.Label(frame, text="Von")
-            von.grid(row=2, column=0)
-            form_edit_feste_schichten_startzeit_input = TimePicker(frame)
-            form_edit_feste_schichten_startzeit_input.grid(row=2, column=1)
-            bis = tk.Label(frame, text="bis")
-            bis.grid(row=3, column=0)
-            form_edit_feste_schichten_endzeit_input = TimePicker(frame)
-            form_edit_feste_schichten_endzeit_input.grid(row=3, column=1)
-            form_edit_feste_schichten_schichtliste = tk.Frame(frame)
-            form_edit_feste_schichten_schichtliste.grid(row=1, column=3, rowspan=3)
-
-            rowcounter = 0
-            for feste_schicht in assistent.festeSchichten:
-                if feste_schicht['asn'] == kuerzel:
-                    text = feste_schicht['wochentag'] + ', '
-                    text += feste_schicht['start'].strftime("%H:%M") + ' - '
-                    text += feste_schicht['ende'].strftime("%H:%M")
-                    eintrag = tk.Label(form_edit_feste_schichten_schichtliste, text=text)
-                    eintrag.grid(row=rowcounter, column=0)
-
-            form_edit_feste_schichten_submit_button = tk.Button(frame, text='feste Schicht hinzufügen',
-                                                                command=save_feste_schicht())
-            form_edit_feste_schichten_submit_button.grid(row=4, column=1, columnspan=2)
-
-        def zeichne_schicht_templates_form(frame):
-            headline = tk.Label(frame, text='Schichtvorlagen erstellen/bearbeiten')
-            headline.grid(row=0, column=0, columnspan=2)
-            bezeichner = tk.Label(frame, text="Bezeichner (z.B. \"Frühschicht\")")
-            bezeichner.grid(row=1, column=0)
-            form_edit_templates_bezeichner = tk.Entry(frame)
-            form_edit_templates_bezeichner.grid(row=1, column=1)
-            von = tk.Label(frame, text="Von")
-            von.grid(row=2, column=0)
-            form_edit_templates_startzeit_input = TimePicker(frame)
-            form_edit_templates_startzeit_input.grid(row=2, column=1)
-            bis = tk.Label(frame, text="bis")
-            bis.grid(row=3, column=0)
-            form_edit_templates_endzeit_input = TimePicker(frame)
-            form_edit_templates_endzeit_input.grid(row=3, column=1)
 
         def change_eb(eb):
             form_edit_eb_vorname_input.delete(0, 'end')
@@ -1899,10 +1926,8 @@ def zeichne_fenster_bearbeite_asn():
         selected_buero.set(option_list[0])
         form_edit_asn_buero_dropdown = tk.OptionMenu(editframe, selected_buero, *option_list)
 
-        form_edit_asn_feste_schichten = tk.Frame(editframe)
-        zeichne_feste_schichten_form(form_edit_asn_feste_schichten)
-        form_edit_asn_schicht_templates = tk.Frame(editframe)
-        zeichne_schicht_templates_form(form_edit_asn_schicht_templates)
+        form_edit_asn_feste_schichten = FesteSchichtForm(editframe, asn)
+        form_edit_asn_schicht_templates = SchichtTemplateForm(editframe, asn)
 
         form_edit_asn_save_button = tk.Button(editframe, text="Daten speichern",
                                               command=lambda: save_asn_edit_form(kuerzel))
