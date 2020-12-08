@@ -1,9 +1,10 @@
-import tkinter as tk
-from tkinter import messagebox
-from tkinter import filedialog
-import pickle
 import datetime
+import pickle
+
+import tkinter as tk
 from tkcalendar import Calendar
+import tkinter.filedialog as filedialog
+import tkinter.messagebox as mb
 
 
 class TimePicker(tk.Frame):
@@ -612,6 +613,59 @@ class LohnTabelle:
             return 6
 
 
+class FesteSchichtForm(tk.Frame):
+
+    def __init__(self, parent, asn):
+        super().__init__(parent)
+        self.asn = asn
+        headline = tk.Label(self, text='Feste Schichten erstellen/bearbeiten')
+        headline.grid(row=0, column=0, columnspan=3)
+        jeden = tk.Label(self, text="Jeden")
+        jeden.grid(row=1, column=0)
+        wochentage = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag', 'Auswählen']
+        self.gewaehlter_tag = tk.StringVar()
+        self.gewaehlter_tag.set(wochentage[7])
+        form_wochentage_dropdown = tk.OptionMenu(self, self.gewaehlter_tag, *wochentage)
+        form_wochentage_dropdown.grid(row=1, column=1)
+        von = tk.Label(self, text="Von")
+        von.grid(row=2, column=0)
+        self.startzeit_input = TimePicker(self)
+        self.startzeit_input.grid(row=2, column=1)
+        bis = tk.Label(self, text="bis")
+        bis.grid(row=3, column=0)
+        self.endzeit_input = TimePicker(self)
+        self.endzeit_input.grid(row=3, column=1)
+        schichtliste = tk.Frame(self)
+        schichtliste.grid(row=1, column=3, rowspan=3)
+
+        rowcounter = 0
+        for feste_schicht in assistent.festeSchichten:
+            if feste_schicht['asn'] == self.asn:
+                text = feste_schicht['wochentag'] + ', '
+                text += feste_schicht['start'].strftime("%H:%M") + ' - '
+                text += feste_schicht['ende'].strftime("%H:%M")
+                eintrag = tk.Label(schichtliste, text=text)
+                eintrag.grid(row=rowcounter, column=0)
+
+        submit_button = tk.Button(self, text='feste Schicht hinzufügen',
+                                  command=self.save_feste_schicht())
+        submit_button.grid(row=4, column=1, columnspan=2)
+
+    def save_feste_schicht(self):
+        if self.gewaehlter_tag.get() != 'Auswählen':
+            wochentag = self.gewaehlter_tag.get()
+            startzeit_stunde = int(self.startzeit_input.hourstr.get())
+            startzeit_minute = int(self.startzeit_input.minstr.get())
+            endzeit_stunde = int(self.endzeit_input.hourstr.get())
+            endzeit_minute = int(self.endzeit_input.minstr.get())
+            s_feste_schicht = {'asn': self.asn,
+                               'wochentag': wochentag,
+                               'start': datetime.time(startzeit_stunde, startzeit_minute, 0),
+                               'ende': datetime.time(endzeit_stunde, endzeit_minute, 0)}
+            assistent.festeSchichten.append(s_feste_schicht)
+            # zeichne_feste_schichten_form(self)
+
+
 def end_of_month(month, year):
     if month == 12:
         month = 1
@@ -1066,7 +1120,7 @@ Autor: Simon Beyer\n\
 Date: 16.11.2020\n\
 Version: 0.01\n\
 ************************"
-    tk.messagebox.showinfo(message=m_text, title="Infos")
+    mb.showinfo(message=m_text, title="Infos")
 
 
 def zeichne_hauptmenue():
