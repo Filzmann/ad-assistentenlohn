@@ -612,153 +612,383 @@ class LohnTabelle:
             return 6
 
 
-class FesteSchichtForm(tk.Frame):
-    class FesteSchichtTabelle(tk.Frame):
-
-        def __init__(self, parent, asn):
-            global assistent
+class FensterEditAsn(tk.Toplevel):
+    class AsnAuswahllisteFrame(tk.Frame):
+        def __init__(self, parent):
             super().__init__(parent)
-            self.asn = asn
-            self.draw()
+            self.parent = parent
+            options = list(assistent.get_all_asn().keys())
+            self.select_asn = tk.Listbox(self, selectmode='single')
+            self.select_asn.insert('end', 'Neuer ASN')
+            for val in options:
+                self.select_asn.insert('end', val)
+            self.select_asn.bind('<<ListboxSelect>>', self.choose_asn)
+            # yScroll = tk.Scrollbar(master=self, orient='vertical')
+            # self.select_asn.config(yscrollcommand=yScroll.set)
+            # yScroll.config(command=self.select_asn.yview)
+            self.select_asn.pack()
 
-        def draw(self):
-            for child in self.winfo_children():
-                child.destroy()
-            rowcounter = 0
-            eintrag = tk.Label(self, text='Deine festen Schichten\nin diesem Einsatz')
-            eintrag.grid(row=rowcounter, column=0)
-            rowcounter += 1
-            for feste_schicht in assistent.festeSchichten:
-                if feste_schicht['asn'] == self.asn.kuerzel:
-                    text = feste_schicht['wochentag'] + ', '
-                    text += feste_schicht['start'].strftime("%H:%M") + ' - '
-                    text += feste_schicht['ende'].strftime("%H:%M")
-                    eintrag = tk.Label(self, text=text)
+        def choose_asn(self, event):
+            listeAusgewaehlt = self.select_asn.curselection()
+            itemAusgewaehlt = listeAusgewaehlt[0]
+            kuerzelAusgewaehlt = self.select_asn.get(itemAusgewaehlt)
+            editframe = self.parent.AsnEditFrame(self.parent, kuerzelAusgewaehlt)
+            editframe.grid(row=0, column=1)
+
+    class AsnEditFrame(tk.Frame):
+        class FesteSchichtForm(tk.Frame):
+            class FesteSchichtTabelle(tk.Frame):
+
+                def __init__(self, parent, asn):
+                    global assistent
+                    super().__init__(parent)
+                    self.asn = asn
+                    self.draw()
+
+                def draw(self):
+                    for child in self.winfo_children():
+                        child.destroy()
+                    rowcounter = 0
+                    eintrag = tk.Label(self, text='Deine festen Schichten\nin diesem Einsatz')
                     eintrag.grid(row=rowcounter, column=0)
                     rowcounter += 1
+                    for feste_schicht in assistent.festeSchichten:
+                        if feste_schicht['asn'] == self.asn.kuerzel:
+                            text = feste_schicht['wochentag'] + ', '
+                            text += feste_schicht['start'].strftime("%H:%M") + ' - '
+                            text += feste_schicht['ende'].strftime("%H:%M")
+                            eintrag = tk.Label(self, text=text)
+                            eintrag.grid(row=rowcounter, column=0)
+                            rowcounter += 1
 
-    def __init__(self, parent, asn):
-        super().__init__(parent)
-        self.asn = asn
-        headline = tk.Label(self, text='Feste Schichten erstellen/bearbeiten')
-        headline.grid(row=0, column=0, columnspan=3)
-        jeden = tk.Label(self, text="Jeden")
-        jeden.grid(row=1, column=0)
-        wochentage = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag', 'Auswählen']
-        self.gewaehlter_tag = tk.StringVar()
-        self.gewaehlter_tag.set(wochentage[7])
-        form_wochentage_dropdown = tk.OptionMenu(self, self.gewaehlter_tag, *wochentage)
-        form_wochentage_dropdown.grid(row=1, column=1)
-        von = tk.Label(self, text="Von")
-        von.grid(row=2, column=0)
-        self.startzeit_input = TimePicker(self)
-        self.startzeit_input.grid(row=2, column=1)
-        bis = tk.Label(self, text="bis")
-        bis.grid(row=3, column=0)
-        self.endzeit_input = TimePicker(self)
-        self.endzeit_input.grid(row=3, column=1)
-        self.schichtliste = self.FesteSchichtTabelle(self, asn)
-        self.schichtliste.grid(row=1, column=3, rowspan=3)
-        submit_button = tk.Button(self, text='feste Schicht hinzufügen',
-                                  command=self.save_feste_schicht)
-        submit_button.grid(row=4, column=1, columnspan=2)
+            def __init__(self, parent, asn):
+                super().__init__(parent)
+                self.asn = asn
+                headline = tk.Label(self, text='Feste Schichten erstellen/bearbeiten')
+                headline.grid(row=0, column=0, columnspan=3)
+                jeden = tk.Label(self, text="Jeden")
+                jeden.grid(row=1, column=0)
+                wochentage = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag',
+                              'Auswählen']
+                self.gewaehlter_tag = tk.StringVar()
+                self.gewaehlter_tag.set(wochentage[7])
+                form_wochentage_dropdown = tk.OptionMenu(self, self.gewaehlter_tag, *wochentage)
+                form_wochentage_dropdown.grid(row=1, column=1)
+                von = tk.Label(self, text="Von")
+                von.grid(row=2, column=0)
+                self.startzeit_input = TimePicker(self)
+                self.startzeit_input.grid(row=2, column=1)
+                bis = tk.Label(self, text="bis")
+                bis.grid(row=3, column=0)
+                self.endzeit_input = TimePicker(self)
+                self.endzeit_input.grid(row=3, column=1)
+                self.schichtliste = self.FesteSchichtTabelle(self, asn)
+                self.schichtliste.grid(row=1, column=3, rowspan=3)
+                submit_button = tk.Button(self, text='feste Schicht hinzufügen',
+                                          command=self.save_feste_schicht)
+                submit_button.grid(row=4, column=1, columnspan=2)
 
-    def save_feste_schicht(self):
-        global assistent
-        if self.gewaehlter_tag.get() != 'Auswählen':
-            wochentag = self.gewaehlter_tag.get()
-            startzeit_stunde = int(self.startzeit_input.hourstr.get())
-            startzeit_minute = int(self.startzeit_input.minstr.get())
-            endzeit_stunde = int(self.endzeit_input.hourstr.get())
-            endzeit_minute = int(self.endzeit_input.minstr.get())
-            s_feste_schicht = {'asn': self.asn.kuerzel,
-                               'wochentag': wochentag,
-                               'start': datetime.time(startzeit_stunde, startzeit_minute, 0),
-                               'ende': datetime.time(endzeit_stunde, endzeit_minute, 0)}
-            assistent.festeSchichten.append(s_feste_schicht)
-            self.schichtliste.draw()
-            alles_speichern()
+            def save_feste_schicht(self):
+                global assistent
+                if self.gewaehlter_tag.get() != 'Auswählen':
+                    wochentag = self.gewaehlter_tag.get()
+                    startzeit_stunde = int(self.startzeit_input.hourstr.get())
+                    startzeit_minute = int(self.startzeit_input.minstr.get())
+                    endzeit_stunde = int(self.endzeit_input.hourstr.get())
+                    endzeit_minute = int(self.endzeit_input.minstr.get())
+                    s_feste_schicht = {'asn': self.asn.kuerzel,
+                                       'wochentag': wochentag,
+                                       'start': datetime.time(startzeit_stunde, startzeit_minute, 0),
+                                       'ende': datetime.time(endzeit_stunde, endzeit_minute, 0)}
+                    assistent.festeSchichten.append(s_feste_schicht)
+                    self.schichtliste.draw()
+                    alles_speichern()
 
+        class SchichtTemplateForm(tk.Frame):
+            class TemplateTabelle(tk.Frame):
 
-class SchichtTemplateForm(tk.Frame):
-    class TemplateTabelle(tk.Frame):
+                def __init__(self, parent, asn):
+                    global assistent
+                    super().__init__(parent)
+                    self.asn = asn
+                    self.draw()
 
-        def __init__(self, parent, asn):
+                def draw(self):
+                    for child in self.winfo_children():
+                        child.destroy()
+                    rowcounter = 0
+                    eintrag = tk.Label(self, text='Deine Vorlagen\nfür diesem Einsatz')
+                    eintrag.grid(row=rowcounter, column=0)
+                    rowcounter += 1
+                    for template in self.asn.schicht_templates:
+                        text = template['bezeichner'] + ': '
+                        text += template['start'].strftime("%H:%M") + ' - '
+                        text += template['ende'].strftime("%H:%M")
+                        eintrag = tk.Label(self, text=text)
+                        eintrag.grid(row=rowcounter, column=0)
+                        rowcounter += 1
+
+            def __init__(self, parent, asn):
+                self.asn = asn
+                super().__init__(parent)
+                headline = tk.Label(self, text='Schichtvorlagen erstellen/bearbeiten')
+                headline.grid(row=0, column=0, columnspan=2)
+                bezeichner = tk.Label(self, text="Bezeichner (z.B. \"Frühschicht\")")
+                bezeichner.grid(row=1, column=0)
+                self.bezeichner = tk.Entry(self)
+                self.bezeichner.grid(row=1, column=1)
+                von = tk.Label(self, text="Von")
+                von.grid(row=2, column=0)
+                self.startzeit_input = TimePicker(self)
+                self.startzeit_input.grid(row=2, column=1)
+                bis = tk.Label(self, text="bis")
+                bis.grid(row=3, column=0)
+                self.endzeit_input = TimePicker(self)
+                self.endzeit_input.grid(row=3, column=1)
+                self.templateliste = self.TemplateTabelle(self, asn=asn)
+                self.templateliste.grid(row=1, column=3, rowspan=3)
+
+                submit_button = tk.Button(self, text='Schichtvorlage hinzufügen',
+                                          command=self.save_schicht_template)
+                submit_button.grid(row=4, column=1, columnspan=2)
+
+            def save_schicht_template(self):
+                bezeichner = self.bezeichner.get()
+                startzeit_stunde = int(self.startzeit_input.hourstr.get())
+                startzeit_minute = int(self.startzeit_input.minstr.get())
+                endzeit_stunde = int(self.endzeit_input.hourstr.get())
+                endzeit_minute = int(self.endzeit_input.minstr.get())
+                s_feste_schicht = {'bezeichner': bezeichner,
+                                   'start': datetime.time(startzeit_stunde, startzeit_minute, 0),
+                                   'ende': datetime.time(endzeit_stunde, endzeit_minute, 0)}
+                self.asn.schicht_templates.append(s_feste_schicht)
+                self.templateliste.draw()
+                # zeichne_feste_schichten_form(self)
+
+        class AsnStammdatenForm(tk.Frame):
+            def __init__(self, parent, asn):
+                self.asn = asn
+                super().__init__(parent)
+                kuerzel_label = tk.Label(self, text="Kürzel")
+                self.kuerzel_input = tk.Entry(self, bd=5, width=40)
+                vorname_label = tk.Label(self, text="Vorname")
+                self.vorname_input = tk.Entry(self, bd=5, width=40)
+                nachname_label = tk.Label(self, text="Nachname")
+                self.nachname_input = tk.Entry(self, bd=5, width=40)
+                strasse_label = tk.Label(self, text="Straße/Hausnummer")
+                self.strasse_input = tk.Entry(self, bd=5, width=29)
+                self.hausnummer_input = tk.Entry(self, bd=5, width=9)
+                plz_label = tk.Label(self, text="Postleitzahl")
+                self.plz_input = tk.Entry(self, bd=5, width=40)
+                stadt_label = tk.Label(self, text="Stadt")
+                self.stadt_input = tk.Entry(self, bd=5, width=40)
+                buero_label = tk.Label(self, text="Zuständiges Einsatzbüro")
+                # TODO in Klassen überführen
+                option_list = ['Bitte auswählen', 'Nordost', 'West', 'Süd']
+                self.selected_buero = tk.StringVar()
+                self.selected_buero.set(option_list[0])
+                self.buero_dropdown = tk.OptionMenu(self, self.selected_buero, *option_list)
+
+                self.kuerzel_input.insert(0, self.asn.kuerzel)
+                if self.asn.kuerzel != '':
+                    self.kuerzel_input.config(state='disabled')
+                self.vorname_input.insert(0, self.asn.vorname)
+                self.nachname_input.insert(0, self.asn.name)
+                self.strasse_input.insert(0, self.asn.strasse)
+                self.hausnummer_input.insert(0, self.asn.hausnummer)
+                self.plz_input.insert(0, self.asn.plz)
+                self.stadt_input.insert(0, self.asn.stadt)
+
+                # positionieren
+                kuerzel_label.grid(row=0, column=0)
+                self.kuerzel_input.grid(row=0, column=1, columnspan=2)
+                vorname_label.grid(row=1, column=0)
+                self.vorname_input.grid(row=1, column=1, columnspan=2)
+                nachname_label.grid(row=2, column=0)
+                self.nachname_input.grid(row=2, column=1, columnspan=2)
+                strasse_label.grid(row=3, column=0)
+                self.strasse_input.grid(row=3, column=1)
+                self.hausnummer_input.grid(row=3, column=2)
+                plz_label.grid(row=4, column=0)
+                self.plz_input.grid(row=4, column=1, columnspan=2)
+                stadt_label.grid(row=5, column=0)
+                self.stadt_input.grid(row=5, column=1, columnspan=2)
+                buero_label.grid(row=6, column=0)
+                self.buero_dropdown.grid(row=6, column=1)
+
+            def save_stammdaten(self):
+                # Stammdaten speichern
+                vname = self.vorname_input.get()
+                name = self.nachname_input.get()
+                strasse = self.strasse_input.get()
+                hnr = self.hausnummer_input.get()
+                plz = self.plz_input.get()
+                stadt = self.stadt_input.get()
+                neues_kuerzel = self.kuerzel_input.get()
+
+                if self.asn == 'Neuer ASN':
+                    asn = ASN(name, vname, neues_kuerzel, strasse, hnr, plz, stadt)
+                else:
+                    asn = self.asn
+                    asn.vorname = vname
+                    asn.name = name
+                    asn.strasse = strasse
+                    asn.hausnummer = hnr
+                    asn.stadt = stadt
+                    asn.plz = plz
+
+                asn.buero = self.selected_buero.get()
+                return asn
+
+        class EbPfkEditForm(tk.Frame):
+            def __init__(self, parent, asn, eb_oder_pfk):
+                self.asn = asn
+                super().__init__(parent)
+
+                first, text, liste, select_what = '', '', [], []
+
+                self.selected = tk.StringVar()
+                if eb_oder_pfk == 'eb':
+                    text = "Einsatzbegleitung"
+                    liste = assistent.eb_liste
+                    first = "Neue EB"
+                    select_what = asn.eb
+                    if self.asn.eb:
+                        if asn.eb.name == '' and asn.eb.vorname == '':
+                            self.selected.set(first)
+                        else:
+                            self.selected.set(select_what)
+                    else:
+                        self.selected.set(first)
+                elif eb_oder_pfk == 'pfk':
+                    text = "Pflegefachkraft"
+                    liste = assistent.pfk_liste
+                    first = "Neue PFK"
+                    select_what = asn.pfk
+                    if self.asn.pfk:
+                        if self.asn.pfk.name == '' and self.asn.pfk.vorname == '':
+                            self.selected.set(first)
+                        else:
+                            self.selected.set(select_what)
+                    else:
+                        self.selected.set(first)
+                headline = tk.Label(self, text=text)
+                option_list = [first, *liste]
+
+                self.eb_dropdown = tk.OptionMenu(self, self.selected, *option_list, command=self.change_person)
+
+                vorname_label = tk.Label(self, text="Vorname")
+                self.vorname_input = tk.Entry(self, bd=5, width=40)
+                nachname_label = tk.Label(self, text="Nachname")
+                self.nachname_input = tk.Entry(self, bd=5, width=40)
+                email_label = tk.Label(self, text="Email")
+                self.email_input = tk.Entry(self, bd=5, width=40)
+
+                if select_what:
+                    self.vorname_input.insert(0, select_what.vorname)
+                    self.nachname_input.insert(0, select_what.name)
+                    self.email_input.insert(0, select_what.email)
+
+                headline.grid(row=0, column=0)
+                self.eb_dropdown.grid(row=0, column=1)
+                vorname_label.grid(row=1, column=0)
+                self.vorname_input.grid(row=1, column=1)
+                nachname_label.grid(row=2, column=0)
+                self.nachname_input.grid(row=2, column=1)
+                email_label.grid(row=3, column=0)
+                self.email_input.grid(row=3, column=1)
+
+            def change_person(self, person):
+                self.vorname_input.delete(0, 'end')
+                self.nachname_input.delete(0, 'end')
+                self.email_input.delete(0, 'end')
+                if person != 'Neue EB' and person != 'Neue PFK':
+                    self.vorname_input.insert(0, person.vorname)
+                    self.nachname_input.insert(0, person.name)
+                    self.email_input.insert(0, person.email)
+
+            def save_person(self, eb_oder_pfk='eb'):
+                if eb_oder_pfk == 'eb':
+                    person = self.asn.eb
+                else:
+                    person = self.asn.pfk
+
+                if self.nachname_input.get() != '' \
+                        or self.vorname_input.get() != '' \
+                        or self.email_input.get() != '':
+
+                    if eb_oder_pfk == 'eb':
+                        abgleich = assistent.get_eb_by_string(self.selected.get())
+                    else:
+                        abgleich = assistent.get_pfk_by_string(self.selected.get())
+
+                    if self.selected.get() == "Neue EB" or self.selected.get == "Neue PFK":
+                        person = EB(name=self.nachname_input.get(),
+                                    vorname=self.vorname_input.get(),
+                                    email=self.email_input.get())
+                    elif abgleich == person:
+                        # aktuelle person bearbeiten
+
+                        person.name = self.nachname_input.get()
+                        person.vorname = self.vorname_input.get()
+                        person.email = self.email_input.get()
+                    else:
+                        person = assistent.get_eb_by_string(self.selected.get())
+
+                    if eb_oder_pfk == 'eb':
+                        self.asn.eb = person
+                    else:
+                        self.asn.pfk = person
+                    if person not in assistent.eb_liste and eb_oder_pfk == 'eb':
+                        assistent.eb_liste.append(person)
+                    elif person not in assistent.pfk_liste and eb_oder_pfk == 'pfk':
+                        assistent.pfk_liste.append(person)
+
+        def __init__(self, parent, kuerzel):
+
             global assistent
             super().__init__(parent)
-            self.asn = asn
-            self.draw()
+            self.parent = parent
+            if kuerzel == 'Neuer ASN':
+                self.asn = ASN('', '', '', '', '', '', 'Berlin')
+            else:
+                self.asn = assistent.get_asn_by_kuerzel(kuerzel)
 
-        def draw(self):
-            for child in self.winfo_children():
-                child.destroy()
-            rowcounter = 0
-            eintrag = tk.Label(self, text='Deine Vorlagen\nfür diesem Einsatz')
-            eintrag.grid(row=rowcounter, column=0)
-            rowcounter += 1
-            for template in self.asn.schicht_templates:
-                text = template['bezeichner'] + ': '
-                text += template['start'].strftime("%H:%M") + ' - '
-                text += template['ende'].strftime("%H:%M")
-                eintrag = tk.Label(self, text=text)
-                eintrag.grid(row=rowcounter, column=0)
-                rowcounter += 1
+            self.stammdatenframe = self.AsnStammdatenForm(self, self.asn)
+            self.stammdatenframe.grid(row=0, column=0, rowspan=2)
+            self.eb_frame = self.EbPfkEditForm(self, self.asn, 'eb')
+            self.eb_frame.grid(row=0, column=1)
 
-    def __init__(self, parent, asn):
-        self.asn = asn
+            # todo fix PFK
+            # self.pfk_frame = self.EbPfkEditForm(self, self.asn, 'pfk')
+            # self.pfk_frame.grid(row=1, column=1)
+
+            self.feste_schichten_frame = self.FesteSchichtForm(self, self.asn)
+            self.feste_schichten_frame.grid(row=2, column=0)
+            self.schicht_templates_frame = self.SchichtTemplateForm(self, self.asn)
+            self.schicht_templates_frame.grid(row=2, column=1)
+
+            save_button = tk.Button(self, text="Daten speichern", command=lambda: self.save_asn_edit_form())
+            exit_button = tk.Button(self, text="Fenster schließen",
+                                    command=parent.destroy)
+            save_button.grid(row=5, column=1)
+            exit_button.grid(row=5, column=0)
+
+        def save_asn_edit_form(self):
+            global assistent
+            asn = self.stammdatenframe.save_stammdaten()
+            self.eb_frame.save_person(eb_oder_pfk='eb')
+            # self.pfk_frame.save_person(eb_oder_pfk='pfk')
+            assistent.asn[asn.kuerzel] = asn
+            alles_speichern()
+            zeichne_fenster_bearbeite_asn()
+
+    def __init__(self, parent):
+        global assistent
         super().__init__(parent)
-        headline = tk.Label(self, text='Schichtvorlagen erstellen/bearbeiten')
-        headline.grid(row=0, column=0, columnspan=2)
-        bezeichner = tk.Label(self, text="Bezeichner (z.B. \"Frühschicht\")")
-        bezeichner.grid(row=1, column=0)
-        self.bezeichner = tk.Entry(self)
-        self.bezeichner.grid(row=1, column=1)
-        von = tk.Label(self, text="Von")
-        von.grid(row=2, column=0)
-        self.startzeit_input = TimePicker(self)
-        self.startzeit_input.grid(row=2, column=1)
-        bis = tk.Label(self, text="bis")
-        bis.grid(row=3, column=0)
-        self.endzeit_input = TimePicker(self)
-        self.endzeit_input.grid(row=3, column=1)
-        self.templateliste = self.TemplateTabelle(self, asn=asn)
-        self.templateliste.grid(row=1, column=3, rowspan=3)
-
-        submit_button = tk.Button(self, text='Schichtvorlage hinzufügen',
-                                  command=self.save_schicht_template)
-        submit_button.grid(row=4, column=1, columnspan=2)
-
-    def save_schicht_template(self):
-        bezeichner = self.bezeichner.get()
-        startzeit_stunde = int(self.startzeit_input.hourstr.get())
-        startzeit_minute = int(self.startzeit_input.minstr.get())
-        endzeit_stunde = int(self.endzeit_input.hourstr.get())
-        endzeit_minute = int(self.endzeit_input.minstr.get())
-        s_feste_schicht = {'bezeichner': bezeichner,
-                           'start': datetime.time(startzeit_stunde, startzeit_minute, 0),
-                           'ende': datetime.time(endzeit_stunde, endzeit_minute, 0)}
-        self.asn.schicht_templates.append(s_feste_schicht)
-        self.templateliste.draw()
-        # zeichne_feste_schichten_form(self)
-
-
-class AsnStammdatenForm(tk.Frame):
-    def __init__(self, parent, asn):
-        self.asn = asn
-        super().__init__(parent)
-        kuerzel_label = tk.Label(self, text="Kürzel")
-        self.kuerzel_input = tk.Entry(self, bd=5, width=40)
-        vorname_label = tk.Label(self, text="Vorname")
-        self.vorname_input = tk.Entry(self, bd=5, width=40)
-        nachname_label = tk.Label(self, text="Nachname")
-        self.nachname_input = tk.Entry(self, bd=5, width=40)
-        strasse_label = tk.Label(self, text="Straße/Hausnummer")
-        self.strasse_input = tk.Entry(self, bd=5, width=40)
-        self.hausnummer_input = tk.Entry(self, bd=5, width=10)
-        plz_label = tk.Label(self, text="Postleitzahl")
-        self.plz_input = tk.Entry(self, bd=5, width=40)
-        stadt_label = tk.Label(self, text="Stadt")
-        self.stadt_input = tk.Entry(self, bd=5, width=40)
+        self.auswahlframe = self.AsnAuswahllisteFrame(self)
+        self.auswahlframe.grid(row=0, column=0)
+        self.editframe = ''
 
 
 def end_of_month(month, year):
@@ -916,6 +1146,18 @@ def neue_schicht():
             form_neuer_asn_stadt_label.grid_remove()
             form_neuer_asn_stadt_input.grid_remove()
 
+        if value != 'Neuer ASN' and value != 'Bitte auswählen':
+            kuerzel = value
+            asn = assistent.get_asn_by_kuerzel(kuerzel)
+            templates = asn.schicht_templates
+            selected_template = tk.StringVar()
+            for template in templates:
+                text = template['bezeichner'] + " von " + template["start"].strftime('%H:%M') \
+                       + " bis " + template["ende"].strftime('%H:%M')
+                label = tk.Radiobutton(form_neue_schicht_templates, text=text,
+                                       variable=selected_template, value=templates[0])
+                label.pack()
+
     def action_save_neue_schicht(undneu=0):
         global assistent
 
@@ -959,6 +1201,7 @@ def neue_schicht():
     form_neue_schicht_headline = tk.Label(fenster_neue_schicht, text="Schichten eintragen")
     form_neue_schicht_startdatum_label = tk.Label(fenster_neue_schicht, text="Datum (Beginn) der Schicht")
     form_neue_schicht_startdatum_input = Calendar(fenster_neue_schicht, date_pattern='MM/dd/yyyy')
+
     form_neue_schicht_startzeit_label = tk.Label(fenster_neue_schicht, text="Startzeit")
     form_neue_schicht_startzeit_input = TimePicker(fenster_neue_schicht)
     form_neue_schicht_endzeit_label = tk.Label(fenster_neue_schicht, text="Schichtende")
@@ -992,6 +1235,9 @@ def neue_schicht():
     variable = tk.StringVar()
     variable.set(option_list[0])
     form_neue_schicht_asn_dropdown = tk.OptionMenu(fenster_neue_schicht, variable, *option_list, command=neuer_asn)
+
+    form_neue_schicht_templates = tk.Frame(fenster_neue_schicht)
+
     # Felder für neuen ASN
     form_neuer_asn_kuerzel_label = tk.Label(fenster_neue_schicht, text="Kürzel")
     form_neuer_asn_kuerzel_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
@@ -1011,6 +1257,13 @@ def neue_schicht():
     form_neue_schicht_ist_pcg = tk.Checkbutton(fenster_neue_schicht, text="PCG")
     form_neue_schicht_ist_rb = tk.Checkbutton(fenster_neue_schicht, text="Kurzfristig (RB/BSD)")
     form_neue_schicht_ist_afg = tk.Checkbutton(fenster_neue_schicht, text="Ausfallgeld")
+
+    form_neue_schicht_alternative_adresse_beginn_label = tk.Label(fenster_neue_schicht,
+                                                                  text="Beginn der Schicht außer Haus (Adresse)")
+    form_neue_schicht_alternative_adresse_beginn_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
+    form_neue_schicht_alternative_adresse_ende_label = tk.Label(fenster_neue_schicht,
+                                                                text="Beginn der Schicht außer Haus (Adresse)")
+    form_neue_schicht_alternative_adresse_ende_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
 
     form_neue_schicht_save_button = tk.Button(fenster_neue_schicht, text="Daten speichern",
                                               command=action_save_neue_schicht)
@@ -1045,10 +1298,16 @@ def neue_schicht():
                     form_neue_schicht_enddatum_label)
     form_neue_schicht_asn_label.grid(row=5, column=0)
     form_neue_schicht_asn_dropdown.grid(row=5, column=1)
+    form_neue_schicht_templates.grid(row=6, column=0, columnspan=2)
     form_neue_schicht_ist_at.grid(row=12, column=0)
     form_neue_schicht_ist_pcg.grid(row=12, column=1)
     form_neue_schicht_ist_rb.grid(row=12, column=2)
     form_neue_schicht_ist_afg.grid(row=12, column=3)
+    form_neue_schicht_alternative_adresse_beginn_label.grid(row=13, column=0)
+    form_neue_schicht_alternative_adresse_beginn_input.grid(row=13, column=1)
+    form_neue_schicht_alternative_adresse_ende_label.grid(row=14, column=0)
+    form_neue_schicht_alternative_adresse_ende_input.grid(row=14, column=1)
+
     form_neue_schicht_save_button.grid(row=15, column=0)
     form_neue_schicht_exit_button.grid(row=15, column=1)
     form_neue_schicht_saveandnew_button.grid(row=15, column=2)
@@ -1742,270 +2001,7 @@ def zeichne_hauptseite():
 
 
 def zeichne_fenster_bearbeite_asn():
-    fenster_edit_asn = tk.Toplevel(fenster)
-
-    def zeichne_asn_auswahl():
-        def choose_asn(event):
-            auswahlframe.listeAusgewaehlt = select_asn.curselection()
-            auswahlframe.itemAusgewaehlt = auswahlframe.listeAusgewaehlt[0]
-            auswahlframe.kuerzelAusgewaehlt = select_asn.get(auswahlframe.itemAusgewaehlt)
-            zeichne_asn_edit_form(auswahlframe.kuerzelAusgewaehlt)
-
-        auswahlframe = tk.Frame(fenster_edit_asn)
-        auswahlframe.grid(row=0, column=0)
-        options = list(assistent.get_all_asn().keys())
-
-        # select_asn = tk.OptionMenu(auswahlframe, variable, *options, command=choose_asn, height=100)
-        select_asn = tk.Listbox(auswahlframe, selectmode='single')
-        select_asn.insert('end', 'Neuer ASN')
-        for val in options:
-            select_asn.insert('end', val)
-        select_asn.bind('<<ListboxSelect>>', choose_asn)
-        yScroll = tk.Scrollbar(master=auswahlframe, orient='vertical')
-        select_asn.config(yscrollcommand=yScroll.set)
-        yScroll.config(command=select_asn.yview)
-
-        select_asn.pack()
-
-    def zeichne_asn_edit_form(kuerzel):
-        def save_asn_edit_form(skuerzel):
-            # Stammdaten speichern
-            vname = form_edit_asn_vorname_input.get()
-            name = form_edit_asn_nachname_input.get()
-            strasse = form_edit_asn_strasse_input.get()
-            hnr = form_edit_asn_hausnummer_input.get()
-            plz = form_edit_asn_plz_input.get()
-            stadt = form_edit_asn_stadt_input.get()
-            neues_kuerzel = form_edit_asn_kuerzel_input.get()
-
-            if skuerzel == 'Neuer ASN':
-                s_asn = ASN(name, vname, neues_kuerzel, strasse, hnr, plz, stadt)
-            else:
-                s_asn = assistent.get_asn_by_kuerzel(skuerzel)
-                s_asn.vorname = vname
-                s_asn.name = name
-                s_asn.strasse = strasse
-                s_asn.hausnummer = hnr
-                s_asn.stadt = stadt
-                s_asn.plz = plz
-            # eb, pfk und büro
-            if form_edit_eb_nachname_input.get() != '' \
-                    or form_edit_eb_vorname_input.get() != '' \
-                    or form_edit_eb_email_input.get() != '':
-                if selected_eb.get() == "Neue EB":
-                    # neue EB
-                    s_asn.eb = EB(name=form_edit_eb_nachname_input.get(),
-                                  vorname=form_edit_eb_vorname_input.get(),
-                                  email=form_edit_eb_email_input.get())
-                elif assistent.get_eb_by_string(selected_eb.get()) == s_asn.eb:
-                    # aktuelle eb bearbeiten
-                    s_asn.eb.name = form_edit_eb_nachname_input.get()
-                    s_asn.eb.vorname = form_edit_eb_vorname_input.get()
-                    s_asn.eb.email = form_edit_eb_email_input.get()
-                else:
-                    # andere eb aus Liste zuweisen
-
-                    s_asn.eb = assistent.get_eb_by_string(selected_eb.get())
-
-                if s_asn.eb not in assistent.eb_liste:
-                    assistent.eb_liste.append(s_asn.eb)
-
-            if form_edit_pfk_nachname_input.get() != '' \
-                    or form_edit_pfk_vorname_input.get() != '' \
-                    or form_edit_pfk_email_input.get() != '':
-                if selected_pfk.get() == "Neue PFK":
-                    # neue PFK
-                    s_asn.pfk = PFK(name=form_edit_pfk_nachname_input.get(),
-                                    vorname=form_edit_pfk_vorname_input.get(),
-                                    email=form_edit_pfk_email_input.get())
-                elif assistent.get_pfk_by_string(selected_pfk.get()) == s_asn.pfk:
-                    # aktuelle PFK verändern
-                    s_asn.pfk.name = form_edit_pfk_nachname_input.get()
-                    s_asn.pfk.vorname = form_edit_pfk_vorname_input.get()
-                    s_asn.pfk.email = form_edit_pfk_email_input.get()
-                else:
-                    # andere pfk aus Liste zuweisen
-                    s_asn.pfk = assistent.get_pfk_by_string(selected_pfk.get())
-
-                if s_asn.pfk not in assistent.eb_liste:
-                    assistent.pfk_liste.append(s_asn.pfk)
-            s_asn.buero = selected_buero.get()
-            alles_speichern()
-            zeichne_fenster_bearbeite_asn()
-
-        def change_eb(eb):
-            form_edit_eb_vorname_input.delete(0, 'end')
-            form_edit_eb_nachname_input.delete(0, 'end')
-            form_edit_eb_email_input.delete(0, 'end')
-            if eb != 'Neue EB':
-                form_edit_eb_vorname_input.insert(0, eb.vorname)
-                form_edit_eb_nachname_input.insert(0, eb.name)
-                form_edit_eb_email_input.insert(0, eb.email)
-
-        def change_pfk(pfk):
-            form_edit_pfk_vorname_input.delete(0, 'end')
-            form_edit_pfk_nachname_input.delete(0, 'end')
-            form_edit_pfk_email_input.delete(0, 'end')
-            if pfk != 'Neue PFK':
-                form_edit_pfk_vorname_input.insert(0, pfk.vorname)
-                form_edit_pfk_nachname_input.insert(0, pfk.name)
-                form_edit_pfk_email_input.insert(0, pfk.email)
-
-        editframe = tk.Frame(fenster_edit_asn)
-        if kuerzel != 'Neuer ASN':
-            asn = assistent.get_asn_by_kuerzel(kuerzel)
-
-        form_edit_asn_kuerzel_label = tk.Label(editframe, text="Kürzel")
-        form_edit_asn_kuerzel_input = tk.Entry(editframe, bd=5, width=40)
-
-        form_edit_asn_vorname_label = tk.Label(editframe, text="Vorname")
-        form_edit_asn_vorname_input = tk.Entry(editframe, bd=5, width=40)
-        form_edit_asn_nachname_label = tk.Label(editframe, text="Nachname")
-        form_edit_asn_nachname_input = tk.Entry(editframe, bd=5, width=40)
-        form_edit_asn_strasse_label = tk.Label(editframe, text="Straße/Hausnummer")
-        form_edit_asn_strasse_input = tk.Entry(editframe, bd=5, width=40)
-        form_edit_asn_hausnummer_input = tk.Entry(editframe, bd=5, width=10)
-        form_edit_asn_plz_label = tk.Label(editframe, text="Postleitzahl")
-        form_edit_asn_plz_input = tk.Entry(editframe, bd=5, width=40)
-        form_edit_asn_stadt_label = tk.Label(editframe, text="Stadt")
-        form_edit_asn_stadt_input = tk.Entry(editframe, bd=5, width=40)
-
-        # eb
-        form_edit_asn_eb_label = tk.Label(editframe, text="Einsatzbegleitung")
-        ebs = assistent.eb_liste
-        option_list = ["Neue EB", *ebs]
-        selected_eb = tk.StringVar()
-        if kuerzel != "Neuer ASN":
-            if asn.eb.name == '' and asn.eb.vorname == '':
-                selected_eb.set("Neue EB")
-            else:
-                selected_eb.set(asn.eb)
-        else:
-            selected_eb.set("Neue EB")
-
-        form_edit_asn_eb_dropdown = tk.OptionMenu(editframe, selected_eb, *option_list, command=change_eb)
-
-        form_edit_eb_vorname_label = tk.Label(editframe, text="Vorname")
-        form_edit_eb_vorname_input = tk.Entry(editframe, bd=5, width=40)
-        form_edit_eb_nachname_label = tk.Label(editframe, text="Nachname")
-        form_edit_eb_nachname_input = tk.Entry(editframe, bd=5, width=40)
-        form_edit_eb_email_label = tk.Label(editframe, text="Email")
-        form_edit_eb_email_input = tk.Entry(editframe, bd=5, width=40)
-
-        # pfk
-        form_edit_asn_pfk_label = tk.Label(editframe, text="Pflegefachkraft")
-        pfks = assistent.pfk_liste
-        option_list = ["Neue PFK", *pfks]
-
-        selected_pfk = tk.StringVar()
-        if kuerzel == "Neue PFK":
-            if asn.pfk.name == '' and asn.pfk.vorname == '':
-                selected_pfk.set("Neue PFK")
-            else:
-                selected_pfk.set(asn.pfk)
-        else:
-            selected_pfk.set("Neue PFK")
-
-        form_edit_asn_pfk_dropdown = tk.OptionMenu(editframe, selected_pfk, *option_list, command=change_pfk)
-
-        form_edit_pfk_vorname_label = tk.Label(editframe, text="Vorname")
-        form_edit_pfk_vorname_input = tk.Entry(editframe, bd=5, width=40)
-        form_edit_pfk_nachname_label = tk.Label(editframe, text="Nachname")
-        form_edit_pfk_nachname_input = tk.Entry(editframe, bd=5, width=40)
-        form_edit_pfk_email_label = tk.Label(editframe, text="Email")
-        form_edit_pfk_email_input = tk.Entry(editframe, bd=5, width=40)
-
-        # Büros
-        form_edit_asn_buero_label = tk.Label(editframe, text="Zuständiges Einsatzbüro")
-        # grundsätzliche Optionen für Dropdown
-
-        # TODO in Klassen überführen
-        option_list = ['Bitte auswählen', 'Nordost', 'West', 'Süd']
-
-        selected_buero = tk.StringVar()
-        selected_buero.set(option_list[0])
-        form_edit_asn_buero_dropdown = tk.OptionMenu(editframe, selected_buero, *option_list)
-
-        form_edit_asn_feste_schichten = FesteSchichtForm(editframe, asn)
-        form_edit_asn_schicht_templates = SchichtTemplateForm(editframe, asn)
-
-        form_edit_asn_save_button = tk.Button(editframe, text="Daten speichern",
-                                              command=lambda: save_asn_edit_form(kuerzel))
-        form_neue_schicht_exit_button = tk.Button(editframe, text="Abbrechen",
-                                                  command=fenster_edit_asn.destroy)
-
-        # befüllen
-        if kuerzel == 'Neuer ASN':
-            form_edit_asn_kuerzel_input.insert(0, '')
-            form_edit_asn_vorname_input.insert(0, '')
-            form_edit_asn_nachname_input.insert(0, '')
-            form_edit_asn_strasse_input.insert(0, '')
-            form_edit_asn_hausnummer_input.insert(0, '')
-            form_edit_asn_plz_input.insert(0, '')
-            form_edit_asn_stadt_input.insert(0, '')
-        else:
-            form_edit_asn_kuerzel_input.insert(0, asn.kuerzel)
-            form_edit_asn_kuerzel_input.config(state='disabled')
-            form_edit_asn_vorname_input.insert(0, asn.vorname)
-            form_edit_asn_nachname_input.insert(0, asn.name)
-            form_edit_asn_strasse_input.insert(0, asn.strasse)
-            form_edit_asn_hausnummer_input.insert(0, asn.hausnummer)
-            form_edit_asn_plz_input.insert(0, asn.plz)
-            form_edit_asn_stadt_input.insert(0, asn.stadt)
-            # eb
-            form_edit_eb_vorname_input.insert(0, asn.eb.vorname)
-            form_edit_eb_nachname_input.insert(0, asn.eb.name)
-            form_edit_eb_email_input.insert(0, asn.eb.email)
-            # pfk
-            form_edit_pfk_vorname_input.insert(0, asn.pfk.vorname)
-            form_edit_pfk_nachname_input.insert(0, asn.pfk.name)
-            form_edit_pfk_email_input.insert(0, asn.pfk.email)
-
-        # positionieren
-        editframe.grid(row=0, column=1)
-        form_edit_asn_kuerzel_label.grid(row=0, column=0)
-        form_edit_asn_kuerzel_input.grid(row=0, column=1)
-        form_edit_asn_vorname_label.grid(row=1, column=0)
-        form_edit_asn_vorname_input.grid(row=1, column=1)
-        form_edit_asn_nachname_label.grid(row=2, column=0)
-        form_edit_asn_nachname_input.grid(row=2, column=1)
-        form_edit_asn_strasse_label.grid(row=3, column=0)
-        form_edit_asn_strasse_input.grid(row=3, column=1)
-        form_edit_asn_hausnummer_input.grid(row=3, column=2)
-        form_edit_asn_plz_label.grid(row=4, column=0)
-        form_edit_asn_plz_input.grid(row=4, column=1)
-        form_edit_asn_stadt_label.grid(row=5, column=0)
-        form_edit_asn_stadt_input.grid(row=5, column=1)
-
-        form_edit_asn_eb_label.grid(row=0, column=4)
-        form_edit_asn_eb_dropdown.grid(row=1, column=4)
-        form_edit_asn_pfk_label.grid(row=5, column=4)
-        form_edit_asn_pfk_dropdown.grid(row=6, column=4)
-
-        form_edit_pfk_vorname_label.grid(row=7, column=4)
-        form_edit_pfk_vorname_input.grid(row=7, column=5)
-        form_edit_pfk_nachname_label.grid(row=8, column=4)
-        form_edit_pfk_nachname_input.grid(row=8, column=5)
-        form_edit_pfk_email_label.grid(row=9, column=4)
-        form_edit_pfk_email_input.grid(row=9, column=5)
-
-        form_edit_eb_vorname_label.grid(row=2, column=4)
-        form_edit_eb_vorname_input.grid(row=2, column=5)
-        form_edit_eb_nachname_label.grid(row=3, column=4)
-        form_edit_eb_nachname_input.grid(row=3, column=5)
-        form_edit_eb_email_label.grid(row=4, column=4)
-        form_edit_eb_email_input.grid(row=4, column=5)
-
-        form_edit_asn_buero_label.grid(row=7, column=0)
-        form_edit_asn_buero_dropdown.grid(row=7, column=1)
-
-        form_edit_asn_feste_schichten.grid(row=10, column=0, columnspan=2)
-        form_edit_asn_schicht_templates.grid(row=10, column=4, columnspan=2)
-
-        form_edit_asn_save_button.grid(row=15, column=0, columnspan=2)
-        form_neue_schicht_exit_button.grid(row=15, column=3, columnspan=2)
-
-    zeichne_asn_auswahl()
+    FensterEditAsn(fenster)
 
 
 assistent = AS()
