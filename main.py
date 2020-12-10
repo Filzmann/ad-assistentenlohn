@@ -612,7 +612,7 @@ class LohnTabelle:
             return 6
 
 
-class FensterEditAsn(tk.Toplevel):
+class FensterEditAsn(tk.Toplevel): 
     class AsnAuswahllisteFrame(tk.Frame):
         def __init__(self, parent):
             super().__init__(parent)
@@ -991,6 +991,41 @@ class FensterEditAsn(tk.Toplevel):
         self.editframe = ''
 
 
+# TODO über allgemeine Klasse (siehe edit ASN) laufen lassen
+class NeuerAsnInSchicht(tk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+        # Felder für neuen ASN
+        form_neuer_asn_kuerzel_label = tk.Label(self, text="Kürzel")
+        form_neuer_asn_kuerzel_input = tk.Entry(self, bd=5, width=40)
+        form_neuer_asn_vorname_label = tk.Label(self, text="Vorname")
+        form_neuer_asn_vorname_input = tk.Entry(self, bd=5, width=40)
+        form_neuer_asn_nachname_label = tk.Label(self, text="Nachname")
+        form_neuer_asn_nachname_input = tk.Entry(self, bd=5, width=40)
+        form_neuer_asn_strasse_label = tk.Label(self, text="Straße/Hausnummer")
+        form_neuer_asn_strasse_input = tk.Entry(self, bd=5, width=40)
+        form_neuer_asn_hausnummer_input = tk.Entry(self, bd=5, width=10)
+        form_neuer_asn_plz_label = tk.Label(self, text="Postleitzahl")
+        form_neuer_asn_plz_input = tk.Entry(self, bd=5, width=40)
+        form_neuer_asn_stadt_label = tk.Label(self, text="Stadt")
+        form_neuer_asn_stadt_input = tk.Entry(self, bd=5, width=40)
+
+        form_neuer_asn_kuerzel_label.grid(row=0, column=0)
+        form_neuer_asn_kuerzel_input.grid(row=0, column=1)
+        form_neuer_asn_vorname_label.grid(row=1, column=0)
+        form_neuer_asn_vorname_input.grid(row=1, column=1)
+        form_neuer_asn_nachname_label.grid(row=2, column=0)
+        form_neuer_asn_nachname_input.grid(row=2, column=1)
+        form_neuer_asn_strasse_label.grid(row=3, column=0)
+        form_neuer_asn_strasse_input.grid(row=3, column=1)
+        form_neuer_asn_hausnummer_input.grid(row=3, column=2)
+        form_neuer_asn_plz_label.grid(row=4, column=0)
+        form_neuer_asn_plz_input.grid(row=4, column=1)
+        form_neuer_asn_stadt_label.grid(row=5, column=0)
+        form_neuer_asn_stadt_input.grid(row=5, column=1)
+
+
 def end_of_month(month, year):
     if month == 12:
         month = 1
@@ -1118,33 +1153,9 @@ def neue_schicht():
 
     def neuer_asn(value):
         if value == "Neuer ASN":
-            form_neuer_asn_kuerzel_label.grid(row=6, column=0)
-            form_neuer_asn_kuerzel_input.grid(row=6, column=1)
-            form_neuer_asn_vorname_label.grid(row=7, column=0)
-            form_neuer_asn_vorname_input.grid(row=7, column=1)
-            form_neuer_asn_nachname_label.grid(row=8, column=0)
-            form_neuer_asn_nachname_input.grid(row=8, column=1)
-            form_neuer_asn_strasse_label.grid(row=9, column=0)
-            form_neuer_asn_strasse_input.grid(row=9, column=1)
-            form_neuer_asn_hausnummer_input.grid(row=9, column=2)
-            form_neuer_asn_plz_label.grid(row=10, column=0)
-            form_neuer_asn_plz_input.grid(row=10, column=1)
-            form_neuer_asn_stadt_label.grid(row=11, column=0)
-            form_neuer_asn_stadt_input.grid(row=11, column=1)
+            form_neuer_asn_fields.grid(row=6, column=0, columnspan=2)
         else:
-            form_neuer_asn_kuerzel_label.grid_remove()
-            form_neuer_asn_kuerzel_input.grid_remove()
-            form_neuer_asn_vorname_label.grid_remove()
-            form_neuer_asn_vorname_input.grid_remove()
-            form_neuer_asn_nachname_label.grid_remove()
-            form_neuer_asn_nachname_input.grid_remove()
-            form_neuer_asn_strasse_label.grid_remove()
-            form_neuer_asn_strasse_input.grid_remove()
-            form_neuer_asn_hausnummer_input.grid_remove()
-            form_neuer_asn_plz_label.grid_remove()
-            form_neuer_asn_plz_input.grid_remove()
-            form_neuer_asn_stadt_label.grid_remove()
-            form_neuer_asn_stadt_input.grid_remove()
+            form_neuer_asn_fields.grid_remove()
 
         if value != 'Neuer ASN' and value != 'Bitte auswählen':
             kuerzel = value
@@ -1235,29 +1246,12 @@ def neue_schicht():
     variable = tk.StringVar()
     variable.set(option_list[0])
     form_neue_schicht_asn_dropdown = tk.OptionMenu(fenster_neue_schicht, variable, *option_list, command=neuer_asn)
-
-    form_neue_schicht_templates = tk.Frame(fenster_neue_schicht)
-
-    # Felder für neuen ASN
-    form_neuer_asn_kuerzel_label = tk.Label(fenster_neue_schicht, text="Kürzel")
-    form_neuer_asn_kuerzel_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
-    form_neuer_asn_vorname_label = tk.Label(fenster_neue_schicht, text="Vorname")
-    form_neuer_asn_vorname_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
-    form_neuer_asn_nachname_label = tk.Label(fenster_neue_schicht, text="Nachname")
-    form_neuer_asn_nachname_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
-    form_neuer_asn_strasse_label = tk.Label(fenster_neue_schicht, text="Straße/Hausnummer")
-    form_neuer_asn_strasse_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
-    form_neuer_asn_hausnummer_input = tk.Entry(fenster_neue_schicht, bd=5, width=10)
-    form_neuer_asn_plz_label = tk.Label(fenster_neue_schicht, text="Postleitzahl")
-    form_neuer_asn_plz_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
-    form_neuer_asn_stadt_label = tk.Label(fenster_neue_schicht, text="Stadt")
-    form_neuer_asn_stadt_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
-
+    form_neue_schicht_templates = NeuerAsnInSchicht(fenster_neue_schicht)
+    form_neuer_asn_fields = tk.Frame(fenster_neue_schicht)
     form_neue_schicht_ist_at = tk.Checkbutton(fenster_neue_schicht, text="AT")
     form_neue_schicht_ist_pcg = tk.Checkbutton(fenster_neue_schicht, text="PCG")
     form_neue_schicht_ist_rb = tk.Checkbutton(fenster_neue_schicht, text="Kurzfristig (RB/BSD)")
     form_neue_schicht_ist_afg = tk.Checkbutton(fenster_neue_schicht, text="Ausfallgeld")
-
     form_neue_schicht_alternative_adresse_beginn_label = tk.Label(fenster_neue_schicht,
                                                                   text="Beginn der Schicht außer Haus (Adresse)")
     form_neue_schicht_alternative_adresse_beginn_input = tk.Entry(fenster_neue_schicht, bd=5, width=40)
@@ -1298,6 +1292,7 @@ def neue_schicht():
                     form_neue_schicht_enddatum_label)
     form_neue_schicht_asn_label.grid(row=5, column=0)
     form_neue_schicht_asn_dropdown.grid(row=5, column=1)
+    # form_neuer_asn_fields.grid(row=6, column=1)
     form_neue_schicht_templates.grid(row=6, column=0, columnspan=2)
     form_neue_schicht_ist_at.grid(row=12, column=0)
     form_neue_schicht_ist_pcg.grid(row=12, column=1)
