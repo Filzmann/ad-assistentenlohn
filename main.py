@@ -128,6 +128,12 @@ class AS(Person):
     def get_asn_by_kuerzel(self, kuerzel):
         return self.asn[kuerzel]
 
+    def get_adresse_by_kuerzel(self, kuerzel):
+        for adresse in self.adressen:
+            if adresse.kuerzel == kuerzel:
+                return adresse
+        return []
+
     def get_all_schichten(self, start=0, end=0):
         """ wenn keine datetimes für start und end angegeben sind, werden alle Schichten ausgegeben,
          ansonsten alle schichten, die größer als start und <= end sind """
@@ -215,6 +221,12 @@ class ASN(Person):
 
     def get_kuerzel(self):
         return self.kuerzel
+
+    def get_adresse_by_kuerzel(self, kuerzel):
+        for adresse in self.adressen:
+            if adresse.kuerzel == kuerzel:
+                return adresse
+        return []
 
 
 class EB(Person):
@@ -815,16 +827,16 @@ class FensterEditAsn(tk.Toplevel):
                 self.selected_buero = tk.StringVar()
                 self.selected_buero.set(option_list[0])
                 self.buero_dropdown = tk.OptionMenu(self, self.selected_buero, *option_list)
-
-                self.kuerzel_input.insert(0, self.asn.kuerzel)
-                if self.asn.kuerzel != '':
-                    self.kuerzel_input.config(state='disabled')
-                self.vorname_input.insert(0, self.asn.vorname)
-                self.nachname_input.insert(0, self.asn.name)
-                self.strasse_input.insert(0, self.asn.strasse)
-                self.hausnummer_input.insert(0, self.asn.hausnummer)
-                self.plz_input.insert(0, self.asn.plz)
-                self.stadt_input.insert(0, self.asn.stadt)
+                if self.asn != 'Neuer ASN':
+                    self.kuerzel_input.insert(0, self.asn.kuerzel)
+                    if self.asn.kuerzel != '':
+                        self.kuerzel_input.config(state='disabled')
+                    self.vorname_input.insert(0, self.asn.vorname)
+                    self.nachname_input.insert(0, self.asn.name)
+                    self.strasse_input.insert(0, self.asn.strasse)
+                    self.hausnummer_input.insert(0, self.asn.hausnummer)
+                    self.plz_input.insert(0, self.asn.plz)
+                    self.stadt_input.insert(0, self.asn.stadt)
 
                 # positionieren
                 kuerzel_label.grid(row=0, column=0)
@@ -842,6 +854,12 @@ class FensterEditAsn(tk.Toplevel):
                 self.stadt_input.grid(row=5, column=1, columnspan=2)
                 buero_label.grid(row=6, column=0)
                 self.buero_dropdown.grid(row=6, column=1)
+
+            def show(self):
+                self.grid()
+
+            def hide(self):
+                self.grid_remove()
 
             def save_stammdaten(self):
                 # Stammdaten speichern
@@ -1018,94 +1036,400 @@ class FensterEditAsn(tk.Toplevel):
         self.editframe = ''
 
 
-# TODO über allgemeine Klasse (siehe edit ASN) laufen lassen
-class NeuerAsnInSchicht(tk.Frame):
+class FensterNeueSchicht(tk.Toplevel):
+    class AsnFrame(tk.Frame):
+        class NeuerAsnInSchicht(tk.Frame):
+            def __init__(self, parent):
+                super().__init__(parent)
+                self.parent = parent
+                # Felder für neuen ASN
+                kuerzel_label = tk.Label(self, text="Kürzel")
+                kuerzel_input = tk.Entry(self, bd=5, width=40)
+                vorname_label = tk.Label(self, text="Vorname")
+                vorname_input = tk.Entry(self, bd=5, width=40)
+                nachname_label = tk.Label(self, text="Nachname")
+                nachname_input = tk.Entry(self, bd=5, width=40)
+                strasse_label = tk.Label(self, text="Straße/Hausnummer")
+                strasse_input = tk.Entry(self, bd=5, width=29)
+                hausnummer_input = tk.Entry(self, bd=5, width=9)
+                plz_label = tk.Label(self, text="Postleitzahl")
+                plz_input = tk.Entry(self, bd=5, width=40)
+                stadt_label = tk.Label(self, text="Stadt")
+                stadt_input = tk.Entry(self, bd=5, width=40)
+
+                kuerzel_label.grid(row=0, column=0)
+                kuerzel_input.grid(row=0, column=1, columnspan=2)
+                vorname_label.grid(row=1, column=0)
+                vorname_input.grid(row=1, column=1, columnspan=2)
+                nachname_label.grid(row=2, column=0)
+                nachname_input.grid(row=2, column=1, columnspan=2)
+                strasse_label.grid(row=3, column=0)
+                strasse_input.grid(row=3, column=1)
+                hausnummer_input.grid(row=3, column=2)
+                plz_label.grid(row=4, column=0)
+                plz_input.grid(row=4, column=1, columnspan=2)
+                stadt_label.grid(row=5, column=0)
+                stadt_input.grid(row=5, column=1, columnspan=2)
+
+        class SchichtTemplates(tk.Frame):
+            def __init__(self, parent):
+                super().__init__(parent)
+                self.parent = parent
+                if parent.parent.asn_frame.selected_asn.get() != 'Bitte auswählen':
+                    kuerzel = parent.parent.asn_frame.selected_asn.get()
+                    asn = assistent.get_asn_by_kuerzel(kuerzel)
+                    self.templates = asn.schicht_templates
+                    self.selected_template = tk.IntVar()
+                    self.selected_template.set(0)
+                    self.change_template()
+                    col = 0
+                    row = 0
+                    counter = 0
+                    for template in self.templates:
+                        text = template['bezeichner'] + " von " + template["start"].strftime('%H:%M') \
+                               + " bis " + template["ende"].strftime('%H:%M')
+                        button = tk.Radiobutton(self.templates, text=text,
+                                                variable=self.selected_template, value=counter,
+                                                command=lambda: self.change_template())
+                        button.grid(row=row, column=col)
+                        counter += 1
+                        col += 1
+                        if col == 4:
+                            col = 0
+                            row += 1
+
+            def change_template(self):
+                pass
+
+            def show(self):
+                self.grid()
+
+            def hide(self):
+                self.grid_remove()
+
+        def __init__(self, parent):
+            super().__init__(parent)
+            self.parent = parent
+            self.asn_label = tk.Label(self, text="Assistenznehmer")
+            # grundsätzliche Optionen für Dropdown
+            option_list = ["Bitte auswählen", "Neuer ASN", *assistent.get_all_asn()]
+            self.selected_asn = tk.StringVar()
+            self.selected_asn.set(option_list[0])
+            self.asn_dropdown = tk.OptionMenu(self, self.selected_asn, *option_list,
+                                              command=self.change_asn)
+            # self.neuer_asn = self.NeuerAsnInSchicht(self)
+            self.neuer_asn = FensterEditAsn.AsnEditFrame.AsnStammdatenForm(self, "Neuer ASN")
+
+            # positionieren
+            self.asn_label.grid(row=1, column=0)
+            self.asn_dropdown.grid(row=1, column=1)
+            self.neuer_asn.grid(row=2, column=0)
+            self.neuer_asn.hide()
+
+        def change_asn(self, selected_asn):
+
+            if selected_asn == "Neuer ASN":
+                self.neuer_asn.show()
+                self.parent.schicht_calendar_frame.templates.hide()
+                self.parent.save_button.grid()
+                self.parent.saveandnew_button.grid()
+            elif selected_asn == "Bitte auswählen":
+                self.neuer_asn.hide()
+                self.parent.schicht_calendar_frame.templates.hide()
+                self.parent.save_button.grid_remove()
+                self.parent.saveandnew_button.grid_remove()
+            else:
+                self.parent.asn = assistent.get_asn_by_kuerzel(selected_asn)
+                self.neuer_asn.hide()
+                self.parent.schicht_calendar_frame.templates.show()
+                self.parent.save_button.grid()
+                self.parent.saveandnew_button.grid()
+
+                # Schalter für Schicht ausser Haus
+
+        def get_data(self):
+            if self.selected_asn.get() == "Neuer ASN":
+                asn = self.neuer_asn.save_stammdaten()
+                assistent.asn_dazu(asn)
+            else:
+                asn = assistent.get_asn_by_kuerzel(self.selected_asn.get())
+            return asn
+
+    class SchichtCalendarFrame(tk.Frame):
+        def __init__(self, parent):
+            super().__init__(parent)
+            self.parent = parent
+            self.startdatum_label = tk.Label(self, text="Datum (Beginn) der Schicht")
+            self.startdatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
+
+            self.startzeit_label = tk.Label(self, text="Startzeit")
+            self.startzeit_input = TimePicker(self)
+            self.endzeit_label = tk.Label(self, text="Schichtende")
+            self.endzeit_input = TimePicker(self)
+            self.enddatum_label = tk.Label(self, text="Datum Ende der Schicht")
+            self.enddatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
+            # TODO Vorauswahl konfigurieren lassen
+            self.tag_nacht_reise_var = tk.IntVar()
+            self.tag_nacht_reise_var.set(1)
+            self.anderes_enddatum_label = tk.Label(self,
+                                                   text="Tagschicht, Nachtschicht\noder mehrtägig?")
+            self.anderes_enddatum_input_radio1 = \
+                tk.Radiobutton(self, text="Tagschicht", padx=20,
+                               variable=self.tag_nacht_reise_var, value=1,
+                               command=lambda: self.tag_nacht_reise(1, self.enddatum_input,
+                                                                    self.enddatum_label))
+            self.anderes_enddatum_input_radio2 = \
+                tk.Radiobutton(self, text="Nachtschicht\n(Ende der Schicht ist am Folgetag)", padx=20,
+                               variable=self.tag_nacht_reise_var, value=2,
+                               command=lambda: self.tag_nacht_reise(2, self.enddatum_input,
+                                                                    self.enddatum_label))
+            self.anderes_enddatum_input_radio3 = \
+                tk.Radiobutton(self, text="Mehrtägig/Reisebegleitung", padx=20,
+                               variable=self.tag_nacht_reise_var, value=3,
+                               command=lambda: self.tag_nacht_reise(3, self.enddatum_input,
+                                                                    self.enddatum_label))
+
+            self.templates = parent.asn_frame.SchichtTemplates(self)
+
+            # positionieren
+            self.startdatum_label.grid(row=0, column=0, columnspan=2, rowspan=3)
+            self.startdatum_input.grid(row=1, column=0, columnspan=2, rowspan=3)
+            self.enddatum_label.grid(row=0, column=2, columnspan=2, rowspan=3)
+            self.enddatum_input.grid(row=1, column=2, columnspan=2, rowspan=3)
+            self.startzeit_label.grid(row=4, column=0)
+            self.startzeit_input.grid(row=4, column=1)
+            self.endzeit_label.grid(row=4, column=2)
+            self.endzeit_input.grid(row=4, column=3)
+            # TODO prüfen, wenn endzeit < startzeit nachtschicht im Radiobutton markieren
+            self.anderes_enddatum_label.grid(row=0, column=2)
+            # TODO zusätzliche Felder für Reisen
+
+            self.anderes_enddatum_input_radio1.grid(row=1, column=4)
+            self.anderes_enddatum_input_radio2.grid(row=2, column=4)
+            self.anderes_enddatum_input_radio3.grid(row=3, column=4)
+
+            self.templates.grid(row=5, column=0, columnspan=4)
+            self.templates.hide()
+
+            # TODO HACK besser machen? zwingt enddatum auf invisible
+            self.tag_nacht_reise(1, self.enddatum_input,
+                                 self.enddatum_label)
+
+        def tag_nacht_reise(self, value, label, button):
+            if value == 3:
+                label.grid()
+                button.grid()
+            elif value == 1 or value == 2:
+                label.grid_remove()
+                button.grid_remove()
+
+        def get_data(self):
+            startdatum = self.startdatum_input.get_date().split('/')
+            beginn = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]),
+                                       int(self.startzeit_input.hourstr.get()),
+                                       int(self.startzeit_input.minstr.get()))
+
+            # ende der Schicht bestimmen. Fälle: Tagschicht, Nachtschicht, Reise
+            # todo minstring darf nicht mehr als 59 sein. kann durch ungeduldiges tippen passieren entry validieren
+            if self.tag_nacht_reise_var.get() == 1:  # Tagschicht
+                ende = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]),
+                                         int(self.endzeit_input.hourstr.get()),
+                                         int(self.endzeit_input.minstr.get()))
+            elif self.tag_nacht_reise_var.get() == 2:  # Nachtschicht
+                ende = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]) + 1,
+                                         int(self.endzeit_input.hourstr.get()),
+                                         int(self.endzeit_input.minstr.get()))
+            else:  # Reisebegleitung
+                enddatum = self.enddatum_input.get_date().split('/')
+                ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]),
+                                         int(self.endzeit_input.hourstr.get()),
+                                         int(self.endzeit_input.minstr.get()))
+
+            return {'beginn': beginn, 'ende': ende}
+
+    class SchichtAdditionalOptions(tk.Frame):
+        class SchichtAusserHaus(tk.Frame):
+            class AdressSelectOrInput(tk.Frame):
+                def __init__(self, parent, master):
+                    super().__init__(parent)
+                    self.parent = parent
+                    self.auswahl = []
+                    self.auswahl.append('Keine abweichende Adresse')
+                    self.auswahl.append('Neue Adresse eintragen')
+                    standardadressen = assistent.adressen
+                    for adresse in standardadressen:
+                        self.auswahl.append(adresse)
+                    self.asn = ''
+                    kuerzel = master.get()
+                    if kuerzel != "Neuer ASN" and kuerzel != "Bitte auswählen":
+                        self.asn = assistent.get_asn_by_kuerzel(kuerzel)
+                        if master.get() != assistent:
+                            if self.asn.adressen:
+                                self.auswahl.append(*master.adressen)
+                    self.selected = tk.StringVar()
+                    self.selected.set(self.auswahl[0])
+                    dropdown = tk.OptionMenu(self, self.selected, *self.auswahl, command=self.change_dropdown)
+                    dropdown.grid(row=0, column=0)
+
+                    self.neue_adresse = tk.Frame(self)
+
+                    self.kuerzel_label = tk.Label(self.neue_adresse, text="Bezeichner")
+                    self.kuerzel_input = tk.Entry(self.neue_adresse, bd=5, width=40)
+                    self.strasse_label = tk.Label(self.neue_adresse, text="Straße/Hausnummer")
+                    self.strasse_input = tk.Entry(self.neue_adresse, bd=5, width=29)
+                    self.hausnummer_input = tk.Entry(self.neue_adresse, bd=5, width=9)
+                    self.plz_label = tk.Label(self.neue_adresse, text="Postleitzahl")
+                    self.plz_input = tk.Entry(self.neue_adresse, bd=5, width=40)
+                    self.stadt_label = tk.Label(self.neue_adresse, text="Stadt")
+                    self.stadt_input = tk.Entry(self.neue_adresse, bd=5, width=40)
+
+                    self.kuerzel_label.grid(row=0, column=0)
+                    self.kuerzel_input.grid(row=0, column=1, columnspan=2)
+                    self.strasse_label.grid(row=1, column=0)
+                    self.strasse_input.grid(row=1, column=1)
+                    self.hausnummer_input.grid(row=1, column=2)
+                    self.plz_label.grid(row=2, column=0)
+                    self.plz_input.grid(row=2, column=1, columnspan=2)
+                    self.stadt_label.grid(row=3, column=0)
+                    self.stadt_input.grid(row=3, column=1, columnspan=2)
+                    self.neue_adresse.grid(row=1, column=0)
+                    self.neue_adresse.grid_remove()
+
+                def change_dropdown(self, selected):
+                    if selected == 'Neue Adresse eintragen':
+                        self.neue_adresse.grid()
+                    else:
+                        self.neue_adresse.grid_remove()
+
+                def get_data(self):
+                    if self.selected.get() == "Keine Abweichende Adresse":
+                        return []
+                    elif self.selected.get() == "Neue Adresse eintragen":
+                        adresse = Adresse(kuerzel=self.kuerzel_input.get(),
+                                          strasse=self.strasse_input.get(),
+                                          hnr=self.hausnummer_input.get(),
+                                          plz=self.plz_input.get(),
+                                          stadt=self.stadt_input.get())
+                        self.asn.adressen.append(adresse)
+                        return adresse
+                    else:
+                        asn_adresse = self.parent.parent.parent.asn.get_adresse_by_kuerzel(self.selected.get())
+                        if asn_adresse:
+                            return asn_adresse
+                        else:
+                            as_adresse = assistent.get_adresse_by_kuerzel(self.selected.get())
+                            return as_adresse
+
+            def __init__(self, parent):
+                super().__init__(parent)
+                self.parent = parent
+                master = self.parent.parent.asn_frame.selected_asn
+                self.alternative_adresse_beginn_label = tk.Label(self,
+                                                                 text="Beginn der Schicht außer Haus")
+                self.alternative_adresse_beginn_input = self.AdressSelectOrInput(self, master)
+                self.alternative_adresse_ende_label = tk.Label(self,
+                                                               text="Ende der Schicht außer Haus")
+                self.alternative_adresse_ende_input = self.AdressSelectOrInput(self, master)
+
+                self.alternative_adresse_beginn_label.grid(row=0, column=0)
+                self.alternative_adresse_beginn_input.grid(row=0, column=1)
+                self.alternative_adresse_ende_label.grid(row=1, column=0)
+                self.alternative_adresse_ende_input.grid(row=1, column=1)
+
+            def get_data(self):
+                return {'alt_adresse_beginn': self.alternative_adresse_beginn_input.get_data(),
+                        'alt_adresse_ende': self.alternative_adresse_ende_input.get_data()}
+
+        def __init__(self, parent):
+            super().__init__(parent)
+            self.parent = parent
+
+            self.ist_at = tk.IntVar()
+            self.ist_pcg = tk.IntVar()
+            self.ist_rb = tk.IntVar()
+            self.ist_afg = tk.IntVar()
+            self.ist_at_button = tk.Checkbutton(self, text="AT", variable=self.ist_at, onvalue=1, offvalue=0)
+            self.ist_pcg_button = tk.Checkbutton(self, text="PCG", variable=self.ist_pcg, onvalue=1, offvalue=0)
+            self.ist_rb_button = tk.Checkbutton(self, text="Kurzfristig (RB/BSD)", variable=self.ist_rb, onvalue=1,
+                                                offvalue=0)
+            self.ist_afg_button = tk.Checkbutton(self, text="Ausfallgeld", variable=self.ist_afg, onvalue=1, offvalue=0)
+            self.ausser_haus = self.SchichtAusserHaus(self)
+
+            # positionieren
+            self.ist_at_button.grid(row=0, column=0)
+            self.ist_pcg_button.grid(row=0, column=1)
+            self.ist_rb_button.grid(row=0, column=2)
+            self.ist_afg_button.grid(row=0, column=3)
+
+            self.ausser_haus.grid(row=1, column=0, columnspan=4)
+
+        def get_data(self):
+            return {"is_at": self.ist_at.get(),
+                    "is_pcg": self.ist_pcg.get(),
+                    "is_rb": self.ist_rb.get(),
+                    "is_afg": self.ist_afg.get(),
+                    "alternative adresse start": self.ausser_haus.get_data()["alt_adresse_beginn"],
+                    "alternative adresse ende": self.ausser_haus.get_data()["alt_adresse_ende"]}
+
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
-        # Felder für neuen ASN
-        kuerzel_label = tk.Label(self, text="Kürzel")
-        kuerzel_input = tk.Entry(self, bd=5, width=40)
-        vorname_label = tk.Label(self, text="Vorname")
-        vorname_input = tk.Entry(self, bd=5, width=40)
-        nachname_label = tk.Label(self, text="Nachname")
-        nachname_input = tk.Entry(self, bd=5, width=40)
-        strasse_label = tk.Label(self, text="Straße/Hausnummer")
-        strasse_input = tk.Entry(self, bd=5, width=29)
-        hausnummer_input = tk.Entry(self, bd=5, width=9)
-        plz_label = tk.Label(self, text="Postleitzahl")
-        plz_input = tk.Entry(self, bd=5, width=40)
-        stadt_label = tk.Label(self, text="Stadt")
-        stadt_input = tk.Entry(self, bd=5, width=40)
+        self.asn = ''
+        self.asn_frame = self.AsnFrame(self)
+        self.schicht_calendar_frame = self.SchichtCalendarFrame(self)
+        self.schicht_add_options = self.SchichtAdditionalOptions(self)
 
-        kuerzel_label.grid(row=0, column=0)
-        kuerzel_input.grid(row=0, column=1, columnspan=2)
-        vorname_label.grid(row=1, column=0)
-        vorname_input.grid(row=1, column=1, columnspan=2)
-        nachname_label.grid(row=2, column=0)
-        nachname_input.grid(row=2, column=1, columnspan=2)
-        strasse_label.grid(row=3, column=0)
-        strasse_input.grid(row=3, column=1)
-        hausnummer_input.grid(row=3, column=2)
-        plz_label.grid(row=4, column=0)
-        plz_input.grid(row=4, column=1, columnspan=2)
-        stadt_label.grid(row=5, column=0)
-        stadt_input.grid(row=5, column=1, columnspan=2)
+        # positionieren
+        self.asn_frame.grid(row=0, column=0, columnspan=3)
+        self.schicht_calendar_frame.grid(row=1, column=0, columnspan=3)
+        self.schicht_add_options.grid(row=2, column=0, columnspan=3)
+
+        self.save_button = tk.Button(self, text="Daten speichern",
+                                     command=self.action_save_neue_schicht)
+        self.exit_button = tk.Button(self, text="Abbrechen",
+                                     command=self.destroy)
+        self.saveandnew_button = tk.Button(self, text="Daten speichern und neu",
+                                           command=lambda: self.action_save_neue_schicht(undneu=1))
+
+        # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
+        # wird erst bei "Neuer AS" zugeschaltet
+        # self.templates.grid(row=2, column=0, columnspan=4)
+
+        self.save_button.grid(row=3, column=0)
+        self.exit_button.grid(row=3, column=1)
+        self.saveandnew_button.grid(row=3, column=2)
+        self.saveandnew_button.grid_remove()
+        self.save_button.grid_remove()
+
+    def action_save_neue_schicht(self, undneu=0):
+        global assistent
+
+        calendar = self.schicht_calendar_frame.get_data()
+        beginn = calendar["beginn"]
+        ende = calendar["ende"]
+        asn = self.asn_frame.get_data()
+        additional = self.schicht_add_options.get_data()
+
+        # Schicht erstellen und zum Assistenten stopfen
+        schicht = Schicht(beginn, ende, asn)
+        schicht.ist_pcg = additional["is_pcg"]
+        schicht.ist_assistententreffen = additional["is_at"]
+        schicht.ist_ausfallgeld = additional["is_afg"]
+        schicht.ist_kurzfristig = additional["is_rb"]
+
+        if additional["alternative adresse start"]:
+            schicht.beginn_andere_adresse = additional["alternative adresse start"]
+        if additional["alternative adresse ende"]:
+            schicht.beginn_andere_adresse = additional["alternative adresse ende"]
+
+        assistent.schicht_dazu(schicht)
+        alles_speichern()
+        self.destroy()
+        if undneu == 1:
+            neue_schicht()
 
 
-class AdressSelectOrInput(tk.Frame):
-    def __init__(self, parent, master):
-        super().__init__(parent)
-        self.parent = parent
-        self.auswahl = []
-        self.auswahl.append('Keine abweichende Adresse')
-        self.auswahl.append('Neue Adresse eintragen')
-        standardadressen = assistent.adressen
-        for adresse in standardadressen:
-            self.auswahl.append(adresse)
-
-        kuerzel = master.get()
-        asn = assistent.get_asn_by_kuerzel(kuerzel)
-        if master.get() != assistent:
-            if asn.adressen:
-                self.auswahl.append(*master.adressen)
-        selected = tk.StringVar()
-        selected.set(self.auswahl[0])
-        dropdown = tk.OptionMenu(self, selected, *self.auswahl, command=self.change_dropdown)
-        dropdown.grid(row=0, column=0)
-
-        self.kuerzel_label = tk.Label(self, text="Bezeichner")
-        self.kuerzel_input = tk.Entry(self, bd=5, width=40)
-        self.strasse_label = tk.Label(self, text="Straße/Hausnummer")
-        self.strasse_input = tk.Entry(self, bd=5, width=29)
-        self.hausnummer_input = tk.Entry(self, bd=5, width=9)
-        self.plz_label = tk.Label(self, text="Postleitzahl")
-        self.plz_input = tk.Entry(self, bd=5, width=40)
-        self.stadt_label = tk.Label(self, text="Stadt")
-        self.stadt_input = tk.Entry(self, bd=5, width=40)
-
-    def change_dropdown(self, selected):
-        if selected.get() == 'Neue Adresse eintragen':
-            self.kuerzel_label.grid(row=1, column=0)
-            self.kuerzel_input.grid(row=1, column=1, columnspan=2)
-            self.strasse_label.grid(row=2, column=0)
-            self.strasse_input.grid(row=2, column=1)
-            self.hausnummer_input.grid(row=2, column=2)
-            self.plz_label.grid(row=3, column=0)
-            self.plz_input.grid(row=3, column=1, columnspan=2)
-            self.stadt_label.grid(row=4, column=0)
-            self.stadt_input.grid(row=4, column=1, columnspan=2)
-        else:
-            self.kuerzel_label.grid_remove()
-            self.strasse_label.grid_remove()
-            self.kuerzel_input.grid_remove()
-            self.strasse_input.grid_remove()
-            self.hausnummer_input.grid_remove()
-            self.plz_label.grid_remove()
-            self.plz_input.grid_remove()
-            self.stadt_label.grid_remove()
-            self.stadt_input.grid_remove()
-
+# TODO über allgemeine Klasse (siehe edit ASN) laufen lassen
 
 def end_of_month(month, year):
     if month == 12:
@@ -1223,222 +1547,7 @@ def neuer_as():
 
 
 def neue_schicht():
-    # TODO allgemeine show-hide funktion
-    def tag_nacht_reise(value, label, button):
-        if value == 3:
-            label.grid()
-            button.grid()
-        elif value == 1 or value == 2:
-            label.grid_remove()
-            button.grid_remove()
-
-    def change_asn(value):
-        if value == "Neuer ASN":
-            form_neue_schicht_neuerAsn.grid(row=2, column=0, columnspan=2)
-            form_neue_schicht_templates.grid_remove()
-            form_neue_schicht_alternative_adresse_beginn_label.grid_remove()
-            form_neue_schicht_alternative_adresse_beginn_input.grid_remove()
-            form_neue_schicht_alternative_adresse_ende_label.grid_remove()
-            form_neue_schicht_alternative_adresse_ende_input.grid_remove()
-
-        else:
-            form_neue_schicht_neuerAsn.grid_remove()
-            form_neue_schicht_templates.grid(row=2, column=0, columnspan=4)
-
-            if value != 'Bitte auswählen':
-                kuerzel = value
-                asn = assistent.get_asn_by_kuerzel(kuerzel)
-                templates = asn.schicht_templates
-                selected_template = tk.IntVar()
-                selected_template.set(0)
-                change_template(selected_template, templates)
-                col = 0
-                row = 0
-                counter = 0
-                for template in templates:
-                    text = template['bezeichner'] + " von " + template["start"].strftime('%H:%M') \
-                           + " bis " + template["ende"].strftime('%H:%M')
-                    button = tk.Radiobutton(form_neue_schicht_templates, text=text,
-                                            variable=selected_template, value=counter,
-                                            command=lambda: change_template(selected_template, templates))
-                    button.grid(row=row, column=col)
-                    counter += 1
-                    col += 1
-                    if col == 4:
-                        col = 0
-                        row += 1
-
-                # Schalter für Schicht aussr Haus
-                form_neue_schicht_alternative_adresse_beginn_label = tk.Label(fenster_neue_schicht,
-                                                                              text="Beginn der Schicht außer Haus")
-                form_neue_schicht_alternative_adresse_beginn_input = AdressSelectOrInput(fenster_neue_schicht, variable)
-                form_neue_schicht_alternative_adresse_ende_label = tk.Label(fenster_neue_schicht,
-                                                                            text="Beginn der Schicht außer Haus")
-                form_neue_schicht_alternative_adresse_ende_input = AdressSelectOrInput(fenster_neue_schicht, variable)
-
-                form_neue_schicht_alternative_adresse_beginn_label.grid(row=7, column=0)
-                form_neue_schicht_alternative_adresse_beginn_input.grid(row=7, column=1)
-                form_neue_schicht_alternative_adresse_ende_label.grid(row=8, column=0)
-                form_neue_schicht_alternative_adresse_ende_input.grid(row=8, column=1)
-
-            else:
-                form_neue_schicht_alternative_adresse_beginn_label.grid_remove()
-                form_neue_schicht_alternative_adresse_beginn_input.grid_remove()
-                form_neue_schicht_alternative_adresse_ende_label.grid_remove()
-                form_neue_schicht_alternative_adresse_ende_input.grid_remove()
-
-    def change_template(template_var, templates):
-        template = templates[template_var.get()]
-        form_neue_schicht_startzeit_input.hourstr.set(template["start"].strftime("%H"))
-        form_neue_schicht_startzeit_input.minstr.set(template["start"].strftime("%M"))
-        form_neue_schicht_endzeit_input.hourstr.set(template["ende"].strftime("%H"))
-        form_neue_schicht_endzeit_input.minstr.set(template["ende"].strftime("%M"))
-        if template["ende"] > template["start"]:
-            fenster_neue_schicht.v.set(2)
-        else:
-            fenster_neue_schicht.v.set(1)
-
-    def action_save_neue_schicht(undneu=0):
-        global assistent
-
-        startdatum = form_neue_schicht_startdatum_input.get_date().split('/')
-        beginn = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]),
-                                   int(form_neue_schicht_startzeit_input.hourstr.get()),
-                                   int(form_neue_schicht_startzeit_input.minstr.get()))
-
-        # ende der Schicht bestimmen. Fälle: Tagschicht, Nachtschicht, Reise
-        # todo minstring darf nicht mehr als 59 sein. kann durch ungeduldiges tippen passieren entry validieren
-        if fenster_neue_schicht.v.get() == 1:  # Tagschicht
-            ende = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]),
-                                     int(form_neue_schicht_endzeit_input.hourstr.get()),
-                                     int(form_neue_schicht_endzeit_input.minstr.get()))
-        elif fenster_neue_schicht.v.get() == 2:  # Nachtschicht
-            ende = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]) + 1,
-                                     int(form_neue_schicht_endzeit_input.hourstr.get()),
-                                     int(form_neue_schicht_endzeit_input.minstr.get()))
-        else:  # Reisebegleitung
-            enddatum = form_neue_schicht_enddatum_input.get_date().split('/')
-            ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]),
-                                     int(form_neue_schicht_endzeit_input.hourstr.get()),
-                                     int(form_neue_schicht_endzeit_input.minstr.get()))
-        if variable.get() == "Neuer ASN":
-            asn = ASN(form_neue_schicht_neuerAsn.nachname_input.get(),
-                      form_neue_schicht_neuerAsn.vorname_input.get(),
-                      form_neue_schicht_neuerAsn.kuerzel_input.get()
-                      )
-            assistent.asn_dazu(asn)
-        else:
-            asn = assistent.get_asn_by_kuerzel(variable.get())
-        # Schicht erstellen und zum Assistenten stopfen
-        schicht = Schicht(beginn, ende, asn)
-        assistent.schicht_dazu(schicht)
-        alles_speichern()
-        fenster_neue_schicht.destroy()
-        if undneu == 1:
-            neue_schicht()
-
-    fenster_neue_schicht = tk.Toplevel(fenster)
-    form_neue_schicht_headline = tk.Label(fenster_neue_schicht, text="Schichten eintragen")
-    form_neue_schicht_startdatum_label = tk.Label(fenster_neue_schicht, text="Datum (Beginn) der Schicht")
-    form_neue_schicht_startdatum_input = Calendar(fenster_neue_schicht, date_pattern='MM/dd/yyyy')
-
-    form_neue_schicht_startzeit_label = tk.Label(fenster_neue_schicht, text="Startzeit")
-    form_neue_schicht_startzeit_input = TimePicker(fenster_neue_schicht)
-    form_neue_schicht_endzeit_label = tk.Label(fenster_neue_schicht, text="Schichtende")
-    form_neue_schicht_endzeit_input = TimePicker(fenster_neue_schicht)
-    form_neue_schicht_enddatum_label = tk.Label(fenster_neue_schicht, text="Datum Ende der Schicht")
-    form_neue_schicht_enddatum_input = Calendar(fenster_neue_schicht, date_pattern='MM/dd/yyyy')
-    # TODO Vorauswahl konfigurieren lassen
-    fenster_neue_schicht.v = tk.IntVar()
-    fenster_neue_schicht.v.set(1)
-    form_neue_schicht_anderes_enddatum_label = tk.Label(fenster_neue_schicht,
-                                                        text="Tagschicht, Nachtschicht\noder mehrtägig?")
-    form_neue_schicht_anderes_enddatum_input_radio1 = \
-        tk.Radiobutton(fenster_neue_schicht, text="Tagschicht", padx=20,
-                       variable=fenster_neue_schicht.v, value=1,
-                       command=lambda: tag_nacht_reise(1, form_neue_schicht_enddatum_input,
-                                                       form_neue_schicht_enddatum_label))
-    form_neue_schicht_anderes_enddatum_input_radio2 = \
-        tk.Radiobutton(fenster_neue_schicht, text="Nachtschicht\n(Ende der Schicht ist am Folgetag)", padx=20,
-                       variable=fenster_neue_schicht.v, value=2,
-                       command=lambda: tag_nacht_reise(2, form_neue_schicht_enddatum_input,
-                                                       form_neue_schicht_enddatum_label))
-    form_neue_schicht_anderes_enddatum_input_radio3 = \
-        tk.Radiobutton(fenster_neue_schicht, text="Mehrtägig/Reisebegleitung", padx=20,
-                       variable=fenster_neue_schicht.v, value=3,
-                       command=lambda: tag_nacht_reise(3, form_neue_schicht_enddatum_input,
-                                                       form_neue_schicht_enddatum_label))
-    form_neue_schicht_asn_label = tk.Label(fenster_neue_schicht, text="Assistenznehmer")
-    # grundsätzliche Optionen für Dropdown
-    option_list = ["Bitte auswählen", "Neuer ASN", *assistent.get_all_asn()]
-
-    variable = tk.StringVar()
-    variable.set(option_list[0])
-    form_neue_schicht_asn_dropdown = tk.OptionMenu(fenster_neue_schicht, variable, *option_list, command=change_asn)
-    form_neue_schicht_neuerAsn = NeuerAsnInSchicht(fenster_neue_schicht)
-    form_neue_schicht_templates = tk.Frame(fenster_neue_schicht)
-
-    form_neue_schicht_ist_at = tk.Checkbutton(fenster_neue_schicht, text="AT")
-    form_neue_schicht_ist_pcg = tk.Checkbutton(fenster_neue_schicht, text="PCG")
-    form_neue_schicht_ist_rb = tk.Checkbutton(fenster_neue_schicht, text="Kurzfristig (RB/BSD)")
-    form_neue_schicht_ist_afg = tk.Checkbutton(fenster_neue_schicht, text="Ausfallgeld")
-    form_neue_schicht_alternative_adresse_beginn_label = tk.Label(fenster_neue_schicht,
-                                                                  text="Beginn der Schicht außer Haus")
-    form_neue_schicht_alternative_adresse_beginn_input = tk.Label(fenster_neue_schicht,
-                                                                  text="Beginn der Schicht außer Haus")
-    form_neue_schicht_alternative_adresse_ende_label = tk.Label(fenster_neue_schicht,
-                                                                text="Beginn der Schicht außer Haus")
-    form_neue_schicht_alternative_adresse_ende_input = tk.Label(fenster_neue_schicht,
-                                                                  text="Beginn der Schicht außer Haus")
-
-    form_neue_schicht_save_button = tk.Button(fenster_neue_schicht, text="Daten speichern",
-                                              command=action_save_neue_schicht)
-    form_neue_schicht_exit_button = tk.Button(fenster_neue_schicht, text="Abbrechen",
-                                              command=fenster_neue_schicht.destroy)
-    form_neue_schicht_saveandnew_button = tk.Button(fenster_neue_schicht, text="Daten speichern und neu",
-                                                    command=lambda: action_save_neue_schicht(undneu=1))
-
-    # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
-
-    # ins Fenster packen
-    form_neue_schicht_headline.grid(row=0, column=0, columnspan=4)
-
-    form_neue_schicht_asn_label.grid(row=1, column=0)
-    form_neue_schicht_asn_dropdown.grid(row=1, column=1)
-    # fields.grid(row=6, column=1)
-    # wird erst bei "Neuer AS" zugeschaltet
-    # form_neue_schicht_neuerAsn.grid(row=6, column=0, columnspan=2)
-    # wird erst bei "Neuer AS" zugeschaltet
-    # form_neue_schicht_templates.grid(row=2, column=0, columnspan=4)
-    form_neue_schicht_ist_at.grid(row=3, column=0)
-    form_neue_schicht_ist_pcg.grid(row=3, column=1)
-    form_neue_schicht_ist_rb.grid(row=3, column=2)
-    form_neue_schicht_ist_afg.grid(row=3, column=3)
-
-    form_neue_schicht_startdatum_label.grid(row=4, column=0)
-    form_neue_schicht_startdatum_input.grid(row=4, column=1, columnspan=2)
-    form_neue_schicht_enddatum_label.grid(row=4, column=3)
-    form_neue_schicht_enddatum_input.grid(row=4, column=4)
-    form_neue_schicht_startzeit_label.grid(row=5, column=0)
-    form_neue_schicht_startzeit_input.grid(row=5, column=1)
-    form_neue_schicht_endzeit_label.grid(row=5, column=2)
-    form_neue_schicht_endzeit_input.grid(row=5, column=3)
-    # TODO prüfen, wenn endzeit < startzeit nachtschicht im Radiobutton markieren
-    form_neue_schicht_anderes_enddatum_label.grid(row=6, column=0)
-    # TODO zusätzliche Felder für Reisen
-
-    form_neue_schicht_anderes_enddatum_input_radio1.grid(row=6, column=1)
-    form_neue_schicht_anderes_enddatum_input_radio2.grid(row=6, column=2)
-    form_neue_schicht_anderes_enddatum_input_radio3.grid(row=6, column=3)
-    # TODO alternativer Ort für Dienstbeginn und Ende
-    # TODO BSD
-    # TODO HACK besser machen? zwingt enddatum auf invisible
-    tag_nacht_reise(1, form_neue_schicht_enddatum_input,
-                    form_neue_schicht_enddatum_label)
-
-    form_neue_schicht_save_button.grid(row=9, column=0)
-    form_neue_schicht_exit_button.grid(row=9, column=1)
-    form_neue_schicht_saveandnew_button.grid(row=9, column=2)
+    FensterNeueSchicht(fenster)
 
 
 def neuer_urlaub():
@@ -1729,10 +1838,13 @@ def zeichne_hauptseite():
                 'stunden_steuerpflichtig': 0,
                 'zuschlag_pro_stunde': 0,
             }
-
+        # TODO Wegegeld BSD. Mit oder ohne Zuschlag???
         tabelle.summen = {'arbeitsstunden': 0,
                           'grundlohn': 0,
                           'grundlohn_pro_stunde': 0,
+                          'kurzfr': 0,
+                          'kurzfr_pro_stunde': 0,
+                          'kurzfr_stunden': 0,
                           'nachtstunden': 0,
                           'nachtzuschlag': 0,
                           'nachtzuschlag_pro_stunde': 0,
@@ -1757,16 +1869,17 @@ def zeichne_hauptseite():
         tk.Label(tabelle, text='ASN', borderwidth=1, relief="solid", width=8).grid(row=0, column=14)
         tk.Label(tabelle, text='Std', borderwidth=1, relief="solid", width=5).grid(row=0, column=15)
         tk.Label(tabelle, text='Grundlohn', borderwidth=1, relief="solid", width=8).grid(row=0, column=16)
-        tk.Label(tabelle, text='NachtStd', borderwidth=1, relief="solid", width=8).grid(row=0, column=17)
-        tk.Label(tabelle, text='Nachtzu.', borderwidth=1, relief="solid", width=8).grid(row=0, column=18)
-        tk.Label(tabelle, text='Zuschlaege', borderwidth=1, relief="solid", width=18).grid(row=0, column=19,
+        tk.Label(tabelle, text='kurzfr.', borderwidth=1, relief="solid", width=8).grid(row=0, column=17)
+        tk.Label(tabelle, text='NachtStd', borderwidth=1, relief="solid", width=8).grid(row=0, column=18)
+        tk.Label(tabelle, text='Nachtzu.', borderwidth=1, relief="solid", width=8).grid(row=0, column=19)
+        tk.Label(tabelle, text='Zuschlaege', borderwidth=1, relief="solid", width=18).grid(row=0, column=20,
                                                                                            columnspan=2)
-        tk.Label(tabelle, text='Wechsel', borderwidth=1, relief="solid", width=8).grid(row=0, column=21)
-        tk.Label(tabelle, text='Orga', borderwidth=1, relief="solid", width=8).grid(row=0, column=22)
+        tk.Label(tabelle, text='Wechsel', borderwidth=1, relief="solid", width=8).grid(row=0, column=22)
+        tk.Label(tabelle, text='Orga', borderwidth=1, relief="solid", width=8).grid(row=0, column=23)
 
         # körper
         meine_tabelle = []
-        spaltenzahl = 23
+        spaltenzahl = 24
         zaehler = 0
         width = 0
         inhalt = ''
@@ -1824,7 +1937,15 @@ def zeichne_hauptseite():
                                                                   arbeitsdatum.month, zeilendaten[0], 0, 1)):
                         inhalt = 'Urlaub'
                     elif zeilendaten[1] != 'empty':
-                        inhalt = zeilendaten[1].asn.kuerzel
+                        inhalt = ''
+                        # TODO andere Lohnarten für Ausfallgeld, Berechnung Wegegeld
+                        if zeilendaten[1].ist_ausfallgeld:
+                            inhalt += "Ausf."
+                        if zeilendaten[1].ist_assistententreffen:
+                            inhalt += "AT "
+                        if zeilendaten[1].ist_pcg:
+                            inhalt += "PCG "
+                        inhalt += zeilendaten[1].asn.kuerzel
                     else:
                         inhalt = ''
                     width = 10
@@ -1879,13 +2000,27 @@ def zeichne_hauptseite():
                     width = 8
                 elif spaltennummer == 17:
                     if zeilendaten[1] != 'empty':
+                        if zeilendaten[1].ist_kurzfristig:
+                            kurzfr = schichtlohn * 0.2
+                            tabelle.summen['kurzfr_pro_stunde'] = zeilendaten[1].stundenlohn * 0.2
+                            tabelle.summen["kurzfr_stunden"] = zeilendaten[1].stundenzahl
+                            tabelle.summen['kurzfr'] += kurzfr
+                            inhalt = "{:,.2f}€".format(kurzfr)
+                        else:
+                            inhalt = ''
+                    else:
+                        inhalt = ''
+                    width = 8
+
+                elif spaltennummer == 18:
+                    if zeilendaten[1] != 'empty':
                         nachtstunden = zeilendaten[1].nachtstunden
                         tabelle.summen['nachtstunden'] += nachtstunden
                         inhalt = str(nachtstunden)
                     else:
                         inhalt = ''
                     width = 8
-                elif spaltennummer == 18:
+                elif spaltennummer == 19:
                     if zeilendaten[1] != 'empty':
                         nachtzuschlag_schicht = zeilendaten[1].nachtzuschlag_schicht
                         tabelle.summen['nachtzuschlag'] += zeilendaten[1].nachtzuschlag_schicht
@@ -1894,7 +2029,7 @@ def zeichne_hauptseite():
                     else:
                         inhalt = ''
                     width = 8
-                elif spaltennummer == 19:
+                elif spaltennummer == 20:
                     if zeilendaten[1] != 'empty' and zeilendaten[1].zuschlaege != {}:
                         grund = zeilendaten[1].zuschlaege['zuschlagsgrund']
                         zuschlag_stunden = zeilendaten[1].zuschlaege['stunden_gesamt']
@@ -1904,7 +2039,7 @@ def zeichne_hauptseite():
                     else:
                         inhalt = ''
                     width = 15
-                elif spaltennummer == 20:
+                elif spaltennummer == 21:
                     if zeilendaten[1] != 'empty' and zeilendaten[1].zuschlaege != {}:
                         grund = zeilendaten[1].zuschlaege['zuschlagsgrund']
                         zuschlag_schicht = zeilendaten[1].zuschlaege['zuschlag_schicht']
@@ -1916,7 +2051,7 @@ def zeichne_hauptseite():
                     else:
                         inhalt = ''
                     width = 8
-                elif spaltennummer == 21:
+                elif spaltennummer == 22:
                     if zeilendaten[1] != 'empty':
                         tabelle.summen['wechselschichtzulage'] += zeilendaten[1].wechselschichtzulage_schicht
                         tabelle.summen['wechselschichtzulage_pro_stunde'] = zeilendaten[1].wechselschichtzulage
@@ -1925,7 +2060,7 @@ def zeichne_hauptseite():
                         inhalt = ''
                     width = 8
 
-                elif spaltennummer == 22:
+                elif spaltennummer == 23:
                     if zeilendaten[1] != 'empty':
                         tabelle.summen['orga'] += zeilendaten[1].orgazulage_schicht
                         tabelle.summen['orga_pro_stunde'] = zeilendaten[1].orgazulage
@@ -2002,27 +2137,47 @@ def zeichne_hauptseite():
                                         borderwidth=2, relief="groove")
         arbeitsstunden_value.grid(row=1, column=3, sticky='e')
 
+        arbeitsstunden = tk.Label(seitenleiste, text="Kurzfr. Vermittlung:", borderwidth=2, relief="groove")
+        arbeitsstunden.grid(row=2, column=0, sticky='w')
+        arbeitsstunden_value = tk.Label(seitenleiste,
+                                        text="{:,.2f}".format(round(tabelle.summen['kurzfr_stunden'], 2)),
+                                        borderwidth=2, relief="groove")
+        arbeitsstunden_value.grid(row=2, column=1, sticky='e')
+        # TODO wechsel der Erfahrungsstufe beachten
+
+        stundenlohn_value = tk.Label(seitenleiste,
+                                     text="{:,.2f}€".format(round(tabelle.summen['kurzfr_pro_stunde'], 2)),
+                                     borderwidth=2,
+                                     relief="groove")
+        stundenlohn_value.grid(row=2, column=2, sticky='e')
+
+        bruttolohn += tabelle.summen['grundlohn']
+        arbeitsstunden_value = tk.Label(seitenleiste,
+                                        text="{:,.2f}€".format(round(tabelle.summen['kurzfr'], 2)),
+                                        borderwidth=2, relief="groove")
+        arbeitsstunden_value.grid(row=2, column=3, sticky='e')
+
         nachtstunden = tk.Label(seitenleiste, text="Nachtstunden:", borderwidth=2, relief="groove")
-        nachtstunden.grid(row=2, column=0, sticky='w')
+        nachtstunden.grid(row=3, column=0, sticky='w')
         nachtstunden_value = tk.Label(seitenleiste,
                                       text="{:,.2f}".format(round(tabelle.summen['nachtstunden'], 2)),
                                       borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=2, column=1, sticky='e')
+        nachtstunden_value.grid(row=3, column=1, sticky='e')
 
         nachtstunden_value = tk.Label(seitenleiste,
                                       text="{:,.2f}€".format(round(tabelle.summen['nachtzuschlag_pro_stunde'], 2)),
                                       borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=2, column=2, sticky='e')
+        nachtstunden_value.grid(row=3, column=2, sticky='e')
 
         nachtstunden_value = tk.Label(seitenleiste,
                                       text="{:,.2f}€".format(round(tabelle.summen['nachtzuschlag'], 2)),
                                       borderwidth=2,
                                       relief="groove")
-        nachtstunden_value.grid(row=2, column=3, sticky='e')
+        nachtstunden_value.grid(row=3, column=3, sticky='e')
         bruttolohn += tabelle.summen['nachtzuschlag']
-        rowcounter = 2
+        rowcounter = 3
         for zuschlagsgrund in tabelle.summen['zuschlaege']:
             if tabelle.summen['zuschlaege'][zuschlagsgrund]['stunden_gesamt'] > 0:
                 zuschl = tabelle.summen['zuschlaege'][zuschlagsgrund]
