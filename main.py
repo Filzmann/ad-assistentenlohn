@@ -1038,45 +1038,25 @@ class FensterEditAsn(tk.Toplevel):
 
 class FensterNeueSchicht(tk.Toplevel):
     class AsnFrame(tk.Frame):
-        class NeuerAsnInSchicht(tk.Frame):
-            def __init__(self, parent):
-                super().__init__(parent)
-                self.parent = parent
-                # Felder für neuen ASN
-                kuerzel_label = tk.Label(self, text="Kürzel")
-                kuerzel_input = tk.Entry(self, bd=5, width=40)
-                vorname_label = tk.Label(self, text="Vorname")
-                vorname_input = tk.Entry(self, bd=5, width=40)
-                nachname_label = tk.Label(self, text="Nachname")
-                nachname_input = tk.Entry(self, bd=5, width=40)
-                strasse_label = tk.Label(self, text="Straße/Hausnummer")
-                strasse_input = tk.Entry(self, bd=5, width=29)
-                hausnummer_input = tk.Entry(self, bd=5, width=9)
-                plz_label = tk.Label(self, text="Postleitzahl")
-                plz_input = tk.Entry(self, bd=5, width=40)
-                stadt_label = tk.Label(self, text="Stadt")
-                stadt_input = tk.Entry(self, bd=5, width=40)
-
-                kuerzel_label.grid(row=0, column=0)
-                kuerzel_input.grid(row=0, column=1, columnspan=2)
-                vorname_label.grid(row=1, column=0)
-                vorname_input.grid(row=1, column=1, columnspan=2)
-                nachname_label.grid(row=2, column=0)
-                nachname_input.grid(row=2, column=1, columnspan=2)
-                strasse_label.grid(row=3, column=0)
-                strasse_input.grid(row=3, column=1)
-                hausnummer_input.grid(row=3, column=2)
-                plz_label.grid(row=4, column=0)
-                plz_input.grid(row=4, column=1, columnspan=2)
-                stadt_label.grid(row=5, column=0)
-                stadt_input.grid(row=5, column=1, columnspan=2)
-
         class SchichtTemplates(tk.Frame):
             def __init__(self, parent):
                 super().__init__(parent)
                 self.parent = parent
-                if parent.parent.asn_frame.selected_asn.get() != 'Bitte auswählen':
-                    kuerzel = parent.parent.asn_frame.selected_asn.get()
+
+                kuerzel = parent.parent.asn_frame.selected_asn.get()
+                if kuerzel != 'Bitte auswählen':
+                    # kuerzel = parent.parent.asn_frame.selected_asn.get()
+                    self.asn = assistent.get_asn_by_kuerzel(kuerzel)
+                    self.templates = self.asn.schicht_templates
+                    self.selected_template = tk.IntVar()
+                    self.selected_template.set(0)
+                    self.change_template()
+                    self.draw_templates()
+
+            def draw_templates(self):
+                kuerzel = self.parent.parent.asn_frame.selected_asn.get()
+                if kuerzel != 'Bitte auswählen':
+                    # kuerzel = parent.parent.asn_frame.selected_asn.get()
                     asn = assistent.get_asn_by_kuerzel(kuerzel)
                     self.templates = asn.schicht_templates
                     self.selected_template = tk.IntVar()
@@ -1088,7 +1068,7 @@ class FensterNeueSchicht(tk.Toplevel):
                     for template in self.templates:
                         text = template['bezeichner'] + " von " + template["start"].strftime('%H:%M') \
                                + " bis " + template["ende"].strftime('%H:%M')
-                        button = tk.Radiobutton(self.templates, text=text,
+                        button = tk.Radiobutton(self, text=text,
                                                 variable=self.selected_template, value=counter,
                                                 command=lambda: self.change_template())
                         button.grid(row=row, column=col)
@@ -1099,9 +1079,17 @@ class FensterNeueSchicht(tk.Toplevel):
                             row += 1
 
             def change_template(self):
-                pass
+                template_index = self.selected_template.get()
+                template = self.asn.schicht_templates[template_index]
+                start = template["start"]
+                ende = template["ende"]
+
+
 
             def show(self):
+                for child in self.winfo_children():
+                    child.destroy()
+                self.draw_templates()
                 self.grid()
 
             def hide(self):
