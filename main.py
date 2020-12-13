@@ -545,9 +545,11 @@ class Schicht:
         OE = 7 - ((OG - SZ) % 7)
 
         tmp = OG + OE  # das Osterdatum als Tages des März, also 32 entspricht 1. April
+
         if tmp > 31:  # Monat erhöhen, tmp=tag erniedriegen
             m = int(tmp / 31)
-            tmp = int(round(tmp) - 31)
+            tmp = tmp - 31
+        tmp = int(round(tmp))
         return datetime.date(jahr, 3 + m, tmp)
 
 
@@ -881,6 +883,7 @@ class FensterEditAsn(tk.Toplevel):
                     asn.hausnummer = hnr
                     asn.stadt = stadt
                     asn.plz = plz
+                    asn.kuerzel = neues_kuerzel
 
                 asn.buero = self.selected_buero.get()
                 return asn
@@ -1769,16 +1772,54 @@ def kill_schicht(key):
     zeichne_hauptseite()
 
 
-def insert_standardschichten(start, ende):
+def insert_standardschichten(erster_tag, letzter_tag):
+    def get_ersten_xxtag(int_weekday, erster=datetime.datetime.now()):
+        for counter in range(1, 8):
+            if datetime.datetime(year=erster.year, month=erster.month, day=counter, hour=0,
+                                 minute=0).weekday() == int_weekday:
+                return counter
+
     feste_schichten = assistent.festeSchichten
     wochentage = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
-
     for schicht in feste_schichten:
         wtag_int = wochentage.index(schicht["wochentag"])
-        wtag_erster = start.weekday()
-        wtag_erster = divmod((wtag_int + wtag_erster), 7)[1]
+        erster_xxtag_des_monats = get_ersten_xxtag(wtag_int, erster_tag)
+        monat = erster_tag.month
+        year = erster_tag.year
+        maxday = letzter_tag - datetime.timedelta(days=1)
+        maxday = int(maxday.strftime("%d"))
+        kuerzel = schicht["asn"]
+        asn = assistent.get_asn_by_kuerzel(kuerzel)
+        for woche in range(0, 4):
+            tag = woche * 7 + erster_xxtag_des_monats
+            if tag <= maxday:
+                if schicht["start"] < schicht["ende"]:
+                    start = datetime.datetime(year=year,
+                                              month=monat,
+                                              day=tag,
+                                              hour=schicht["start"].hour,
+                                              minute=schicht["start"].minute)
+                    end = datetime.datetime(year=year,
+                                            month=monat,
+                                            day=tag,
+                                            hour=schicht["ende"].hour,
+                                            minute=schicht["ende"].minute)
+                # nachtschicht. es gibt keine regelmäßigen dienstreisen!
+                else:
+                    start = datetime.datetime(year=year,
+                                              month=monat,
+                                              day=tag,
+                                              hour=schicht["start"].hour,
+                                              minute=schicht["start"].minute)
+                    end = datetime.datetime(year=year,
+                                            month=monat,
+                                            day=tag,
+                                            hour=schicht["ende"].hour,
+                                            minute=schicht["ende"].minute) + datetime.timedelta(days=1)
+                schicht_neu = Schicht(beginn=start, ende=end, asn=asn)
+                assistent.schicht_dazu(schicht_neu)
 
-    return {}
+    return assistent.get_all_schichten(erster_tag, letzter_tag)
 
 
 def zeichne_hauptseite():
