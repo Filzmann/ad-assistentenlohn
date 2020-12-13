@@ -1043,10 +1043,10 @@ class FensterNeueSchicht(tk.Toplevel):
                 super().__init__(parent)
                 self.parent = parent
 
-                kuerzel = parent.parent.asn_frame.selected_asn.get()
-                if kuerzel != 'Bitte auswählen':
+                self.kuerzel = parent.parent.asn_frame.selected_asn.get()
+                if self.kuerzel != 'Bitte auswählen':
                     # kuerzel = parent.parent.asn_frame.selected_asn.get()
-                    self.asn = assistent.get_asn_by_kuerzel(kuerzel)
+                    self.asn = assistent.get_asn_by_kuerzel(self.kuerzel)
                     self.templates = self.asn.schicht_templates
                     self.selected_template = tk.IntVar()
                     self.selected_template.set(0)
@@ -1054,10 +1054,10 @@ class FensterNeueSchicht(tk.Toplevel):
                     self.draw_templates()
 
             def draw_templates(self):
-                kuerzel = self.parent.parent.asn_frame.selected_asn.get()
-                if kuerzel != 'Bitte auswählen':
+                self.kuerzel = self.parent.parent.asn_frame.selected_asn.get()
+                if self.kuerzel != 'Bitte auswählen':
                     # kuerzel = parent.parent.asn_frame.selected_asn.get()
-                    asn = assistent.get_asn_by_kuerzel(kuerzel)
+                    asn = assistent.get_asn_by_kuerzel(self.kuerzel)
                     self.templates = asn.schicht_templates
                     self.selected_template = tk.IntVar()
                     self.selected_template.set(0)
@@ -1079,12 +1079,21 @@ class FensterNeueSchicht(tk.Toplevel):
                             row += 1
 
             def change_template(self):
-                template_index = self.selected_template.get()
-                template = self.asn.schicht_templates[template_index]
-                start = template["start"]
-                ende = template["ende"]
-
-
+                if self.kuerzel != "Bitte auswählen" and self.kuerzel != "Neuer Assistent":
+                    template_index = self.selected_template.get()
+                    asn = assistent.get_asn_by_kuerzel(self.kuerzel)
+                    template = asn.schicht_templates[template_index]
+                    start = template["start"]
+                    ende = template["ende"]
+                    frame = self.parent.parent.schicht_calendar_frame
+                    frame.startzeit_input.hourstr.set(start.strftime("%H"))
+                    frame.startzeit_input.minstr.set(start.strftime("%M"))
+                    frame.endzeit_input.hourstr.set(ende.strftime("%H"))
+                    frame.endzeit_input.minstr.set(ende.strftime("%M"))
+                    if ende < start:
+                        frame.tag_nacht_reise_var.set(2)
+                    else:
+                        frame.tag_nacht_reise_var.set(1)
 
             def show(self):
                 for child in self.winfo_children():
@@ -1760,6 +1769,18 @@ def kill_schicht(key):
     zeichne_hauptseite()
 
 
+def insert_standardschichten(start, ende):
+    feste_schichten = assistent.festeSchichten
+    wochentage = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
+
+    for schicht in feste_schichten:
+        wtag_int = wochentage.index(schicht["wochentag"])
+        wtag_erster = start.weekday()
+        wtag_erster = divmod((wtag_int + wtag_erster), 7)[1]
+
+    return {}
+
+
 def zeichne_hauptseite():
     global button_neu, button_oeffnen, assistent
 
@@ -1846,6 +1867,8 @@ def zeichne_hauptseite():
         arbeitsdatum = start = verschiebe_monate(offs)
         end = verschiebe_monate(1, arbeitsdatum)
         schichten = assistent.get_all_schichten(start, end)
+        if not schichten:
+            schichten = insert_standardschichten(start, end)
         schichten_sortiert = split_schichten_um_mitternacht(schichten)
         schichten_sortiert = sort_und_berechne_schichten_by_day(schichten_sortiert, arbeitsdatum)
 
