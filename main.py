@@ -653,6 +653,104 @@ class LohnTabelle:
             return 6
 
 
+class Menuleiste(tk.Menu):
+    class DateiMenue(tk.Menu):
+        def __init__(self, parent):
+            super().__init__(parent, tearoff=0)
+            self.parent = parent
+            self.add_command(label="Neue Assistenten-Datei", command=lambda: NeuerAS(fenster))
+            self.add_command(label="Assistenten-Datei laden", command=alles_laden)
+            self.add_command(label="Assistenten-Datei speichern", command=alles_speichern)
+            # self.add_command(label="Assistenten-Datei speichern unter")
+            self.add_separator()  # Fügt eine Trennlinie hinzu
+            self.add_command(label="Exit", command=fenster.quit)
+
+    class EintragenMenue(tk.Menu):
+        def __int__(self, parent):
+            super().__init__(parent, tearoff=0)
+            self.parent = parent
+            self.add_command(label="Schicht eintragen", command=lambda: FensterNeueSchicht(fenster))
+            self.add_command(label="Urlaub eintragen", command=lambda: NeuerUrlaub(fenster))
+            self.add_command(label="AU/krank eintragen", command=neue_arbeitsunfaehigkeit)
+
+    class BearbeitenMenue(tk.Menu):
+        def __int__(self, parent):
+            super().__init__(parent, tearoff=0)
+            self.parent = parent
+            self.add_command(label="ASN bearbeiten", command=lambda: FensterEditAsn(fenster))
+
+    class TaxesMenue(tk.Menu):
+        def __int__(self, parent):
+            super().__init__(parent, tearoff=0)
+            self.parent = parent
+            self.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand")
+            self.add_command(label="Berechne Fahrtzeiten für Reisekosten")
+
+    class HelpMenue(tk.Menu):
+        def __int__(self, parent):
+            super().__init__(parent, tearoff=0)
+            self.parent = parent
+            self.add_command(label="Info!", command=action_get_info_dialog)
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+        # Menü Datei und Help erstellen
+        self.datei_menu = self.DateiMenue(self)
+        self.eintragen_menu = self.EintragenMenue(self)
+        self.bearbeiten_menu = self.BearbeitenMenue(self)
+        self.taxes_menu = self.TaxesMenue(self)
+        self.help_menu = self.HelpMenue(self)
+        # Nun fügen wir die Menüs (Datei und Help) der Menüleiste als
+        # "Drop-Down-Menü" hinzu
+        self.add_cascade(label="Datei", menu=self.datei_menu)
+        self.add_cascade(label="Eintragen", menu=self.eintragen_menu)
+        self.add_cascade(label="Bearbeiten", menu=self.bearbeiten_menu)
+        self.add_cascade(label="Einkommenssteuer", menu=self.taxes_menu)
+        self.add_cascade(label="Help", menu=self.help_menu)
+
+
+class NeuerAS(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+        self.headline = tk.Label(self, text="Wer bist du denn eigentlich?")
+        self.vorname_label = tk.Label(self, text="Vorname")
+        self.vorname_input = tk.Entry(self, bd=5, width=40)
+        self.nachname_label = tk.Label(self, text="Nachname")
+        self.nachname_input = tk.Entry(self, bd=5, width=40)
+        self.email_label = tk.Label(self, text="Email")
+        self.email_input = tk.Entry(self, bd=5, width=40)
+        self.einstellungsdatum_label = tk.Label(self, text="Seit wann bei ad? (tt.mm.JJJJ)")
+        self.einstellungsdatum_input = Calendar(self)
+        self.save_button = tk.Button(self, text="Daten speichern", command=self.action_save_neuer_as)
+        self.exit_button = tk.Button(self, text="Abbrechen", command=self.destroy)
+
+        # ins Fenster packen
+        self.headline.grid(row=0, column=0, columnspan=2)
+        self.vorname_label.grid(row=1, column=0)
+        self.vorname_input.grid(row=1, column=1)
+        self.nachname_label.grid(row=2, column=0)
+        self.nachname_input.grid(row=2, column=1)
+        self.email_label.grid(row=3, column=0)
+        self.email_input.grid(row=3, column=1)
+        # TODO Text nach oben
+        self.einstellungsdatum_label.grid(row=4, column=0)
+        self.einstellungsdatum_input.grid(row=4, column=1)
+        self.exit_button.grid(row=5, column=0)
+        self.save_button.grid(row=5, column=1)
+
+    def action_save_neuer_as(self):
+        global assistent
+        einstellungsdatum_date_obj = datetime.datetime.strptime(self.einstellungsdatum_input.get_date(),
+                                                                '%m/%d/%y')
+        assistent = AS(self.nachname_input.get(), self.vorname_input.get(),
+                       self.email_input.get(), einstellungsdatum_date_obj)
+        assistent.__class__.assistent_is_loaded = 1
+        alles_speichern(neu=1)
+        self.destroy()
+
+
 class FensterEditAsn(tk.Toplevel):
     class AsnAuswahllisteFrame(tk.Frame):
         def __init__(self, parent):
@@ -1029,7 +1127,7 @@ class FensterEditAsn(tk.Toplevel):
             # self.pfk_frame.save_person(eb_oder_pfk='pfk')
             assistent.asn[asn.kuerzel] = asn
             alles_speichern()
-            zeichne_fenster_bearbeite_asn()
+            FensterEditAsn(fenster)
 
     def __init__(self, parent):
         global assistent
@@ -1426,10 +1524,75 @@ class FensterNeueSchicht(tk.Toplevel):
         alles_speichern()
         self.destroy()
         if undneu == 1:
-            neue_schicht()
+            FensterNeueSchicht(fenster)
 
 
-# TODO über allgemeine Klasse (siehe edit ASN) laufen lassen
+class NeuerUrlaub(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+        self.headline = tk.Label(self, text="Urlaub eintragen")
+        self.startdatum_label = tk.Label(self, text="von")
+        self.startdatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
+        self.enddatum_label = tk.Label(self, text="bis")
+        self.enddatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
+        self.urlaubsstatus = tk.StringVar()
+        self.urlaubsstatus.set('notiert')
+        self.status_label = tk.Label(self, text="Status")
+        self.status_input_radio1 = \
+            tk.Radiobutton(self, text="notiert", padx=20,
+                           variable=self.urlaubsstatus, value='notiert')
+        self.status_input_radio2 = \
+            tk.Radiobutton(self, text="beantragt", padx=20,
+                           variable=self.urlaubsstatus, value='beantragt')
+        self.status_input_radio3 = \
+            tk.Radiobutton(self, text="genehmigt", padx=20,
+                           variable=self.urlaubsstatus, value='genehmigt')
+
+        self.save_button = tk.Button(self, text="Daten speichern",
+                                     command=self.action_save_neuer_urlaub)
+        self.exit_button = tk.Button(self, text="Abbrechen",
+                                     command=self.destroy)
+        self.saveandnew_button = tk.Button(self, text="Daten speichern und neu",
+                                           command=lambda: self.action_save_neuer_urlaub(undneu=1))
+
+        # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
+
+        # ins Fenster packen
+        self.headline.grid(row=0, column=0, columnspan=4)
+        self.startdatum_label.grid(row=1, column=0)
+        self.startdatum_input.grid(row=1, column=1, columnspan=2)
+        self.enddatum_label.grid(row=1, column=3)
+        self.enddatum_input.grid(row=1, column=4)
+
+        self.status_label.grid(row=3, column=0)
+
+        self.status_input_radio1.grid(row=3, column=1)
+        self.status_input_radio2.grid(row=3, column=2)
+        self.status_input_radio3.grid(row=3, column=3)
+
+        self.save_button.grid(row=15, column=0)
+        self.exit_button.grid(row=15, column=1)
+        self.saveandnew_button.grid(row=15, column=2)
+
+    def action_save_neuer_urlaub(self, undneu=0):
+        global assistent
+
+        startdatum = self.startdatum_input.get_date().split('/')
+        beginn = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]), 0, 0)
+        enddatum = self.enddatum_input.get_date().split('/')
+        # urlaub geht bis 23:59 am letzten Tag
+        ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]), 23, 59)
+        status = self.urlaubsstatus.get()
+
+        # Schicht erstellen und zum Assistenten stopfen
+        urlaub = Urlaub(beginn, ende, status)
+        assistent.urlaub_dazu(urlaub)
+        alles_speichern()
+        self.destroy()
+        if undneu == 1:
+            NeuerUrlaub(fenster)
+
 
 def end_of_month(month, year):
     if month == 12:
@@ -1506,168 +1669,56 @@ def sort_und_berechne_schichten_by_day(schichten, monatjahr=datetime.date.today(
     return ausgabe
 
 
-def neuer_as():
-    def action_save_neuer_as():
-        global assistent
-        einstellungsdatum_date_obj = datetime.datetime.strptime(form_neuer_as_einstellungsdatum_input.get_date(),
-                                                                '%m/%d/%y')
-        assistent = AS(form_neuer_as_nachname_input.get(), form_neuer_as_vorname_input.get(),
-                       form_neuer_as_email_input.get(), einstellungsdatum_date_obj)
-        assistent.__class__.assistent_is_loaded = 1
-        alles_speichern(neu=1)
-        fenster_neuer_as.destroy()
-
-    #  global assistent
-    fenster_neuer_as = tk.Toplevel(fenster)
-    form_neuer_as_headline = tk.Label(fenster_neuer_as, text="Wer bist du denn eigentlich?")
-    form_neuer_as_vorname_label = tk.Label(fenster_neuer_as, text="Vorname")
-    form_neuer_as_vorname_input = tk.Entry(fenster_neuer_as, bd=5, width=40)
-    form_neuer_as_nachname_label = tk.Label(fenster_neuer_as, text="Nachname")
-    form_neuer_as_nachname_input = tk.Entry(fenster_neuer_as, bd=5, width=40)
-    form_neuer_as_email_label = tk.Label(fenster_neuer_as, text="Email")
-    form_neuer_as_email_input = tk.Entry(fenster_neuer_as, bd=5, width=40)
-    form_neuer_as_einstellungsdatum_label = tk.Label(fenster_neuer_as, text="Seit wann bei ad? (tt.mm.JJJJ)")
-    form_neuer_as_einstellungsdatum_input = Calendar(fenster_neuer_as)
-    form_neuer_as_save_button = tk.Button(fenster_neuer_as, text="Daten speichern", command=action_save_neuer_as)
-    form_neuer_as_exit_button = tk.Button(fenster_neuer_as, text="Abbrechen", command=fenster_neuer_as.destroy)
-
-    # ins Fenster packen
-    form_neuer_as_headline.grid(row=0, column=0, columnspan=2)
-    form_neuer_as_vorname_label.grid(row=1, column=0)
-    form_neuer_as_vorname_input.grid(row=1, column=1)
-    form_neuer_as_nachname_label.grid(row=2, column=0)
-    form_neuer_as_nachname_input.grid(row=2, column=1)
-    form_neuer_as_email_label.grid(row=3, column=0)
-    form_neuer_as_email_input.grid(row=3, column=1)
-    # TODO Text nach oben
-    form_neuer_as_einstellungsdatum_label.grid(row=4, column=0)
-    form_neuer_as_einstellungsdatum_input.grid(row=4, column=1)
-    form_neuer_as_exit_button.grid(row=5, column=0)
-    form_neuer_as_save_button.grid(row=5, column=1)
-
-
-def neue_schicht():
-    FensterNeueSchicht(fenster)
-
-
-def neuer_urlaub():
-    # TODO allgemeine show-hide funktion
-
-    def action_save_neuer_urlaub(undneu=0):
-        global assistent
-
-        startdatum = form_neuer_urlaub_startdatum_input.get_date().split('/')
-        beginn = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]), 0, 0)
-        enddatum = form_neuer_urlaub_enddatum_input.get_date().split('/')
-        # urlaub geht bis 23:59 am letzten Tag
-        ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]), 23, 59)
-        status = fenster_neuer_urlaub.urlaubsstatus.get()
-
-        # Schicht erstellen und zum Assistenten stopfen
-        urlaub = Urlaub(beginn, ende, status)
-        assistent.urlaub_dazu(urlaub)
-        alles_speichern()
-        fenster_neuer_urlaub.destroy()
-        if undneu == 1:
-            neuer_urlaub()
-
-    fenster_neuer_urlaub = tk.Toplevel(fenster)
-    form_neuer_urlaub_headline = tk.Label(fenster_neuer_urlaub, text="Urlaub eintragen")
-    form_neuer_urlaub_startdatum_label = tk.Label(fenster_neuer_urlaub, text="von")
-    form_neuer_urlaub_startdatum_input = Calendar(fenster_neuer_urlaub, date_pattern='MM/dd/yyyy')
-    form_neuer_urlaub_enddatum_label = tk.Label(fenster_neuer_urlaub, text="bis")
-    form_neuer_urlaub_enddatum_input = Calendar(fenster_neuer_urlaub, date_pattern='MM/dd/yyyy')
-    fenster_neuer_urlaub.urlaubsstatus = tk.StringVar()
-    fenster_neuer_urlaub.urlaubsstatus.set('notiert')
-    form_neuer_urlaub_status_label = tk.Label(fenster_neuer_urlaub, text="Status")
-    form_neuer_urlaub_status_input_radio1 = \
-        tk.Radiobutton(fenster_neuer_urlaub, text="notiert", padx=20,
-                       variable=fenster_neuer_urlaub.urlaubsstatus, value='notiert')
-    form_neuer_urlaub_status_input_radio2 = \
-        tk.Radiobutton(fenster_neuer_urlaub, text="beantragt", padx=20,
-                       variable=fenster_neuer_urlaub.urlaubsstatus, value='beantragt')
-    form_neuer_urlaub_status_input_radio3 = \
-        tk.Radiobutton(fenster_neuer_urlaub, text="genehmigt", padx=20,
-                       variable=fenster_neuer_urlaub.urlaubsstatus, value='genehmigt')
-
-    form_neuer_urlaub_save_button = tk.Button(fenster_neuer_urlaub, text="Daten speichern",
-                                              command=action_save_neuer_urlaub)
-    form_neuer_urlaub_exit_button = tk.Button(fenster_neuer_urlaub, text="Abbrechen",
-                                              command=fenster_neuer_urlaub.destroy)
-    form_neuer_urlaub_saveandnew_button = tk.Button(fenster_neuer_urlaub, text="Daten speichern und neu",
-                                                    command=lambda: action_save_neuer_urlaub(undneu=1))
-
-    # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
-
-    # ins Fenster packen
-    form_neuer_urlaub_headline.grid(row=0, column=0, columnspan=4)
-    form_neuer_urlaub_startdatum_label.grid(row=1, column=0)
-    form_neuer_urlaub_startdatum_input.grid(row=1, column=1, columnspan=2)
-    form_neuer_urlaub_enddatum_label.grid(row=1, column=3)
-    form_neuer_urlaub_enddatum_input.grid(row=1, column=4)
-
-    form_neuer_urlaub_status_label.grid(row=3, column=0)
-
-    form_neuer_urlaub_status_input_radio1.grid(row=3, column=1)
-    form_neuer_urlaub_status_input_radio2.grid(row=3, column=2)
-    form_neuer_urlaub_status_input_radio3.grid(row=3, column=3)
-
-    form_neuer_urlaub_save_button.grid(row=15, column=0)
-    form_neuer_urlaub_exit_button.grid(row=15, column=1)
-    form_neuer_urlaub_saveandnew_button.grid(row=15, column=2)
-
-
 def neue_arbeitsunfaehigkeit():
     # TODO allgemeine show-hide funktion
+    class NeueAU(tk.Toplevel):
+        def __init__(self, parent):
+            super().__init__(parent)
+            self.parent = parent
+            self.headline = tk.Label(self, text="AU/krank eintragen")
+            self.startdatum_label = tk.Label(self, text="von")
+            self.startdatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
+            self.enddatum_label = tk.Label(self, text="bis")
+            self.enddatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
+            self.urlaubsstatus = tk.StringVar()
+            self.urlaubsstatus.set('notiert')
 
-    def action_save_neue_arbeitsunfaehigkeit(undneu=0):
-        global assistent
+            self.save_button = tk.Button(self, text="Daten speichern",
+                                         command=self.action_save_neue_arbeitsunfaehigkeit)
+            self.exit_button = tk.Button(self, text="Abbrechen", command=self.destroy)
+            self.saveandnew_button = tk.Button(self,
+                                               text="Daten speichern und neu",
+                                               command=lambda: self.action_save_neue_arbeitsunfaehigkeit(undneu=1))
 
-        startdatum = form_neue_arbeitsunfaehigkeit_startdatum_input.get_date().split('/')
-        beginn = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]), 0, 0)
-        enddatum = form_neue_arbeitsunfaehigkeit_enddatum_input.get_date().split('/')
-        # au geht bis 23:59 am letzten Tag
-        ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]), 23, 59)
+            # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
 
-        # au erstellen und zum Assistenten stopfen
-        au = Arbeitsunfaehigkeit(beginn, ende)
-        assistent.au_dazu(au)
-        alles_speichern()
-        fenster_neue_arbeitsunfaehigkeit.destroy()
-        if undneu == 1:
-            neue_arbeitsunfaehigkeit()
+            # ins Fenster packen
+            self.headline.grid(row=0, column=0, columnspan=4)
+            self.startdatum_label.grid(row=1, column=0)
+            self.startdatum_input.grid(row=1, column=1, columnspan=2)
+            self.enddatum_label.grid(row=1, column=3)
+            self.enddatum_input.grid(row=1, column=4)
 
-    fenster_neue_arbeitsunfaehigkeit = tk.Toplevel(fenster)
-    form_neue_arbeitsunfaehigkeit_headline = tk.Label(fenster_neue_arbeitsunfaehigkeit, text="AU/krank eintragen")
-    form_neue_arbeitsunfaehigkeit_startdatum_label = tk.Label(fenster_neue_arbeitsunfaehigkeit, text="von")
-    form_neue_arbeitsunfaehigkeit_startdatum_input = Calendar(fenster_neue_arbeitsunfaehigkeit,
-                                                              date_pattern='MM/dd/yyyy')
-    form_neue_arbeitsunfaehigkeit_enddatum_label = tk.Label(fenster_neue_arbeitsunfaehigkeit, text="bis")
-    form_neue_arbeitsunfaehigkeit_enddatum_input = Calendar(fenster_neue_arbeitsunfaehigkeit, date_pattern='MM/dd/yyyy')
-    fenster_neue_arbeitsunfaehigkeit.urlaubsstatus = tk.StringVar()
-    fenster_neue_arbeitsunfaehigkeit.urlaubsstatus.set('notiert')
+            self.save_button.grid(row=15, column=0)
+            self.exit_button.grid(row=15, column=1)
+            self.saveandnew_button.grid(row=15, column=2)
 
-    form_neue_arbeitsunfaehigkeit_save_button = tk.Button(fenster_neue_arbeitsunfaehigkeit, text="Daten speichern",
-                                                          command=action_save_neue_arbeitsunfaehigkeit)
-    form_neue_arbeitsunfaehigkeit_exit_button = tk.Button(fenster_neue_arbeitsunfaehigkeit, text="Abbrechen",
-                                                          command=fenster_neue_arbeitsunfaehigkeit.destroy)
-    form_neue_arbeitsunfaehigkeit_saveandnew_button = tk.Button(fenster_neue_arbeitsunfaehigkeit,
-                                                                text="Daten speichern und neu",
-                                                                command=lambda: action_save_neue_arbeitsunfaehigkeit(
-                                                                    undneu=1))
+        def action_save_neue_arbeitsunfaehigkeit(self, undneu=0):
+            global assistent
 
-    # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
+            startdatum = self.startdatum_input.get_date().split('/')
+            beginn = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]), 0, 0)
+            enddatum = self.enddatum_input.get_date().split('/')
+            # au geht bis 23:59 am letzten Tag
+            ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]), 23, 59)
 
-    # ins Fenster packen
-    form_neue_arbeitsunfaehigkeit_headline.grid(row=0, column=0, columnspan=4)
-    form_neue_arbeitsunfaehigkeit_startdatum_label.grid(row=1, column=0)
-    form_neue_arbeitsunfaehigkeit_startdatum_input.grid(row=1, column=1, columnspan=2)
-    form_neue_arbeitsunfaehigkeit_enddatum_label.grid(row=1, column=3)
-    form_neue_arbeitsunfaehigkeit_enddatum_input.grid(row=1, column=4)
-
-    form_neue_arbeitsunfaehigkeit_save_button.grid(row=15, column=0)
-    form_neue_arbeitsunfaehigkeit_exit_button.grid(row=15, column=1)
-    form_neue_arbeitsunfaehigkeit_saveandnew_button.grid(row=15, column=2)
+            # au erstellen und zum Assistenten stopfen
+            au = Arbeitsunfaehigkeit(beginn, ende)
+            assistent.au_dazu(au)
+            alles_speichern()
+            self.destroy()
+            if undneu == 1:
+                NeueAU(fenster)
 
 
 def alles_speichern(neu=0):
@@ -1716,43 +1767,7 @@ Version: 0.01\n\
 
 def zeichne_hauptmenue():
     # Menüleiste erstellen
-    menuleiste = tk.Menu(root)
-
-    # Menü Datei und Help erstellen
-    datei_menu = tk.Menu(menuleiste, tearoff=0)
-    eintragen_menu = tk.Menu(menuleiste, tearoff=0)
-    bearbeiten_menu = tk.Menu(menuleiste, tearoff=0)
-    taxes_menu = tk.Menu(menuleiste, tearoff=0)
-    help_menu = tk.Menu(menuleiste, tearoff=0)
-
-    # Beim Klick auf Datei oder auf Help sollen nun weitere Einträge erscheinen.
-    # Diese werden also zu "datei_menu" und "help_menu" hinzugefügt
-    datei_menu.add_command(label="Neue Assistenten-Datei", command=neuer_as)
-    datei_menu.add_command(label="Assistenten-Datei laden", command=alles_laden)
-    datei_menu.add_command(label="Assistenten-Datei speichern", command=alles_speichern)
-    datei_menu.add_command(label="Assistenten-Datei speichern unter")
-    datei_menu.add_separator()  # Fügt eine Trennlinie hinzu
-    datei_menu.add_command(label="Exit", command=fenster.quit)
-
-    eintragen_menu.add_command(label="Schicht eintragen", command=neue_schicht)
-    eintragen_menu.add_command(label="Urlaub eintragen", command=neuer_urlaub)
-    eintragen_menu.add_command(label="AU/krank eintragen", command=neue_arbeitsunfaehigkeit)
-
-    bearbeiten_menu.add_command(label="ASN bearbeiten", command=zeichne_fenster_bearbeite_asn)
-
-    taxes_menu.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand")
-    taxes_menu.add_command(label="Berechne Fahrtzeiten für Reisekosten")
-
-    help_menu.add_command(label="Info!", command=action_get_info_dialog)
-
-    # Nun fügen wir die Menüs (Datei und Help) der Menüleiste als
-    # "Drop-Down-Menü" hinzu
-    menuleiste.add_cascade(label="Datei", menu=datei_menu)
-    menuleiste.add_cascade(label="Eintragen", menu=eintragen_menu)
-    menuleiste.add_cascade(label="Bearbeiten", menu=bearbeiten_menu)
-    menuleiste.add_cascade(label="Einkommenssteuer", menu=taxes_menu)
-    menuleiste.add_cascade(label="Help", menu=help_menu)
-    # Die Menüleiste mit den Menüeinträgen noch dem Fenster übergeben und fertig.
+    menuleiste = Menuleiste(root)
     root.config(menu=menuleiste)
 
 
@@ -2335,10 +2350,6 @@ def zeichne_hauptseite():
     # 2 Frames Für Navigation und Tabelle
 
 
-def zeichne_fenster_bearbeite_asn():
-    FensterEditAsn(fenster)
-
-
 assistent = AS()
 lohntabelle = LohnTabelle()
 root = tk.Tk()
@@ -2351,7 +2362,7 @@ info_text = tk.Label(fenster, text="Bitte erstelle oder öffne eine Assistenten-
 info_text.grid(row=0, column=0, columnspan=2)
 button_oeffnen = tk.Button(fenster, text="Gespeicherten Assistenten laden", command=alles_laden)
 button_oeffnen.grid(row=1, column=0)
-button_neu = tk.Button(fenster, text="Neuen Assistenten anlegen", command=neuer_as)
+button_neu = tk.Button(fenster, text="Neuen Assistenten anlegen", command=lambda: NeuerAS(fenster))
 button_neu.grid(row=1, column=1)
 
 fenster.mainloop()
