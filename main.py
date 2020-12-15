@@ -87,6 +87,7 @@ class AS(Person):
         self.name = name
         self.vorname = vorname
         self.email = email
+        self.home = Adresse('home', '', '', '', '')
         self.einstellungsdatum = einstellungsdatum
         self.__class__.count += 1
         self.festeSchichten = []
@@ -411,14 +412,14 @@ class Schicht:
                 if self.ende < dreizehn_uhr:
                     feiertagsstunden = 0
                 elif dreizehn_uhr < self.ende <= einundzwanzig_uhr:
-                    feiertagsstunden = get_duration(self.ende, dreizehn_uhr)
+                    feiertagsstunden = get_duration(dreizehn_uhr, self.ende, 'hours')
                 else:  # self.ende > einundzwanzig_uhr:
                     feiertagsstunden = 8  # 21 - 13
             elif dreizehn_uhr <= self.beginn < einundzwanzig_uhr:
                 if self.ende < einundzwanzig_uhr:
                     feiertagsstunden = self.berechne_stundenzahl()
                 elif self.ende > einundzwanzig_uhr:
-                    feiertagsstunden = get_duration(einundzwanzig_uhr, self.beginn)
+                    feiertagsstunden = get_duration(self.beginn, einundzwanzig_uhr, 'hours')
             else:
                 feiertagsstunden = 0
 
@@ -673,6 +674,7 @@ class Menuleiste(tk.Menu):
 
         bearbeiten_menu = tk.Menu(self, tearoff=0)
         bearbeiten_menu.add_command(label="ASN bearbeiten", command=lambda: FensterEditAsn(root))
+        bearbeiten_menu.add_command(label="Assistent bearbeiten", command=lambda: NeuerAS(root, edit=1))
 
         taxes_menu = tk.Menu(self, tearoff=0)
         taxes_menu.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand")
@@ -689,34 +691,58 @@ class Menuleiste(tk.Menu):
 
 
 class NeuerAS(tk.Toplevel):
-    def __init__(self, parent):
+    def __init__(self, parent, edit=0):
         super().__init__(parent)
         self.parent = parent
-        self.headline = tk.Label(self, text="Wer bist du denn eigentlich?")
-        self.vorname_label = tk.Label(self, text="Vorname")
+        headline = tk.Label(self, text="Wer bist du denn eigentlich?")
+        vorname_label = tk.Label(self, text="Vorname")
         self.vorname_input = tk.Entry(self, bd=5, width=40)
-        self.nachname_label = tk.Label(self, text="Nachname")
+        nachname_label = tk.Label(self, text="Nachname")
         self.nachname_input = tk.Entry(self, bd=5, width=40)
-        self.email_label = tk.Label(self, text="Email")
+        email_label = tk.Label(self, text="Email")
         self.email_input = tk.Entry(self, bd=5, width=40)
-        self.einstellungsdatum_label = tk.Label(self, text="Seit wann bei ad? (tt.mm.JJJJ)")
+        strasse_label = tk.Label(self, text="Straße/Hausnummer")
+        self.strasse_input = tk.Entry(self, bd=5, width=29)
+        self.hausnummer_input = tk.Entry(self, bd=5, width=9)
+        plz_label = tk.Label(self, text="Postleitzahl")
+        self.plz_input = tk.Entry(self, bd=5, width=40)
+        stadt_label = tk.Label(self, text="Stadt")
+        self.stadt_input = tk.Entry(self, bd=5, width=40)
+        einstellungsdatum_label = tk.Label(self, text="Seit wann bei ad? (tt.mm.JJJJ)")
         self.einstellungsdatum_input = Calendar(self)
         self.save_button = tk.Button(self, text="Daten speichern", command=self.action_save_neuer_as)
         self.exit_button = tk.Button(self, text="Abbrechen", command=self.destroy)
 
+        if edit:
+            self.vorname_input.insert(0, assistent.vorname)
+            self.nachname_input.insert(0, assistent.name)
+            self.email_input.insert(0, assistent.email)
+            self.strasse_input.insert(0, assistent.home.strasse)
+            self.hausnummer_input.insert(0, assistent.home.hnr)
+            self.plz_input.insert(0, assistent.home.plz)
+            self.stadt_input.insert(0, assistent.home.stadt)
+
         # ins Fenster packen
-        self.headline.grid(row=0, column=0, columnspan=2)
-        self.vorname_label.grid(row=1, column=0)
-        self.vorname_input.grid(row=1, column=1)
-        self.nachname_label.grid(row=2, column=0)
-        self.nachname_input.grid(row=2, column=1)
-        self.email_label.grid(row=3, column=0)
-        self.email_input.grid(row=3, column=1)
+        headline.grid(row=0, column=0, columnspan=3)
+        vorname_label.grid(row=1, column=0)
+        self.vorname_input.grid(row=1, column=1, columnspan=2)
+        nachname_label.grid(row=2, column=0)
+        self.nachname_input.grid(row=2, column=1, columnspan=2)
+        email_label.grid(row=3, column=0)
+        self.email_input.grid(row=3, column=1, columnspan=2)
+        strasse_label.grid(row=4, column=0)
+        self.strasse_input.grid(row=4, column=1)
+        self.hausnummer_input.grid(row=4, column=2)
+        plz_label.grid(row=5, column=0)
+        self.plz_input.grid(row=5, column=1, columnspan=2)
+        stadt_label.grid(row=6, column=0)
+        self.stadt_input.grid(row=6, column=1, columnspan=2)
+
         # TODO Text nach oben
-        self.einstellungsdatum_label.grid(row=4, column=0)
-        self.einstellungsdatum_input.grid(row=4, column=1)
-        self.exit_button.grid(row=5, column=0)
-        self.save_button.grid(row=5, column=1)
+        einstellungsdatum_label.grid(row=7, column=0)
+        self.einstellungsdatum_input.grid(row=7, column=1)
+        self.exit_button.grid(row=8, column=0)
+        self.save_button.grid(row=8, column=1)
 
     def action_save_neuer_as(self):
         global assistent
@@ -724,6 +750,11 @@ class NeuerAS(tk.Toplevel):
                                                                 '%m/%d/%y')
         assistent = AS(self.nachname_input.get(), self.vorname_input.get(),
                        self.email_input.get(), einstellungsdatum_date_obj)
+        assistent.home = Adresse(kuerzel='home',
+                                 strasse=self.strasse_input.get(),
+                                 hnr=self.hausnummer_input.get(),
+                                 plz=self.plz_input.get(),
+                                 stadt=self.stadt_input.get())
         assistent.__class__.assistent_is_loaded = 1
         alles_speichern(neu=1)
         self.destroy()
@@ -734,23 +765,22 @@ class FensterEditAsn(tk.Toplevel):
         def __init__(self, parent):
             super().__init__(parent)
             self.parent = parent
-            options = list(assistent.get_all_asn().keys())
-            self.select_asn = tk.Listbox(self, selectmode='single')
-            self.select_asn.insert('end', 'Neuer ASN')
-            for val in options:
-                self.select_asn.insert('end', val)
-            self.select_asn.bind('<<ListboxSelect>>', self.choose_asn)
-            # yScroll = tk.Scrollbar(master=self, orient='vertical')
-            # self.select_asn.config(yscrollcommand=yScroll.set)
-            # yScroll.config(command=self.select_asn.yview)
-            self.select_asn.pack()
+            self.asn_options = list(assistent.get_all_asn().keys())
+            self.selected_asn = tk.StringVar()
+            self.asn_options.insert(0, "Neuer ASN")
+            self.selected_asn.set("Neuer ASN")
 
-        def choose_asn(self, event):
-            listeAusgewaehlt = self.select_asn.curselection()
-            itemAusgewaehlt = listeAusgewaehlt[0]
-            kuerzelAusgewaehlt = self.select_asn.get(itemAusgewaehlt)
-            editframe = self.parent.AsnEditFrame(self.parent, kuerzelAusgewaehlt)
-            editframe.grid(row=0, column=1)
+            for kuerzel in self.asn_options:
+                button = tk.Radiobutton(self, text=kuerzel, padx=20,
+                                        variable=self.selected_asn, value=kuerzel,
+                                        command=self.choose_asn)
+                button.pack()
+
+        def choose_asn(self):
+            kuerzelAusgewaehlt = self.selected_asn.get()
+            self.parent.editframe.destroy()
+            self.parent.editframe = self.parent.AsnEditFrame(self.parent, kuerzelAusgewaehlt)
+            self.parent.editframe.grid(row=0, column=1)
 
     class AsnEditFrame(tk.Frame):
         class FesteSchichtForm(tk.Frame):
@@ -1105,6 +1135,7 @@ class FensterEditAsn(tk.Toplevel):
             # self.pfk_frame.save_person(eb_oder_pfk='pfk')
             assistent.asn[asn.kuerzel] = asn
             alles_speichern()
+            self.parent.destroy()
             FensterEditAsn(root)
 
     def __init__(self, parent):
@@ -1112,7 +1143,8 @@ class FensterEditAsn(tk.Toplevel):
         super().__init__(parent)
         self.auswahlframe = self.AsnAuswahllisteFrame(self)
         self.auswahlframe.grid(row=0, column=0)
-        self.editframe = ''
+        self.editframe = self.AsnEditFrame(self, "Neuer ASN")
+        self.editframe.grid(row=0, column=1)
 
 
 class FensterNeueSchicht(tk.Toplevel):
@@ -1159,20 +1191,22 @@ class FensterNeueSchicht(tk.Toplevel):
 
             def change_template(self):
                 if self.kuerzel != "Bitte auswählen" and self.kuerzel != "Neuer Assistent":
-                    template_index = self.selected_template.get()
+
                     asn = assistent.get_asn_by_kuerzel(self.kuerzel)
-                    template = asn.schicht_templates[template_index]
-                    start = template["start"]
-                    ende = template["ende"]
-                    frame = self.parent.parent.schicht_calendar_frame
-                    frame.startzeit_input.hourstr.set(start.strftime("%H"))
-                    frame.startzeit_input.minstr.set(start.strftime("%M"))
-                    frame.endzeit_input.hourstr.set(ende.strftime("%H"))
-                    frame.endzeit_input.minstr.set(ende.strftime("%M"))
-                    if ende < start:
-                        frame.tag_nacht_reise_var.set(2)
-                    else:
-                        frame.tag_nacht_reise_var.set(1)
+                    if asn.schicht_templates:
+                        template_index = self.selected_template.get()
+                        template = asn.schicht_templates[template_index]
+                        start = template["start"]
+                        ende = template["ende"]
+                        frame = self.parent.parent.schicht_calendar_frame
+                        frame.startzeit_input.hourstr.set(start.strftime("%H"))
+                        frame.startzeit_input.minstr.set(start.strftime("%M"))
+                        frame.endzeit_input.hourstr.set(ende.strftime("%H"))
+                        frame.endzeit_input.minstr.set(ende.strftime("%M"))
+                        if ende < start:
+                            frame.tag_nacht_reise_var.set(2)
+                        else:
+                            frame.tag_nacht_reise_var.set(1)
 
             def show(self):
                 for child in self.winfo_children():
@@ -1240,8 +1274,11 @@ class FensterNeueSchicht(tk.Toplevel):
 
             self.startzeit_label = tk.Label(self, text="Startzeit")
             self.startzeit_input = TimePicker(self)
+            self.startzeit_input.bind('<FocusOut>', self.nachtschicht_durch_uhrzeit)
             self.endzeit_label = tk.Label(self, text="Schichtende")
             self.endzeit_input = TimePicker(self)
+            self.endzeit_input.bind('<FocusOut>', self.nachtschicht_durch_uhrzeit)
+
             self.enddatum_label = tk.Label(self, text="Datum Ende der Schicht")
             self.enddatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
             # TODO Vorauswahl konfigurieren lassen
@@ -1290,6 +1327,17 @@ class FensterNeueSchicht(tk.Toplevel):
             # TODO HACK besser machen? zwingt enddatum auf invisible
             self.tag_nacht_reise(1, self.enddatum_input,
                                  self.enddatum_label)
+
+        def nachtschicht_durch_uhrzeit(self, event):
+            start = datetime.time(hour=int(self.startzeit_input.hourstr.get()),
+                                  minute=int(self.startzeit_input.minstr.get()))
+            ende = datetime.time(hour=int(self.endzeit_input.hourstr.get()),
+                                 minute=int(self.endzeit_input.minstr.get()))
+
+            if ende < start:
+                self.tag_nacht_reise_var.set(2)
+            else:
+                self.tag_nacht_reise_var.set(1)
 
         def tag_nacht_reise(self, value, label, button):
             if value == 3:
@@ -1378,7 +1426,7 @@ class FensterNeueSchicht(tk.Toplevel):
                         self.neue_adresse.grid_remove()
 
                 def get_data(self):
-                    if self.selected.get() == "Keine Abweichende Adresse":
+                    if self.selected.get() == "Keine abweichende Adresse":
                         return []
                     elif self.selected.get() == "Neue Adresse eintragen":
                         adresse = Adresse(kuerzel=self.kuerzel_input.get(),
@@ -1386,7 +1434,7 @@ class FensterNeueSchicht(tk.Toplevel):
                                           hnr=self.hausnummer_input.get(),
                                           plz=self.plz_input.get(),
                                           stadt=self.stadt_input.get())
-                        self.asn.adressen.append(adresse)
+                        self.parent.parent.parent.asn.adressen.append(adresse)
                         return adresse
                     else:
                         asn_adresse = self.parent.parent.parent.asn.get_adresse_by_kuerzel(self.selected.get())
@@ -1467,7 +1515,6 @@ class FensterNeueSchicht(tk.Toplevel):
         self.saveandnew_button = tk.Button(self, text="Daten speichern und neu",
                                            command=lambda: self.action_save_neue_schicht(undneu=1))
 
-        # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
         # wird erst bei "Neuer AS" zugeschaltet
         # self.templates.grid(row=2, column=0, columnspan=4)
 
@@ -1534,8 +1581,6 @@ class NeuerUrlaub(tk.Toplevel):
         self.saveandnew_button = tk.Button(self, text="Daten speichern und neu",
                                            command=lambda: self.action_save_neuer_urlaub(undneu=1))
 
-        # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
-
         # ins Fenster packen
         self.headline.grid(row=0, column=0, columnspan=4)
         self.startdatum_label.grid(row=1, column=0)
@@ -1590,8 +1635,6 @@ class NeueAU(tk.Toplevel):
         self.saveandnew_button = tk.Button(self,
                                            text="Daten speichern und neu",
                                            command=lambda: self.action_save_neue_arbeitsunfaehigkeit(undneu=1))
-
-        # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
 
         # ins Fenster packen
         self.headline.grid(row=0, column=0, columnspan=4)
@@ -1675,16 +1718,21 @@ class Hauptfenster(tk.Frame):
             def monat_change(self, step):
                 self.offset += step
                 self.arbeitsdate = self.berechne_arbeitsdate()
+                # Hack date in datetime übersetzen
+                # TODO  konsequent datetime verwenden.
+                self.arbeitsdate = datetime.datetime(self.arbeitsdate.year,
+                                                     self.arbeitsdate.month,
+                                                     self.arbeitsdate.day,
+                                                     0, 0, 0)
                 self.aktueller_monat.config(text=self.arbeitsdate.strftime("%B %Y"))
                 root.fenster.hauptseite.tab.destroy()
                 root.fenster.hauptseite.seitenleiste.destroy()
-                root.fenster.hauptseite.seitenleiste = root.fenster.hauptseite.Seitenleiste(self)
-                root.fenster.hauptseite.tab = root.fenster.hauptseite.Tabelle(self)
+                root.fenster.hauptseite.seitenleiste = root.fenster.hauptseite.Seitenleiste(root.fenster.hauptseite)
+                root.fenster.hauptseite.tab = root.fenster.hauptseite.Tabelle(root.fenster.hauptseite, self.arbeitsdate)
 
                 root.fenster.hauptseite.tab.grid(row=2, column=0)
-
-                # self.erstelle_tabelle(self.arbeitsdate)
-                # erstelle_seitenleiste()
+                root.fenster.hauptseite.seitenleiste.draw()
+                root.fenster.hauptseite.seitenleiste.grid(row=2, column=1)
 
         class Tabelle(tk.Frame):
             def __init__(self,
@@ -1692,7 +1740,7 @@ class Hauptfenster(tk.Frame):
                          arbeitsdatum=datetime.datetime(datetime.date.today().year,
                                                         datetime.date.today().month,
                                                         1)):
-                super().__init__(parent)
+                super().__init__(parent, bd=1)
                 self.start = self.arbeitsdatum = arbeitsdatum
                 self.end = self.verschiebe_monate(1, arbeitsdatum)
                 schichten = assistent.get_all_schichten(self.start, self.end)
@@ -1800,7 +1848,7 @@ class Hauptfenster(tk.Frame):
                                                                           zeilendaten[0], 0, 1))
                                 austunden = au.berechne_durchschnittliche_stundenzahl_pro_tag()
                                 inhalt = austunden
-                                # root.fenster.hauptseite.seitenleiste.arbeitsstunden += austunden
+                                parent.seitenleiste.arbeitsstunden += austunden
                             elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
                                                                           arbeitsdatum.month, zeilendaten[0], 0, 1)):
                                 urlaub = assistent.check_urlaub(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
@@ -1809,7 +1857,7 @@ class Hauptfenster(tk.Frame):
                                 inhalt = ustunden
                                 parent.seitenleiste.arbeitsstunden += ustunden
                             elif zeilendaten[1] != 'empty':
-                                # root.fenster.hauptseite.seitenleiste.arbeitsstunden += zeilendaten[1].stundenzahl
+                                parent.seitenleiste.arbeitsstunden += zeilendaten[1].stundenzahl
                                 inhalt = str(zeilendaten[1].berechne_stundenzahl())
                             else:
                                 inhalt = ''
@@ -1821,8 +1869,8 @@ class Hauptfenster(tk.Frame):
                                                                           zeilendaten[0], 0, 1))
                                 aulohn = au.aulohn_pro_tag
                                 aulohn_pro_stunde = au.aulohn_pro_stunde
-                                # root.fenster.hauptseite.seitenleiste.grundlohn += aulohn
-                                # root.fenster.hauptseite.seitenleiste.grundlohn_pro_stunde = aulohn_pro_stunde
+                                parent.seitenleiste.grundlohn += aulohn
+                                parent.seitenleiste.grundlohn_pro_stunde = aulohn_pro_stunde
                                 inhalt = "{:,.2f}€".format(aulohn)
                             elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
                                                                           arbeitsdatum.month, zeilendaten[0], 0, 1)):
@@ -1830,13 +1878,13 @@ class Hauptfenster(tk.Frame):
                                                                                   zeilendaten[0], 0, 1))
                                 ulohn = urlaub.ulohn_pro_tag
                                 ulohn_pro_stunde = urlaub.ulohn_pro_stunde
-                                # root.fenster.hauptseite.seitenleiste.grundlohn += ulohn
-                                # root.fenster.hauptseite.seitenleiste.grundlohn_pro_stunde = ulohn_pro_stunde
+                                parent.seitenleiste.grundlohn += ulohn
+                                parent.seitenleiste.grundlohn_pro_stunde = ulohn_pro_stunde
                                 inhalt = "{:,.2f}€".format(ulohn)
                             elif zeilendaten[1] != 'empty':
                                 schichtlohn = zeilendaten[1].schichtlohn
-                                # root.fenster.hauptseite.seitenleiste.grundlohn += zeilendaten[1].schichtlohn
-                                # root.fenster.hauptseite.seitenleiste.grundlohn_pro_stunde = zeilendaten[1].stundenlohn
+                                parent.seitenleiste.grundlohn += zeilendaten[1].schichtlohn
+                                parent.seitenleiste.grundlohn_pro_stunde = zeilendaten[1].stundenlohn
                                 inhalt = "{:,.2f}€".format(schichtlohn)
                             else:
                                 inhalt = ''
@@ -1845,9 +1893,9 @@ class Hauptfenster(tk.Frame):
                             if zeilendaten[1] != 'empty':
                                 if zeilendaten[1].ist_kurzfristig:
                                     kurzfr = schichtlohn * 0.2
-                                    # root.fenster.hauptseite.seitenleiste.kurzfr_pro_stunde = zeilendaten[1].stundenlohn * 0.2
-                                    # root.fenster.hauptseite.seitenleiste.kurzfr_stunden = zeilendaten[1].stundenzahl
-                                    # root.fenster.hauptseite.seitenleiste.kurzfr += kurzfr
+                                    parent.seitenleiste.kurzfr_pro_stunde = zeilendaten[1].stundenlohn * 0.2
+                                    parent.seitenleiste.kurzfr_stunden = zeilendaten[1].stundenzahl
+                                    parent.seitenleiste.kurzfr += kurzfr
                                     inhalt = "{:,.2f}€".format(kurzfr)
                                 else:
                                     inhalt = ''
@@ -1866,8 +1914,8 @@ class Hauptfenster(tk.Frame):
                         elif spaltennummer == 19:
                             if zeilendaten[1] != 'empty':
                                 nachtzuschlag_schicht = zeilendaten[1].nachtzuschlag_schicht
-                                # root.fenster.hauptseite.seitenleiste.nachtzuschlag += zeilendaten[1].nachtzuschlag_schicht
-                                # root.fenster.hauptseite.seitenleiste.nachtzuschlag_pro_stunde = zeilendaten[1].nachtzuschlag
+                                parent.seitenleiste.nachtzuschlag += zeilendaten[1].nachtzuschlag_schicht
+                                parent.seitenleiste.nachtzuschlag_pro_stunde = zeilendaten[1].nachtzuschlag
                                 inhalt = "{:,.2f}€".format(nachtzuschlag_schicht)
                             else:
                                 inhalt = ''
@@ -1876,8 +1924,8 @@ class Hauptfenster(tk.Frame):
                             if zeilendaten[1] != 'empty' and zeilendaten[1].zuschlaege != {}:
                                 grund = zeilendaten[1].zuschlaege['zuschlagsgrund']
                                 zuschlag_stunden = zeilendaten[1].zuschlaege['stunden_gesamt']
-                                # root.fenster.hauptseite.seitenleiste.zuschlaege[grund]['stunden_gesamt'] \
-                                #    += zuschlag_stunden
+                                parent.seitenleiste.zuschlaege[grund]['stunden_gesamt'] \
+                                    #    += zuschlag_stunden
                                 inhalt = str(zuschlag_stunden) + ' ' + zeilendaten[1].zuschlaege['zuschlagsgrund']
                             else:
                                 inhalt = ''
@@ -1886,20 +1934,20 @@ class Hauptfenster(tk.Frame):
                             if zeilendaten[1] != 'empty' and zeilendaten[1].zuschlaege != {}:
                                 grund = zeilendaten[1].zuschlaege['zuschlagsgrund']
                                 zuschlag_schicht = zeilendaten[1].zuschlaege['zuschlag_schicht']
-                                # root.fenster.hauptseite.seitenleiste.zuschlaege[grund]['zuschlaege_gesamt'] \
-                                #     += zuschlag_schicht
-                                # root.fenster.hauptseite.seitenleiste.zuschlaege[grund]['zuschlag_pro_stunde'] = \
-                                #     zeilendaten[1].zuschlaege['zuschlag_pro_stunde']
+                                parent.seitenleiste.zuschlaege[grund]['zuschlaege_gesamt'] \
+                                    += zuschlag_schicht
+                                parent.seitenleiste.zuschlaege[grund]['zuschlag_pro_stunde'] = \
+                                    zeilendaten[1].zuschlaege['zuschlag_pro_stunde']
                                 inhalt = "{:,.2f}€".format(zuschlag_schicht)
                             else:
                                 inhalt = ''
                             width = 8
                         elif spaltennummer == 22:
                             if zeilendaten[1] != 'empty':
-                                # root.fenster.hauptseite.seitenleiste.wechselschichtzulage += zeilendaten[
-                                #     1].wechselschichtzulage_schicht
-                                # root.fenster.hauptseite.seitenleiste.wechselschichtzulage_pro_stunde = zeilendaten[
-                                #     1].wechselschichtzulage
+                                parent.seitenleiste.wechselschichtzulage += zeilendaten[
+                                    1].wechselschichtzulage_schicht
+                                parent.seitenleiste.wechselschichtzulage_pro_stunde = zeilendaten[
+                                    1].wechselschichtzulage
                                 inhalt = "{:,.2f}€".format(zeilendaten[1].wechselschichtzulage_schicht)
                             else:
                                 inhalt = ''
@@ -1907,8 +1955,8 @@ class Hauptfenster(tk.Frame):
 
                         elif spaltennummer == 23:
                             if zeilendaten[1] != 'empty':
-                                # root.fenster.hauptseite.seitenleiste.orga += zeilendaten[1].orgazulage_schicht
-                                # root.fenster.hauptseite.seitenleiste.orga_pro_stunde = zeilendaten[1].orgazulage
+                                parent.seitenleiste.orga += zeilendaten[1].orgazulage_schicht
+                                parent.seitenleiste.orga_pro_stunde = zeilendaten[1].orgazulage
                                 inhalt = "{:,.2f}€".format(zeilendaten[1].orgazulage_schicht)
                             else:
                                 inhalt = ''
@@ -1953,6 +2001,24 @@ class Hauptfenster(tk.Frame):
                 return arbeitsdatum
 
         class Seitenleiste(tk.Frame):
+            class Zeile(tk.Frame):
+                def __init__(self, parent, spalte1, spalte4, spalte2='', spalte3=''):
+                    super().__init__(parent)
+                    a = tk.Label(self, text=spalte1, justify="left")
+                    b = tk.Label(self, text=spalte2, justify="right")
+                    c = tk.Label(self, text=spalte3, justify="right")
+                    d = tk.Label(self, text=spalte4, justify="right")
+
+                    a.config(width=15)
+                    b.config(width=10)
+                    c.config(width=10)
+                    d.config(width=10)
+
+                    a.grid(row=0, column=0, sticky="w")
+                    b.grid(row=0, column=1, sticky="e")
+                    c.grid(row=0, column=2, sticky="e")
+                    d.grid(row=0, column=3, sticky="e")
+
             def __init__(self, parent):
                 super().__init__(parent)
                 self.zuschlaege = {}
@@ -1978,6 +2044,68 @@ class Hauptfenster(tk.Frame):
                 self.orga = 0
                 self.orga_pro_stunde = 0
 
+            def draw(self):
+                zeilenzaehler = 0
+                zeile = self.Zeile(self,
+                                   spalte1='Bezeichnung',
+                                   spalte2="Stunden",
+                                   spalte3="pro Stunde",
+                                   spalte4="gesamt")
+                zeile.grid(row=zeilenzaehler, column=0)
+                zeilenzaehler += 1
+                zeile = self.Zeile(self,
+                                   spalte1='Grundlohn',
+                                   spalte2="{:,.2f}".format(self.arbeitsstunden),
+                                   spalte3="{:,.2f}€".format(self.grundlohn_pro_stunde),
+                                   spalte4="{:,.2f}€".format(self.grundlohn))
+                zeile.grid(row=zeilenzaehler, column=0)
+                zeilenzaehler += 1
+                zeile = self.Zeile(self,
+                                   spalte1='Kurzfr. RB',
+                                   spalte2="{:,.2f}".format(self.kurzfr_stunden),
+                                   spalte3="{:,.2f}€".format(self.kurzfr_pro_stunde),
+                                   spalte4="{:,.2f}€".format(self.kurzfr))
+                zeile.grid(row=zeilenzaehler, column=0)
+                zeilenzaehler += 1
+                zeile = self.Zeile(self,
+                                   spalte1='Nacht',
+                                   spalte2="{:,.2f}".format(self.nachtstunden),
+                                   spalte3="{:,.2f}€".format(self.nachtzuschlag_pro_stunde),
+                                   spalte4="{:,.2f}€".format(self.nachtstunden))
+                zeile.grid(row=zeilenzaehler, column=0)
+                zeilenzaehler += 1
+                zeile = self.Zeile(self,
+                                   spalte1='Wechselschicht',
+                                   spalte2="{:,.2f}".format(self.arbeitsstunden),
+                                   spalte3="{:,.2f}€".format(self.wechselschichtzulage_pro_stunde),
+                                   spalte4="{:,.2f}€".format(self.wechselschichtzulage))
+                zeile.grid(row=zeilenzaehler, column=0)
+                zeilenzaehler += 1
+                zeile = self.Zeile(self,
+                                   spalte1='Orga',
+                                   spalte2="{:,.2f}".format(self.arbeitsstunden),
+                                   spalte3="{:,.2f}€".format(self.orga_pro_stunde),
+                                   spalte4="{:,.2f}€".format(self.orga))
+                zeile.grid(row=zeilenzaehler, column=0)
+                zeilenzaehler += 1
+                brutto = self.grundlohn + self.wechselschichtzulage + self.nachtzuschlag + self.orga + self.kurzfr
+                for zuschlag in self.zuschlaege:
+                    if self.zuschlaege[zuschlag]["stunden_gesamt"] > 0:
+                        zeile = self.Zeile(self,
+                                           spalte1=zuschlag,
+                                           spalte2="{:,.2f}".format(self.zuschlaege[zuschlag]["stunden_gesamt"]),
+                                           spalte3="{:,.2f}€".format(self.zuschlaege[zuschlag]["zuschlag_pro_stunde"]),
+                                           spalte4="{:,.2f}€".format(self.zuschlaege[zuschlag]["zuschlaege_gesamt"]))
+                        zeile.grid(row=zeilenzaehler, column=0)
+                        brutto += self.zuschlaege[zuschlag]["zuschlaege_gesamt"]
+                        zeilenzaehler += 1
+
+                zeile = self.Zeile(self,
+                                   spalte1='Bruttolohn',
+                                   spalte4="{:,.2f}€".format(brutto))
+                zeile.grid(row=zeilenzaehler, column=0)
+                zeilenzaehler += 1
+
         def __init__(self, parent):  # von Hauptseite
             super().__init__(parent)
             self.title = self.Title(self)
@@ -1988,7 +2116,8 @@ class Hauptfenster(tk.Frame):
             self.title.grid(row=0, column=0, columnspan=2)
             self.nav.grid(row=1, column=0, columnspan=2)
             self.tab.grid(row=2, column=0)
-            # self.seite.grid(row=2, column=1)
+            self.seitenleiste.grid(row=2, column=1)
+            self.seitenleiste.draw()
 
         def show(self):
             self.grid()
@@ -2083,7 +2212,6 @@ def sort_und_berechne_schichten_by_day(schichten, monatjahr=datetime.date.today(
 
 def alles_speichern(neu=0):
     global assistent
-    # TODO File picker
 
     if neu == 1:
         files = [('Assistenten-Dateien', '*.dat')]
