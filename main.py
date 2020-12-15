@@ -654,60 +654,38 @@ class LohnTabelle:
 
 
 class Menuleiste(tk.Menu):
-    class DateiMenue(tk.Menu):
-        def __init__(self, parent):
-            super().__init__(parent, tearoff=0)
-            self.parent = parent
-            self.add_command(label="Neue Assistenten-Datei", command=lambda: NeuerAS(fenster))
-            self.add_command(label="Assistenten-Datei laden", command=alles_laden)
-            self.add_command(label="Assistenten-Datei speichern", command=alles_speichern)
-            # self.add_command(label="Assistenten-Datei speichern unter")
-            self.add_separator()  # Fügt eine Trennlinie hinzu
-            self.add_command(label="Exit", command=fenster.quit)
-
-    class EintragenMenue(tk.Menu):
-        def __int__(self, parent):
-            super().__init__(parent, tearoff=0)
-            self.parent = parent
-            self.add_command(label="Schicht eintragen", command=lambda: FensterNeueSchicht(fenster))
-            self.add_command(label="Urlaub eintragen", command=lambda: NeuerUrlaub(fenster))
-            self.add_command(label="AU/krank eintragen", command=neue_arbeitsunfaehigkeit)
-
-    class BearbeitenMenue(tk.Menu):
-        def __int__(self, parent):
-            super().__init__(parent, tearoff=0)
-            self.parent = parent
-            self.add_command(label="ASN bearbeiten", command=lambda: FensterEditAsn(fenster))
-
-    class TaxesMenue(tk.Menu):
-        def __int__(self, parent):
-            super().__init__(parent, tearoff=0)
-            self.parent = parent
-            self.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand")
-            self.add_command(label="Berechne Fahrtzeiten für Reisekosten")
-
-    class HelpMenue(tk.Menu):
-        def __int__(self, parent):
-            super().__init__(parent, tearoff=0)
-            self.parent = parent
-            self.add_command(label="Info!", command=action_get_info_dialog)
-
     def __init__(self, parent):
-        super().__init__(parent)
-        self.parent = parent
+        tk.Menu.__init__(self, parent)
+
         # Menü Datei und Help erstellen
-        self.datei_menu = self.DateiMenue(self)
-        self.eintragen_menu = self.EintragenMenue(self)
-        self.bearbeiten_menu = self.BearbeitenMenue(self)
-        self.taxes_menu = self.TaxesMenue(self)
-        self.help_menu = self.HelpMenue(self)
-        # Nun fügen wir die Menüs (Datei und Help) der Menüleiste als
-        # "Drop-Down-Menü" hinzu
-        self.add_cascade(label="Datei", menu=self.datei_menu)
-        self.add_cascade(label="Eintragen", menu=self.eintragen_menu)
-        self.add_cascade(label="Bearbeiten", menu=self.bearbeiten_menu)
-        self.add_cascade(label="Einkommenssteuer", menu=self.taxes_menu)
-        self.add_cascade(label="Help", menu=self.help_menu)
+        datei_menu = tk.Menu(self, tearoff=0)
+        datei_menu.add_command(label="Neue Assistenten-Datei", command=lambda: NeuerAS(root))
+        datei_menu.add_command(label="Assistenten-Datei laden", command=alles_laden)
+        datei_menu.add_command(label="Assistenten-Datei speichern", command=alles_speichern)
+        # dateimenu.add_command(label="Assistenten-Datei speichern unter")
+        datei_menu.add_separator()  # Fügt eine Trennlinie hinzu
+        datei_menu.add_command(label="Exit", command=root.fenster.quit)
+
+        eintragen_menu = tk.Menu(self, tearoff=0)
+        eintragen_menu.add_command(label="Schicht eintragen", command=lambda: FensterNeueSchicht(root))
+        eintragen_menu.add_command(label="Urlaub eintragen", command=lambda: NeuerUrlaub(root))
+        eintragen_menu.add_command(label="AU/krank eintragen", command=lambda: NeueAU(root))
+
+        bearbeiten_menu = tk.Menu(self, tearoff=0)
+        bearbeiten_menu.add_command(label="ASN bearbeiten", command=lambda: FensterEditAsn(root))
+
+        taxes_menu = tk.Menu(self, tearoff=0)
+        taxes_menu.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand")
+        taxes_menu.add_command(label="Berechne Fahrtzeiten für Reisekosten")
+
+        help_menu = tk.Menu(self, tearoff=0)
+        help_menu.add_command(label="Info!", command=action_get_info_dialog)
+
+        self.add_cascade(label="Datei", menu=datei_menu)
+        self.add_cascade(label="Eintragen", menu=eintragen_menu)
+        self.add_cascade(label="Bearbeiten", menu=bearbeiten_menu)
+        self.add_cascade(label="Einkommenssteuer", menu=taxes_menu)
+        self.add_cascade(label="Help", menu=help_menu)
 
 
 class NeuerAS(tk.Toplevel):
@@ -1127,7 +1105,7 @@ class FensterEditAsn(tk.Toplevel):
             # self.pfk_frame.save_person(eb_oder_pfk='pfk')
             assistent.asn[asn.kuerzel] = asn
             alles_speichern()
-            FensterEditAsn(fenster)
+            FensterEditAsn(root)
 
     def __init__(self, parent):
         global assistent
@@ -1524,7 +1502,7 @@ class FensterNeueSchicht(tk.Toplevel):
         alles_speichern()
         self.destroy()
         if undneu == 1:
-            FensterNeueSchicht(fenster)
+            FensterNeueSchicht(root)
 
 
 class NeuerUrlaub(tk.Toplevel):
@@ -1591,7 +1569,441 @@ class NeuerUrlaub(tk.Toplevel):
         alles_speichern()
         self.destroy()
         if undneu == 1:
-            NeuerUrlaub(fenster)
+            NeuerUrlaub(root)
+
+
+class NeueAU(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+        self.headline = tk.Label(self, text="AU/krank eintragen")
+        self.startdatum_label = tk.Label(self, text="von")
+        self.startdatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
+        self.enddatum_label = tk.Label(self, text="bis")
+        self.enddatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
+        self.urlaubsstatus = tk.StringVar()
+        self.urlaubsstatus.set('notiert')
+
+        self.save_button = tk.Button(self, text="Daten speichern",
+                                     command=self.action_save_neue_arbeitsunfaehigkeit)
+        self.exit_button = tk.Button(self, text="Abbrechen", command=self.destroy)
+        self.saveandnew_button = tk.Button(self,
+                                           text="Daten speichern und neu",
+                                           command=lambda: self.action_save_neue_arbeitsunfaehigkeit(undneu=1))
+
+        # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
+
+        # ins Fenster packen
+        self.headline.grid(row=0, column=0, columnspan=4)
+        self.startdatum_label.grid(row=1, column=0)
+        self.startdatum_input.grid(row=1, column=1, columnspan=2)
+        self.enddatum_label.grid(row=1, column=3)
+        self.enddatum_input.grid(row=1, column=4)
+
+        self.save_button.grid(row=15, column=0)
+        self.exit_button.grid(row=15, column=1)
+        self.saveandnew_button.grid(row=15, column=2)
+
+    def action_save_neue_arbeitsunfaehigkeit(self, undneu=0):
+        global assistent
+
+        startdatum = self.startdatum_input.get_date().split('/')
+        beginn = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]), 0, 0)
+        enddatum = self.enddatum_input.get_date().split('/')
+        # au geht bis 23:59 am letzten Tag
+        ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]), 23, 59)
+
+        # au erstellen und zum Assistenten stopfen
+        au = Arbeitsunfaehigkeit(beginn, ende)
+        assistent.au_dazu(au)
+        alles_speichern()
+        self.destroy()
+        if undneu == 1:
+            NeueAU(root)
+
+
+class Hauptfenster(tk.Frame):
+    class Begruessung(tk.Frame):
+        def __init__(self, parent):
+            super().__init__(parent)
+            self.info_text = tk.Label(self, text="Bitte erstelle oder öffne eine Assistenten-Datei")
+            self.info_text.grid(row=0, column=0, columnspan=2)
+            self.button_oeffnen = tk.Button(self, text="Gespeicherten Assistenten laden", command=alles_laden)
+            self.button_oeffnen.grid(row=1, column=0)
+            self.button_neu = tk.Button(self, text="Neuen Assistenten anlegen", command=lambda: NeuerAS(root))
+            self.button_neu.grid(row=1, column=1)
+
+        def show(self):
+            self.grid()
+
+        def hide(self):
+            self.grid_remove()
+
+    class Hauptseite(tk.Frame):
+        class Title(tk.Frame):
+            def __init__(self, parent):
+                super().__init__(parent)
+                hallo = tk.Label(self, text="Hallo " + str(assistent))
+                hallo.grid(row=0, column=0)
+
+        class Navigation(tk.Frame):
+            def __init__(self, parent, offset=0):
+                super().__init__(parent)
+                self.parent = parent
+                self.offset = offset
+                # offset = 0
+                vormonat = tk.Button(self, text='einen Monat Zurück', command=lambda: self.monat_change(-1))
+                self.arbeitsdate = self.berechne_arbeitsdate()
+                self.aktueller_monat = tk.Label(self, text=self.arbeitsdate.strftime("%B %Y"))
+                naechster_monat = tk.Button(self, text='Nächster Monat', command=lambda: self.monat_change(+1))
+
+                # in den frame packen
+                vormonat.grid(row=0, column=0)
+                self.aktueller_monat.grid(row=0, column=1)
+                naechster_monat.grid(row=0, column=2)
+
+            def berechne_arbeitsdate(self):
+                aktuelles_datum = datetime.date.today()
+                jahrmonat = divmod(aktuelles_datum.month + self.offset, 12)
+                jahroffset = jahrmonat[0]
+                monat = jahrmonat[1]
+                if monat == 0:
+                    monat = 12
+                    jahroffset -= 1
+                return datetime.date(aktuelles_datum.year + jahroffset, monat, 1)
+
+            def monat_change(self, step):
+                self.offset += step
+                self.arbeitsdate = self.berechne_arbeitsdate()
+                self.aktueller_monat.config(text=self.arbeitsdate.strftime("%B %Y"))
+                root.fenster.hauptseite.tab.destroy()
+                root.fenster.hauptseite.seitenleiste.destroy()
+                root.fenster.hauptseite.seitenleiste = root.fenster.hauptseite.Seitenleiste(self)
+                root.fenster.hauptseite.tab = root.fenster.hauptseite.Tabelle(self)
+
+                root.fenster.hauptseite.tab.grid(row=2, column=0)
+
+                # self.erstelle_tabelle(self.arbeitsdate)
+                # erstelle_seitenleiste()
+
+        class Tabelle(tk.Frame):
+            def __init__(self,
+                         parent,
+                         arbeitsdatum=datetime.datetime(datetime.date.today().year,
+                                                        datetime.date.today().month,
+                                                        1)):
+                super().__init__(parent)
+                self.start = self.arbeitsdatum = arbeitsdatum
+                self.end = self.verschiebe_monate(1, arbeitsdatum)
+                schichten = assistent.get_all_schichten(self.start, self.end)
+                if not schichten:
+                    schichten = insert_standardschichten(self.start, self.end)
+                schichten_sortiert = split_schichten_um_mitternacht(schichten)
+                schichten_sortiert = sort_und_berechne_schichten_by_day(schichten_sortiert, arbeitsdatum)
+                # Tabelle aufbauen
+                # kopfzeile erstellen
+                tk.Label(self, text='Tag', borderwidth=1, relief="solid", width=6).grid(row=0, column=10,
+                                                                                        columnspan=2)
+                tk.Label(self, text='von', borderwidth=1, relief="solid", width=5).grid(row=0, column=12)
+                tk.Label(self, text='bis', borderwidth=1, relief="solid", width=5).grid(row=0, column=13)
+                tk.Label(self, text='ASN', borderwidth=1, relief="solid", width=8).grid(row=0, column=14)
+                tk.Label(self, text='Std', borderwidth=1, relief="solid", width=5).grid(row=0, column=15)
+                tk.Label(self, text='Grundlohn', borderwidth=1, relief="solid", width=8).grid(row=0, column=16)
+                tk.Label(self, text='kurzfr.', borderwidth=1, relief="solid", width=8).grid(row=0, column=17)
+                tk.Label(self, text='NachtStd', borderwidth=1, relief="solid", width=8).grid(row=0, column=18)
+                tk.Label(self, text='Nachtzu.', borderwidth=1, relief="solid", width=8).grid(row=0, column=19)
+                tk.Label(self, text='Zuschlaege', borderwidth=1, relief="solid", width=18).grid(row=0, column=20,
+                                                                                                columnspan=2)
+                tk.Label(self, text='Wechsel', borderwidth=1, relief="solid", width=8).grid(row=0, column=22)
+                tk.Label(self, text='Orga', borderwidth=1, relief="solid", width=8).grid(row=0, column=23)
+
+                # körper
+                meine_tabelle = []
+                spaltenzahl = 24
+                zaehler = 0
+                width = 0
+                inhalt = ''
+                for zeilendaten in schichten_sortiert:
+                    zeile = []
+                    zaehler += 1
+                    for spaltennummer in range(0, spaltenzahl):
+                        if spaltennummer == 0:
+                            # Creating a photoimage object to use image
+                            image = "images/edit.png"
+                            text = 'edit'
+                            command = 'edit'
+
+                        elif spaltennummer == 1:
+                            text = 'del'
+                            command = 'kill'
+                            if zeilendaten[1] != 'empty':
+                                if zeilendaten[1].original_schicht != "root":
+                                    key_string = zeilendaten[1].original_schicht
+                                else:
+                                    key_string = zeilendaten[1].beginn.strftime('%Y%m%d%H%M')
+                            image = "images/del.png"
+
+                        elif 1 < spaltennummer < 10:
+                            text = ''
+
+                        elif spaltennummer == 10:
+                            zeile = []
+                            width = 4
+                            # TODO timezone checken
+                            #  Wochentag
+                            inhalt = datetime.datetime(arbeitsdatum.year, arbeitsdatum.month, zeilendaten[0]).strftime(
+                                '%a')
+
+                        elif spaltennummer == 11:
+                            zeile = []
+                            width = 3
+                            # Tag
+                            inhalt = zeilendaten[0]
+                        elif spaltennummer == 12:
+                            if zeilendaten[1] != 'empty':
+                                inhalt = zeilendaten[1].beginn.strftime('%H:%M')
+                            else:
+                                inhalt = ''
+                            width = 5
+                        elif spaltennummer == 13:
+                            if zeilendaten[1] != 'empty':
+                                inhalt = zeilendaten[1].ende.strftime('%H:%M')
+                            else:
+                                inhalt = ''
+                            width = 5
+
+                        elif spaltennummer == 14:
+                            if assistent.check_au(datetime.datetime(arbeitsdatum.year,
+                                                                    arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                                inhalt = 'AU'
+                            elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
+                                                                          arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                                inhalt = 'Urlaub'
+                            elif zeilendaten[1] != 'empty':
+                                inhalt = ''
+                                # TODO andere Lohnarten für Ausfallgeld, Berechnung Wegegeld
+                                if zeilendaten[1].ist_ausfallgeld:
+                                    inhalt += "Ausf."
+                                if zeilendaten[1].ist_assistententreffen:
+                                    inhalt += "AT "
+                                if zeilendaten[1].ist_pcg:
+                                    inhalt += "PCG "
+                                inhalt += zeilendaten[1].asn.kuerzel
+                            else:
+                                inhalt = ''
+                            width = 10
+
+                        elif spaltennummer == 15:
+                            if assistent.check_au(datetime.datetime(arbeitsdatum.year,
+                                                                    arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                                au = assistent.check_au(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
+                                                                          zeilendaten[0], 0, 1))
+                                austunden = au.berechne_durchschnittliche_stundenzahl_pro_tag()
+                                inhalt = austunden
+                                # root.fenster.hauptseite.seitenleiste.arbeitsstunden += austunden
+                            elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
+                                                                          arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                                urlaub = assistent.check_urlaub(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
+                                                                                  zeilendaten[0], 0, 1))
+                                ustunden = urlaub.berechne_durchschnittliche_stundenzahl_pro_tag()
+                                inhalt = ustunden
+                                parent.seitenleiste.arbeitsstunden += ustunden
+                            elif zeilendaten[1] != 'empty':
+                                # root.fenster.hauptseite.seitenleiste.arbeitsstunden += zeilendaten[1].stundenzahl
+                                inhalt = str(zeilendaten[1].berechne_stundenzahl())
+                            else:
+                                inhalt = ''
+                            width = 5
+                        elif spaltennummer == 16:
+                            if assistent.check_au(datetime.datetime(arbeitsdatum.year,
+                                                                    arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                                au = assistent.check_au(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
+                                                                          zeilendaten[0], 0, 1))
+                                aulohn = au.aulohn_pro_tag
+                                aulohn_pro_stunde = au.aulohn_pro_stunde
+                                # root.fenster.hauptseite.seitenleiste.grundlohn += aulohn
+                                # root.fenster.hauptseite.seitenleiste.grundlohn_pro_stunde = aulohn_pro_stunde
+                                inhalt = "{:,.2f}€".format(aulohn)
+                            elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
+                                                                          arbeitsdatum.month, zeilendaten[0], 0, 1)):
+                                urlaub = assistent.check_urlaub(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
+                                                                                  zeilendaten[0], 0, 1))
+                                ulohn = urlaub.ulohn_pro_tag
+                                ulohn_pro_stunde = urlaub.ulohn_pro_stunde
+                                # root.fenster.hauptseite.seitenleiste.grundlohn += ulohn
+                                # root.fenster.hauptseite.seitenleiste.grundlohn_pro_stunde = ulohn_pro_stunde
+                                inhalt = "{:,.2f}€".format(ulohn)
+                            elif zeilendaten[1] != 'empty':
+                                schichtlohn = zeilendaten[1].schichtlohn
+                                # root.fenster.hauptseite.seitenleiste.grundlohn += zeilendaten[1].schichtlohn
+                                # root.fenster.hauptseite.seitenleiste.grundlohn_pro_stunde = zeilendaten[1].stundenlohn
+                                inhalt = "{:,.2f}€".format(schichtlohn)
+                            else:
+                                inhalt = ''
+                            width = 8
+                        elif spaltennummer == 17:
+                            if zeilendaten[1] != 'empty':
+                                if zeilendaten[1].ist_kurzfristig:
+                                    kurzfr = schichtlohn * 0.2
+                                    # root.fenster.hauptseite.seitenleiste.kurzfr_pro_stunde = zeilendaten[1].stundenlohn * 0.2
+                                    # root.fenster.hauptseite.seitenleiste.kurzfr_stunden = zeilendaten[1].stundenzahl
+                                    # root.fenster.hauptseite.seitenleiste.kurzfr += kurzfr
+                                    inhalt = "{:,.2f}€".format(kurzfr)
+                                else:
+                                    inhalt = ''
+                            else:
+                                inhalt = ''
+                            width = 8
+
+                        elif spaltennummer == 18:
+                            if zeilendaten[1] != 'empty':
+                                nachtstunden = zeilendaten[1].nachtstunden
+                                # root.fenster.hauptseite.seitenleiste.nachtstunden += nachtstunden
+                                inhalt = str(nachtstunden)
+                            else:
+                                inhalt = ''
+                            width = 8
+                        elif spaltennummer == 19:
+                            if zeilendaten[1] != 'empty':
+                                nachtzuschlag_schicht = zeilendaten[1].nachtzuschlag_schicht
+                                # root.fenster.hauptseite.seitenleiste.nachtzuschlag += zeilendaten[1].nachtzuschlag_schicht
+                                # root.fenster.hauptseite.seitenleiste.nachtzuschlag_pro_stunde = zeilendaten[1].nachtzuschlag
+                                inhalt = "{:,.2f}€".format(nachtzuschlag_schicht)
+                            else:
+                                inhalt = ''
+                            width = 8
+                        elif spaltennummer == 20:
+                            if zeilendaten[1] != 'empty' and zeilendaten[1].zuschlaege != {}:
+                                grund = zeilendaten[1].zuschlaege['zuschlagsgrund']
+                                zuschlag_stunden = zeilendaten[1].zuschlaege['stunden_gesamt']
+                                # root.fenster.hauptseite.seitenleiste.zuschlaege[grund]['stunden_gesamt'] \
+                                #    += zuschlag_stunden
+                                inhalt = str(zuschlag_stunden) + ' ' + zeilendaten[1].zuschlaege['zuschlagsgrund']
+                            else:
+                                inhalt = ''
+                            width = 15
+                        elif spaltennummer == 21:
+                            if zeilendaten[1] != 'empty' and zeilendaten[1].zuschlaege != {}:
+                                grund = zeilendaten[1].zuschlaege['zuschlagsgrund']
+                                zuschlag_schicht = zeilendaten[1].zuschlaege['zuschlag_schicht']
+                                # root.fenster.hauptseite.seitenleiste.zuschlaege[grund]['zuschlaege_gesamt'] \
+                                #     += zuschlag_schicht
+                                # root.fenster.hauptseite.seitenleiste.zuschlaege[grund]['zuschlag_pro_stunde'] = \
+                                #     zeilendaten[1].zuschlaege['zuschlag_pro_stunde']
+                                inhalt = "{:,.2f}€".format(zuschlag_schicht)
+                            else:
+                                inhalt = ''
+                            width = 8
+                        elif spaltennummer == 22:
+                            if zeilendaten[1] != 'empty':
+                                # root.fenster.hauptseite.seitenleiste.wechselschichtzulage += zeilendaten[
+                                #     1].wechselschichtzulage_schicht
+                                # root.fenster.hauptseite.seitenleiste.wechselschichtzulage_pro_stunde = zeilendaten[
+                                #     1].wechselschichtzulage
+                                inhalt = "{:,.2f}€".format(zeilendaten[1].wechselschichtzulage_schicht)
+                            else:
+                                inhalt = ''
+                            width = 8
+
+                        elif spaltennummer == 23:
+                            if zeilendaten[1] != 'empty':
+                                # root.fenster.hauptseite.seitenleiste.orga += zeilendaten[1].orgazulage_schicht
+                                # root.fenster.hauptseite.seitenleiste.orga_pro_stunde = zeilendaten[1].orgazulage
+                                inhalt = "{:,.2f}€".format(zeilendaten[1].orgazulage_schicht)
+                            else:
+                                inhalt = ''
+                            width = 8
+
+                        if spaltennummer < 10:
+                            if zeilendaten[1] != 'empty':
+                                if text != '':
+                                    if command == 'kill':
+                                        zelle = tk.Button(self, text=text, command=lambda: kill_schicht(key_string))
+                                    elif command == 'edit':
+                                        zelle = tk.Button(self, text=text)
+                                    zelle.image = tk.PhotoImage(file=image, width=16, height=16)
+                                    zelle.config(image=zelle.image, width=16, height=16)
+                                    zelle.grid(row=zaehler, column=spaltennummer)
+                                    zeile.append(zelle)
+
+                        elif spaltennummer >= 10:
+                            zelle = tk.Entry(self, width=width)
+                            zelle.grid(row=zaehler, column=spaltennummer)
+                            zelle.delete(0, "end")
+                            zelle.insert(0, inhalt)
+                            zelle.config(state='readonly')
+                            zeile.append(zelle)
+
+                    meine_tabelle.append(zeile)
+
+            def verschiebe_monate(self, offset, datum=datetime.datetime.now()):
+                arbeitsmonat = datum.month + offset
+                tmp = divmod(arbeitsmonat, 12)
+                offset_arbeitsjahr = tmp[0]
+                arbeitsmonat = tmp[1]
+                if arbeitsmonat == 0:
+                    arbeitsmonat = 12
+                    offset_arbeitsjahr -= 1
+                if offset_arbeitsjahr < 0:
+                    # modulo einer negativen Zahl ist ein Arschloch..hoffentlich stimmts
+                    # TODO eventuell jahr korrigieren? Testen, was passiert
+                    arbeitsmonat = 12 - arbeitsmonat
+                arbeitsjahr = datum.year + offset_arbeitsjahr
+                arbeitsdatum = datetime.datetime(arbeitsjahr, arbeitsmonat, 1, 0, 0, 0)
+                return arbeitsdatum
+
+        class Seitenleiste(tk.Frame):
+            def __init__(self, parent):
+                super().__init__(parent)
+                self.zuschlaege = {}
+                for zuschlag_name in lohntabelle.zuschlaege.keys():
+                    self.zuschlaege[zuschlag_name] = {
+                        'stunden_gesamt': 0,
+                        'zuschlaege_gesamt': 0,
+                        'stunden_steuerfrei': 0,
+                        'stunden_steuerpflichtig': 0,
+                        'zuschlag_pro_stunde': 0,
+                    }
+                self.arbeitsstunden = 0
+                self.grundlohn = 0
+                self.grundlohn_pro_stunde = 0
+                self.kurzfr = 0
+                self.kurzfr_pro_stunde = 0
+                self.kurzfr_stunden = 0
+                self.nachtstunden = 0
+                self.nachtzuschlag = 0
+                self.nachtzuschlag_pro_stunde = 0
+                self.wechselschichtzulage = 0
+                self.wechselschichtzulage_pro_stunde = 0
+                self.orga = 0
+                self.orga_pro_stunde = 0
+
+        def __init__(self, parent):  # von Hauptseite
+            super().__init__(parent)
+            self.title = self.Title(self)
+            self.nav = self.Navigation(self)
+            self.seitenleiste = self.Seitenleiste(self)
+            self.tab = self.Tabelle(self)
+
+            self.title.grid(row=0, column=0, columnspan=2)
+            self.nav.grid(row=1, column=0, columnspan=2)
+            self.tab.grid(row=2, column=0)
+            # self.seite.grid(row=2, column=1)
+
+        def show(self):
+            self.grid()
+
+        def hide(self):
+            self.grid_remove()
+
+    def __init__(self, parent):  # von Hauptfenster
+        super().__init__(parent)
+        if not assistent.assistent_is_loaded:
+            self.hello = self.Begruessung(self)
+            self.hello.grid(row=0, column=0)
+        else:
+            self.hauptseite = self.Hauptseite(self)
+            self.hauptseite.grid(row=0, column=0)
 
 
 def end_of_month(month, year):
@@ -1669,58 +2081,6 @@ def sort_und_berechne_schichten_by_day(schichten, monatjahr=datetime.date.today(
     return ausgabe
 
 
-def neue_arbeitsunfaehigkeit():
-    # TODO allgemeine show-hide funktion
-    class NeueAU(tk.Toplevel):
-        def __init__(self, parent):
-            super().__init__(parent)
-            self.parent = parent
-            self.headline = tk.Label(self, text="AU/krank eintragen")
-            self.startdatum_label = tk.Label(self, text="von")
-            self.startdatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
-            self.enddatum_label = tk.Label(self, text="bis")
-            self.enddatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
-            self.urlaubsstatus = tk.StringVar()
-            self.urlaubsstatus.set('notiert')
-
-            self.save_button = tk.Button(self, text="Daten speichern",
-                                         command=self.action_save_neue_arbeitsunfaehigkeit)
-            self.exit_button = tk.Button(self, text="Abbrechen", command=self.destroy)
-            self.saveandnew_button = tk.Button(self,
-                                               text="Daten speichern und neu",
-                                               command=lambda: self.action_save_neue_arbeitsunfaehigkeit(undneu=1))
-
-            # TODO Berücksichtigen PCG, AT, Büro, Ausfallgeld, fester ASN, regelmäßige Schicht, besonderer Einsatz
-
-            # ins Fenster packen
-            self.headline.grid(row=0, column=0, columnspan=4)
-            self.startdatum_label.grid(row=1, column=0)
-            self.startdatum_input.grid(row=1, column=1, columnspan=2)
-            self.enddatum_label.grid(row=1, column=3)
-            self.enddatum_input.grid(row=1, column=4)
-
-            self.save_button.grid(row=15, column=0)
-            self.exit_button.grid(row=15, column=1)
-            self.saveandnew_button.grid(row=15, column=2)
-
-        def action_save_neue_arbeitsunfaehigkeit(self, undneu=0):
-            global assistent
-
-            startdatum = self.startdatum_input.get_date().split('/')
-            beginn = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]), 0, 0)
-            enddatum = self.enddatum_input.get_date().split('/')
-            # au geht bis 23:59 am letzten Tag
-            ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]), 23, 59)
-
-            # au erstellen und zum Assistenten stopfen
-            au = Arbeitsunfaehigkeit(beginn, ende)
-            assistent.au_dazu(au)
-            alles_speichern()
-            self.destroy()
-            if undneu == 1:
-                NeueAU(fenster)
-
-
 def alles_speichern(neu=0):
     global assistent
     # TODO File picker
@@ -1737,8 +2097,11 @@ def alles_speichern(neu=0):
     pickle.dump(assistent, outfile)
     outfile.close()
     if neu == 1:
-        zeichne_hauptmenue()
-    zeichne_hauptseite()
+        menuleiste = Menuleiste(root)
+        root.config(menu=menuleiste)
+    root.fenster.destroy()
+    root.fenster = Hauptfenster(root)
+    root.fenster.grid(row=0, column=0)
 
 
 def alles_laden():
@@ -1751,8 +2114,13 @@ def alles_laden():
         assistent = pickle.load(infile)
         infile.close()
         assistent.__class__.assistent_is_loaded = 1
-        zeichne_hauptmenue()
-        zeichne_hauptseite()
+        # menueleiste laden
+        menuleiste = Menuleiste(root)
+        root.config(menu=menuleiste)
+
+        root.fenster.destroy()
+        root.fenster = Hauptfenster(root)
+        root.fenster.grid(row=0, column=0)
 
 
 def action_get_info_dialog():
@@ -1763,12 +2131,6 @@ Date: 16.11.2020\n\
 Version: 0.01\n\
 ************************"
     mb.showinfo(message=m_text, title="Infos")
-
-
-def zeichne_hauptmenue():
-    # Menüleiste erstellen
-    menuleiste = Menuleiste(root)
-    root.config(menu=menuleiste)
 
 
 def split_schichten_um_mitternacht(schichten):
@@ -1784,7 +2146,9 @@ def split_schichten_um_mitternacht(schichten):
 
 def kill_schicht(key):
     assistent.delete_schicht(key=key)
-    zeichne_hauptseite()
+    root.fenster.destroy()
+    root.fenster = Hauptfenster(root)
+    root.fenster.grid(row=0, column=0)
 
 
 def insert_standardschichten(erster_tag, letzter_tag):
@@ -1837,532 +2201,29 @@ def insert_standardschichten(erster_tag, letzter_tag):
     return assistent.get_all_schichten(erster_tag, letzter_tag)
 
 
-def zeichne_hauptseite():
-    global button_neu, button_oeffnen, assistent
+class App(tk.Tk):
+    def __init__(self):
+        tk.Tk.__init__(self)
 
-    def erstelle_navigation(offset=0):
-        def monat_zurueck(offs):
-            offs -= 1
-            erstelle_navigation(offs)
-            erstelle_tabelle(offs)
-            erstelle_seitenleiste()
+        self.geometry('1200x1000')
+        self.title("Dein Assistentenlohn")
+        # Menue wird leer initialisiert und erst beim Laden des AS gesetzt
+        self.config(menu="")
 
-        def monat_vor(offs):
-            offs += 1
-            erstelle_navigation(offs)
-            erstelle_tabelle(offs)
-            erstelle_seitenleiste()
-
-        for navwidget in nav.winfo_children():
-            navwidget.destroy()
-
-        # offset = 0
-        vormonat = tk.Button(nav, text='einen Monat Zurück', command=lambda: monat_zurueck(offset))
-        aktuelles_datum = datetime.date.today()
-        jahrmonat = divmod(int(aktuelles_datum.strftime('%m')) + offset, 12)
-        jahroffset = jahrmonat[0]
-        monat = jahrmonat[1]
-        if monat == 0:
-            monat = 12
-        arbeitsdate = datetime.date(int(aktuelles_datum.strftime('%Y')) + jahroffset, monat, 1)
-        aktueller_monat = tk.Label(nav, text=arbeitsdate.strftime("%B %Y"))
-        naechster_monat = tk.Button(nav, text='Nächster Monat', command=lambda: monat_vor(offset))
-
-        # in den frame packen
-        vormonat.grid(row=0, column=0)
-        aktueller_monat.grid(row=0, column=1)
-        naechster_monat.grid(row=0, column=2)
-
-    def verschiebe_monate(offset, datum=datetime.datetime.now()):
-        arbeitsmonat = datum.month + offset
-        tmp = divmod(arbeitsmonat, 12)
-        offset_arbeitsjahr = tmp[0]
-        arbeitsmonat = tmp[1]
-        if arbeitsmonat == 0:
-            arbeitsmonat = 12
-            offset_arbeitsjahr -= 1
-        if offset_arbeitsjahr < 0:
-            # modulo einer negativen Zahl ist ein Arschloch..hoffentlich stimmts
-            # TODO eventuell jahr korrigieren? Testen, was passiert
-            arbeitsmonat = 12 - arbeitsmonat
-        arbeitsjahr = datum.year + offset_arbeitsjahr
-        arbeitsdatum = datetime.datetime(arbeitsjahr, arbeitsmonat, 1, 0, 0, 0)
-        return arbeitsdatum
-
-    def erstelle_tabelle(offs=0):
-        command = text = zelle = image = ''
-        for tabwidget in tabelle.winfo_children():
-            tabwidget.destroy()
-
-        zuschlaege = {}
-        for zuschlag_name in lohntabelle.zuschlaege.keys():
-            zuschlaege[zuschlag_name] = {
-                'stunden_gesamt': 0,
-                'zuschlaege_gesamt': 0,
-                'stunden_steuerfrei': 0,
-                'stunden_steuerpflichtig': 0,
-                'zuschlag_pro_stunde': 0,
-            }
-        # TODO Wegegeld BSD. Mit oder ohne Zuschlag???
-        tabelle.summen = {'arbeitsstunden': 0,
-                          'grundlohn': 0,
-                          'grundlohn_pro_stunde': 0,
-                          'kurzfr': 0,
-                          'kurzfr_pro_stunde': 0,
-                          'kurzfr_stunden': 0,
-                          'nachtstunden': 0,
-                          'nachtzuschlag': 0,
-                          'nachtzuschlag_pro_stunde': 0,
-                          'wechselschichtzulage': 0,
-                          'wechselschichtzulage_pro_stunde': 0,
-                          'orga': 0,
-                          'orga_pro_stunde': 0,
-                          'zuschlaege': zuschlaege
-                          }
-
-        arbeitsdatum = start = verschiebe_monate(offs)
-        end = verschiebe_monate(1, arbeitsdatum)
-        schichten = assistent.get_all_schichten(start, end)
-        if not schichten:
-            schichten = insert_standardschichten(start, end)
-        schichten_sortiert = split_schichten_um_mitternacht(schichten)
-        schichten_sortiert = sort_und_berechne_schichten_by_day(schichten_sortiert, arbeitsdatum)
-
-        # Tabelle aufbauen
-        # kopfzeile erstellen
-        tk.Label(tabelle, text='Tag', borderwidth=1, relief="solid", width=6).grid(row=0, column=10, columnspan=2)
-        tk.Label(tabelle, text='von', borderwidth=1, relief="solid", width=5).grid(row=0, column=12)
-        tk.Label(tabelle, text='bis', borderwidth=1, relief="solid", width=5).grid(row=0, column=13)
-        tk.Label(tabelle, text='ASN', borderwidth=1, relief="solid", width=8).grid(row=0, column=14)
-        tk.Label(tabelle, text='Std', borderwidth=1, relief="solid", width=5).grid(row=0, column=15)
-        tk.Label(tabelle, text='Grundlohn', borderwidth=1, relief="solid", width=8).grid(row=0, column=16)
-        tk.Label(tabelle, text='kurzfr.', borderwidth=1, relief="solid", width=8).grid(row=0, column=17)
-        tk.Label(tabelle, text='NachtStd', borderwidth=1, relief="solid", width=8).grid(row=0, column=18)
-        tk.Label(tabelle, text='Nachtzu.', borderwidth=1, relief="solid", width=8).grid(row=0, column=19)
-        tk.Label(tabelle, text='Zuschlaege', borderwidth=1, relief="solid", width=18).grid(row=0, column=20,
-                                                                                           columnspan=2)
-        tk.Label(tabelle, text='Wechsel', borderwidth=1, relief="solid", width=8).grid(row=0, column=22)
-        tk.Label(tabelle, text='Orga', borderwidth=1, relief="solid", width=8).grid(row=0, column=23)
-
-        # körper
-        meine_tabelle = []
-        spaltenzahl = 24
-        zaehler = 0
-        width = 0
-        inhalt = ''
-        for zeilendaten in schichten_sortiert:
-            zeile = []
-            zaehler += 1
-            for spaltennummer in range(0, spaltenzahl):
-                if spaltennummer == 0:
-                    # Creating a photoimage object to use image
-                    image = "images/edit.png"
-                    text = 'edit'
-                    command = 'edit'
-
-                elif spaltennummer == 1:
-                    text = 'del'
-                    command = 'kill'
-                    if zeilendaten[1] != 'empty':
-                        if zeilendaten[1].original_schicht != "root":
-                            key_string = zeilendaten[1].original_schicht
-                        else:
-                            key_string = zeilendaten[1].beginn.strftime('%Y%m%d%H%M')
-                    image = "images/del.png"
-
-                elif 1 < spaltennummer < 10:
-                    text = ''
-
-                elif spaltennummer == 10:
-                    zeile = []
-                    width = 4
-                    # TODO timezone checken
-                    inhalt = datetime.datetime(arbeitsdatum.year, arbeitsdatum.month, zeilendaten[0]).strftime('%a')
-
-                elif spaltennummer == 11:
-                    zeile = []
-                    width = 3
-                    inhalt = zeilendaten[0]
-                elif spaltennummer == 12:
-                    if zeilendaten[1] != 'empty':
-                        inhalt = zeilendaten[1].beginn.strftime('%H:%M')
-                    else:
-                        inhalt = ''
-                    width = 5
-                elif spaltennummer == 13:
-                    if zeilendaten[1] != 'empty':
-                        inhalt = zeilendaten[1].ende.strftime('%H:%M')
-                    else:
-                        inhalt = ''
-                    width = 5
-
-                elif spaltennummer == 14:
-                    if assistent.check_au(datetime.datetime(arbeitsdatum.year,
-                                                            arbeitsdatum.month, zeilendaten[0], 0, 1)):
-                        inhalt = 'AU'
-                    elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
-                                                                  arbeitsdatum.month, zeilendaten[0], 0, 1)):
-                        inhalt = 'Urlaub'
-                    elif zeilendaten[1] != 'empty':
-                        inhalt = ''
-                        # TODO andere Lohnarten für Ausfallgeld, Berechnung Wegegeld
-                        if zeilendaten[1].ist_ausfallgeld:
-                            inhalt += "Ausf."
-                        if zeilendaten[1].ist_assistententreffen:
-                            inhalt += "AT "
-                        if zeilendaten[1].ist_pcg:
-                            inhalt += "PCG "
-                        inhalt += zeilendaten[1].asn.kuerzel
-                    else:
-                        inhalt = ''
-                    width = 10
-
-                elif spaltennummer == 15:
-                    if assistent.check_au(datetime.datetime(arbeitsdatum.year,
-                                                            arbeitsdatum.month, zeilendaten[0], 0, 1)):
-                        au = assistent.check_au(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
-                                                                  zeilendaten[0], 0, 1))
-                        austunden = au.berechne_durchschnittliche_stundenzahl_pro_tag()
-                        inhalt = austunden
-                        tabelle.summen['arbeitsstunden'] += austunden
-                    elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
-                                                                  arbeitsdatum.month, zeilendaten[0], 0, 1)):
-                        urlaub = assistent.check_urlaub(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
-                                                                          zeilendaten[0], 0, 1))
-                        ustunden = urlaub.berechne_durchschnittliche_stundenzahl_pro_tag()
-                        inhalt = ustunden
-                        tabelle.summen['arbeitsstunden'] += ustunden
-                    elif zeilendaten[1] != 'empty':
-                        tabelle.summen['arbeitsstunden'] += zeilendaten[1].stundenzahl
-                        inhalt = str(zeilendaten[1].berechne_stundenzahl())
-                    else:
-                        inhalt = ''
-                    width = 5
-                elif spaltennummer == 16:
-                    if assistent.check_au(datetime.datetime(arbeitsdatum.year,
-                                                            arbeitsdatum.month, zeilendaten[0], 0, 1)):
-                        au = assistent.check_au(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
-                                                                  zeilendaten[0], 0, 1))
-                        aulohn = au.aulohn_pro_tag
-                        aulohn_pro_stunde = au.aulohn_pro_stunde
-                        tabelle.summen['grundlohn'] += aulohn
-                        tabelle.summen['grundlohn_pro_stunde'] = aulohn_pro_stunde
-                        inhalt = "{:,.2f}€".format(aulohn)
-                    elif assistent.check_urlaub(datetime.datetime(arbeitsdatum.year,
-                                                                  arbeitsdatum.month, zeilendaten[0], 0, 1)):
-                        urlaub = assistent.check_urlaub(datetime.datetime(arbeitsdatum.year, arbeitsdatum.month,
-                                                                          zeilendaten[0], 0, 1))
-                        ulohn = urlaub.ulohn_pro_tag
-                        ulohn_pro_stunde = urlaub.ulohn_pro_stunde
-                        tabelle.summen['grundlohn'] += ulohn
-                        tabelle.summen['grundlohn_pro_stunde'] = ulohn_pro_stunde
-                        inhalt = "{:,.2f}€".format(ulohn)
-                    elif zeilendaten[1] != 'empty':
-                        schichtlohn = zeilendaten[1].schichtlohn
-                        tabelle.summen['grundlohn'] += zeilendaten[1].schichtlohn
-                        tabelle.summen['grundlohn_pro_stunde'] = zeilendaten[1].stundenlohn
-                        inhalt = "{:,.2f}€".format(schichtlohn)
-                    else:
-                        inhalt = ''
-                    width = 8
-                elif spaltennummer == 17:
-                    if zeilendaten[1] != 'empty':
-                        if zeilendaten[1].ist_kurzfristig:
-                            kurzfr = schichtlohn * 0.2
-                            tabelle.summen['kurzfr_pro_stunde'] = zeilendaten[1].stundenlohn * 0.2
-                            tabelle.summen["kurzfr_stunden"] = zeilendaten[1].stundenzahl
-                            tabelle.summen['kurzfr'] += kurzfr
-                            inhalt = "{:,.2f}€".format(kurzfr)
-                        else:
-                            inhalt = ''
-                    else:
-                        inhalt = ''
-                    width = 8
-
-                elif spaltennummer == 18:
-                    if zeilendaten[1] != 'empty':
-                        nachtstunden = zeilendaten[1].nachtstunden
-                        tabelle.summen['nachtstunden'] += nachtstunden
-                        inhalt = str(nachtstunden)
-                    else:
-                        inhalt = ''
-                    width = 8
-                elif spaltennummer == 19:
-                    if zeilendaten[1] != 'empty':
-                        nachtzuschlag_schicht = zeilendaten[1].nachtzuschlag_schicht
-                        tabelle.summen['nachtzuschlag'] += zeilendaten[1].nachtzuschlag_schicht
-                        tabelle.summen['nachtzuschlag_pro_stunde'] = zeilendaten[1].nachtzuschlag
-                        inhalt = "{:,.2f}€".format(nachtzuschlag_schicht)
-                    else:
-                        inhalt = ''
-                    width = 8
-                elif spaltennummer == 20:
-                    if zeilendaten[1] != 'empty' and zeilendaten[1].zuschlaege != {}:
-                        grund = zeilendaten[1].zuschlaege['zuschlagsgrund']
-                        zuschlag_stunden = zeilendaten[1].zuschlaege['stunden_gesamt']
-                        tabelle.summen['zuschlaege'][grund]['stunden_gesamt'] \
-                            += zuschlag_stunden
-                        inhalt = str(zuschlag_stunden) + ' ' + zeilendaten[1].zuschlaege['zuschlagsgrund']
-                    else:
-                        inhalt = ''
-                    width = 15
-                elif spaltennummer == 21:
-                    if zeilendaten[1] != 'empty' and zeilendaten[1].zuschlaege != {}:
-                        grund = zeilendaten[1].zuschlaege['zuschlagsgrund']
-                        zuschlag_schicht = zeilendaten[1].zuschlaege['zuschlag_schicht']
-                        tabelle.summen['zuschlaege'][grund]['zuschlaege_gesamt'] \
-                            += zuschlag_schicht
-                        tabelle.summen['zuschlaege'][grund]['zuschlag_pro_stunde'] = \
-                            zeilendaten[1].zuschlaege['zuschlag_pro_stunde']
-                        inhalt = "{:,.2f}€".format(zuschlag_schicht)
-                    else:
-                        inhalt = ''
-                    width = 8
-                elif spaltennummer == 22:
-                    if zeilendaten[1] != 'empty':
-                        tabelle.summen['wechselschichtzulage'] += zeilendaten[1].wechselschichtzulage_schicht
-                        tabelle.summen['wechselschichtzulage_pro_stunde'] = zeilendaten[1].wechselschichtzulage
-                        inhalt = "{:,.2f}€".format(zeilendaten[1].wechselschichtzulage_schicht)
-                    else:
-                        inhalt = ''
-                    width = 8
-
-                elif spaltennummer == 23:
-                    if zeilendaten[1] != 'empty':
-                        tabelle.summen['orga'] += zeilendaten[1].orgazulage_schicht
-                        tabelle.summen['orga_pro_stunde'] = zeilendaten[1].orgazulage
-                        inhalt = "{:,.2f}€".format(zeilendaten[1].orgazulage_schicht)
-                    else:
-                        inhalt = ''
-                    width = 8
-
-                if spaltennummer < 10:
-                    if zeilendaten[1] != 'empty':
-                        if text != '':
-                            if command == 'kill':
-                                zelle = tk.Button(tabelle, text=text, command=lambda: kill_schicht(key_string))
-                            elif command == 'edit':
-                                zelle = tk.Button(tabelle, text=text)
-                            zelle.image = tk.PhotoImage(file=image, width=16, height=16)
-                            zelle.config(image=zelle.image, width=16, height=16)
-                            zelle.grid(row=zaehler, column=spaltennummer)
-                            zeile.append(zelle)
-
-                elif spaltennummer >= 10:
-                    zelle = tk.Entry(tabelle, width=width)
-                    zelle.grid(row=zaehler, column=spaltennummer)
-                    zelle.delete(0, "end")
-                    zelle.insert(0, inhalt)
-                    zelle.config(state='readonly')
-                    zeile.append(zelle)
-
-            meine_tabelle.append(zeile)
-
-    for widget in fenster.winfo_children():
-        widget.destroy()
-    nav = tk.Frame(fenster)
-    tabelle = tk.Frame(fenster)
-    seitenleiste = tk.Frame(fenster)
-
-    if assistent.assistent_is_loaded == 1:
-        hallo = tk.Label(fenster, text="Hallo " + str(assistent))
-        hallo.grid(row=0, column=0)
-
-    def erstelle_seitenleiste():
-        for slwidget in seitenleiste.winfo_children():
-            slwidget.destroy()
-
-        # Header
-        header = tk.Label(seitenleiste, text="Bezeichung", borderwidth=2, relief="groove")
-        header.grid(row=0, column=0, sticky='w')
-        header = tk.Label(seitenleiste, text="Stunden", borderwidth=2, relief="groove")
-        header.grid(row=0, column=1)
-        header = tk.Label(seitenleiste, text="pro Stunde", borderwidth=2, relief="groove")
-        header.grid(row=0, column=2)
-        header = tk.Label(seitenleiste, text="Gesamt", borderwidth=2, relief="groove")
-        header.grid(row=0, column=3)
-
-        bruttolohn = 0
-
-        arbeitsstunden = tk.Label(seitenleiste, text="Arbeitsstunden:", borderwidth=2, relief="groove")
-        arbeitsstunden.grid(row=1, column=0, sticky='w')
-        arbeitsstunden_value = tk.Label(seitenleiste,
-                                        text="{:,.2f}".format(round(tabelle.summen['arbeitsstunden'], 2)),
-                                        borderwidth=2, relief="groove")
-        arbeitsstunden_value.grid(row=1, column=1, sticky='e')
-        # TODO wechsel der Erfahrungsstufe beachten
-
-        stundenlohn_value = tk.Label(seitenleiste,
-                                     text="{:,.2f}€".format(round(tabelle.summen['grundlohn_pro_stunde'], 2)),
-                                     borderwidth=2,
-                                     relief="groove")
-        stundenlohn_value.grid(row=1, column=2, sticky='e')
-
-        bruttolohn += tabelle.summen['grundlohn']
-        arbeitsstunden_value = tk.Label(seitenleiste,
-                                        text="{:,.2f}€".format(round(tabelle.summen['grundlohn'], 2)),
-                                        borderwidth=2, relief="groove")
-        arbeitsstunden_value.grid(row=1, column=3, sticky='e')
-
-        arbeitsstunden = tk.Label(seitenleiste, text="Kurzfr. Vermittlung:", borderwidth=2, relief="groove")
-        arbeitsstunden.grid(row=2, column=0, sticky='w')
-        arbeitsstunden_value = tk.Label(seitenleiste,
-                                        text="{:,.2f}".format(round(tabelle.summen['kurzfr_stunden'], 2)),
-                                        borderwidth=2, relief="groove")
-        arbeitsstunden_value.grid(row=2, column=1, sticky='e')
-        # TODO wechsel der Erfahrungsstufe beachten
-
-        stundenlohn_value = tk.Label(seitenleiste,
-                                     text="{:,.2f}€".format(round(tabelle.summen['kurzfr_pro_stunde'], 2)),
-                                     borderwidth=2,
-                                     relief="groove")
-        stundenlohn_value.grid(row=2, column=2, sticky='e')
-
-        bruttolohn += tabelle.summen['grundlohn']
-        arbeitsstunden_value = tk.Label(seitenleiste,
-                                        text="{:,.2f}€".format(round(tabelle.summen['kurzfr'], 2)),
-                                        borderwidth=2, relief="groove")
-        arbeitsstunden_value.grid(row=2, column=3, sticky='e')
-
-        nachtstunden = tk.Label(seitenleiste, text="Nachtstunden:", borderwidth=2, relief="groove")
-        nachtstunden.grid(row=3, column=0, sticky='w')
-        nachtstunden_value = tk.Label(seitenleiste,
-                                      text="{:,.2f}".format(round(tabelle.summen['nachtstunden'], 2)),
-                                      borderwidth=2,
-                                      relief="groove")
-        nachtstunden_value.grid(row=3, column=1, sticky='e')
-
-        nachtstunden_value = tk.Label(seitenleiste,
-                                      text="{:,.2f}€".format(round(tabelle.summen['nachtzuschlag_pro_stunde'], 2)),
-                                      borderwidth=2,
-                                      relief="groove")
-        nachtstunden_value.grid(row=3, column=2, sticky='e')
-
-        nachtstunden_value = tk.Label(seitenleiste,
-                                      text="{:,.2f}€".format(round(tabelle.summen['nachtzuschlag'], 2)),
-                                      borderwidth=2,
-                                      relief="groove")
-        nachtstunden_value.grid(row=3, column=3, sticky='e')
-        bruttolohn += tabelle.summen['nachtzuschlag']
-        rowcounter = 3
-        for zuschlagsgrund in tabelle.summen['zuschlaege']:
-            if tabelle.summen['zuschlaege'][zuschlagsgrund]['stunden_gesamt'] > 0:
-                zuschl = tabelle.summen['zuschlaege'][zuschlagsgrund]
-                rowcounter += 1
-                nachtstunden = tk.Label(seitenleiste, text="Zuschlag " + zuschlagsgrund, borderwidth=2, relief="groove")
-                nachtstunden.grid(row=rowcounter, column=0, sticky='w')
-
-                nachtstunden_value = tk.Label(seitenleiste,
-                                              text="{:,.2f}".format(round(zuschl['stunden_gesamt'], 2)),
-                                              borderwidth=2,
-                                              relief="groove")
-                nachtstunden_value.grid(row=rowcounter, column=1, sticky='e')
-
-                nachtstunden_value = tk.Label(seitenleiste,
-                                              text="{:,.2f}€".format(round(zuschl['zuschlag_pro_stunde'], 2)),
-                                              borderwidth=2,
-                                              relief="groove")
-                nachtstunden_value.grid(row=rowcounter, column=2, sticky='e')
-
-                nachtstunden_value = tk.Label(seitenleiste,
-                                              text="{:,.2f}€".format(round(zuschl['zuschlaege_gesamt'], 2)),
-                                              borderwidth=2,
-                                              relief="groove")
-                nachtstunden_value.grid(row=rowcounter, column=3, sticky='e')
-                bruttolohn += zuschl['zuschlaege_gesamt']
-
-        rowcounter += 1
-        nachtstunden = tk.Label(seitenleiste, text="Wechselschichtzulage:", borderwidth=2, relief="groove")
-        nachtstunden.grid(row=rowcounter, column=0, sticky='w')
-        nachtstunden_value = tk.Label(seitenleiste,
-                                      text="{:,.2f}".format(round(tabelle.summen['arbeitsstunden'], 2)),
-                                      borderwidth=2,
-                                      relief="groove")
-        nachtstunden_value.grid(row=rowcounter, column=1, sticky='e')
-
-        nachtstunden_value = tk.Label(seitenleiste,
-                                      text="{:,.2f}€".format(
-                                          round(tabelle.summen['wechselschichtzulage_pro_stunde'], 2)),
-                                      borderwidth=2,
-                                      relief="groove")
-        nachtstunden_value.grid(row=rowcounter, column=2, sticky='e')
-
-        nachtstunden_value = tk.Label(seitenleiste,
-                                      text="{:,.2f}€".format(round(tabelle.summen['wechselschichtzulage'], 2)),
-                                      borderwidth=2,
-                                      relief="groove")
-        nachtstunden_value.grid(row=rowcounter, column=3, sticky='e')
-        bruttolohn += tabelle.summen['nachtzuschlag']
-        # TODO besseren Paltz für Kappung finden
-        rowcounter += 1
-        if tabelle.summen['wechselschichtzulage'] >= 105:
-            tabelle.summen['wechselschichtzulage'] = 105
-            nachtstunden = tk.Label(seitenleiste,
-                                    text="Übersteigt die Wechselschitzulage 105€ wird auf diesen Betrag gekappt",
-                                    borderwidth=2, relief="groove", columnspan=3)
-            nachtstunden.grid(row=rowcounter, column=0, sticky='w')
-            nachtstunden_value = tk.Label(seitenleiste,
-                                          text="{:,.2f}".format(105),
-                                          borderwidth=2,
-                                          relief="groove")
-            nachtstunden_value.grid(row=rowcounter, column=3, sticky='e')
-            bruttolohn += tabelle.summen['wechselschichtzulage']
-
-        rowcounter += 1
-        nachtstunden = tk.Label(seitenleiste, text="Organisationszulage:", borderwidth=2, relief="groove")
-        nachtstunden.grid(row=rowcounter, column=0, sticky='w')
-        nachtstunden_value = tk.Label(seitenleiste,
-                                      text="{:,.2f}".format(round(tabelle.summen['arbeitsstunden'], 2)),
-                                      borderwidth=2,
-                                      relief="groove")
-        nachtstunden_value.grid(row=rowcounter, column=1, sticky='e')
-
-        nachtstunden_value = tk.Label(seitenleiste,
-                                      text="{:,.2f}€".format(
-                                          round(tabelle.summen['orga_pro_stunde'], 2)),
-                                      borderwidth=2,
-                                      relief="groove")
-        nachtstunden_value.grid(row=rowcounter, column=2, sticky='e')
-
-        nachtstunden_value = tk.Label(seitenleiste,
-                                      text="{:,.2f}€".format(round(tabelle.summen['orga'], 2)),
-                                      borderwidth=2,
-                                      relief="groove")
-        nachtstunden_value.grid(row=rowcounter, column=3, sticky='e')
-        bruttolohn += tabelle.summen['nachtzuschlag']
-        rowcounter += 1
-        nachtstunden = tk.Label(seitenleiste, text="Summe = Bruttolohn", borderwidth=2, relief="groove")
-        nachtstunden.grid(row=rowcounter, column=0, sticky='w')
-
-        nachtstunden_value = tk.Label(seitenleiste,
-                                      text="{:,.2f}€".format(round(bruttolohn, 2)),
-                                      borderwidth=2,
-                                      relief="groove")
-        nachtstunden_value.grid(row=rowcounter, column=3, sticky='e')
-
-    erstelle_navigation()
-    nav.grid(row=1, column=0)
-    erstelle_tabelle()
-    tabelle.grid(row=2, column=0)
-    erstelle_seitenleiste()
-    seitenleiste.grid(row=1, column=1, rowspan=2)
-
-    # 2 Frames Für Navigation und Tabelle
+        # fenster = tk.Frame(root)
+        self.fenster = Hauptfenster(self)
+        self.fenster.pack()
+        # info_text = tk.Label(fenster, text="Bitte erstelle oder öffne eine Assistenten-Datei")
+        # info_text.grid(row=0, column=0, columnspan=2)
+        # button_oeffnen = tk.Button(fenster, text="Gespeicherten Assistenten laden", command=alles_laden)
+        # button_oeffnen.grid(row=1, column=0)
+        # button_neu = tk.Button(fenster, text="Neuen Assistenten anlegen", command=lambda: NeuerAS(fenster))
+        # button_neu.grid(row=1, column=1)
 
 
 assistent = AS()
 lohntabelle = LohnTabelle()
-root = tk.Tk()
-root.geometry('1200x1000')
-root.title("Dein Assistentenlohn")
 
-fenster = tk.Frame(root)
-fenster.pack()
-info_text = tk.Label(fenster, text="Bitte erstelle oder öffne eine Assistenten-Datei")
-info_text.grid(row=0, column=0, columnspan=2)
-button_oeffnen = tk.Button(fenster, text="Gespeicherten Assistenten laden", command=alles_laden)
-button_oeffnen.grid(row=1, column=0)
-button_neu = tk.Button(fenster, text="Neuen Assistenten anlegen", command=lambda: NeuerAS(fenster))
-button_neu.grid(row=1, column=1)
-
-fenster.mainloop()
+if __name__ == "__main__":
+    root = App()
+    root.mainloop()
