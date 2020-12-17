@@ -1925,7 +1925,7 @@ class Hauptfenster(tk.Frame):
                                 grund = zeilendaten[1].zuschlaege['zuschlagsgrund']
                                 zuschlag_stunden = zeilendaten[1].zuschlaege['stunden_gesamt']
                                 parent.seitenleiste.zuschlaege[grund]['stunden_gesamt'] \
-                                    #    += zuschlag_stunden
+                                    += zuschlag_stunden
                                 inhalt = str(zuschlag_stunden) + ' ' + zeilendaten[1].zuschlaege['zuschlagsgrund']
                             else:
                                 inhalt = ''
@@ -2338,15 +2338,8 @@ class App(tk.Tk):
         # Menue wird leer initialisiert und erst beim Laden des AS gesetzt
         self.config(menu="")
 
-        # fenster = tk.Frame(root)
         self.fenster = Hauptfenster(self)
         self.fenster.pack()
-        # info_text = tk.Label(fenster, text="Bitte erstelle oder öffne eine Assistenten-Datei")
-        # info_text.grid(row=0, column=0, columnspan=2)
-        # button_oeffnen = tk.Button(fenster, text="Gespeicherten Assistenten laden", command=alles_laden)
-        # button_oeffnen.grid(row=1, column=0)
-        # button_neu = tk.Button(fenster, text="Neuen Assistenten anlegen", command=lambda: NeuerAS(fenster))
-        # button_neu.grid(row=1, column=1)
 
 
 assistent = AS()
