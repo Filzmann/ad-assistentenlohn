@@ -18,8 +18,8 @@ class TimePicker(tk.Frame):
     def hour_invalid(self):
         self.hourstr.set('10')
 
-    def hour_valid(self, input):
-        if input.isdigit() and int(input) in range(24) and len(input) in range(1, 3):
+    def hour_valid(self, eingabe):
+        if eingabe.isdigit() and int(eingabe) in range(24) and len(eingabe) in range(1, 3):
             valid = True
         else:
             valid = False
@@ -30,16 +30,11 @@ class TimePicker(tk.Frame):
     def min_invalid(self):
         self.minstr.set('30')
 
-    def min_valid(self, input):
-        if input.isdigit() and int(input) in range(60) and len(input) in range(1, 3):
+    def min_valid(self, eingabe):
+        if eingabe.isdigit() and int(eingabe) in range(60) and len(eingabe) in range(1, 3):
             valid = True
         else:
             valid = False
         if not valid:
             self.min.after_idle(lambda: self.min.config(validate='focusout'))
         return valid
-
-
-root = tk.Tk()
-App(root).pack()
-root.mainloop()
