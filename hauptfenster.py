@@ -577,7 +577,7 @@ class Hauptfenster(tk.Frame):
             self.nav = self.Navigation(self, assistent=assistent)
             self.seitenleiste = self.Seitenleiste(self)
             dt = self.assistent.letzte_eingetragene_schicht.beginn
-            arbeitsdatum = datetime.datetime(dt.year, dt.month, dt.day)
+            arbeitsdatum = datetime.datetime(dt.year, dt.month, 1)
             self.tab = self.Tabelle(self, arbeitsdatum=arbeitsdatum, assistent=self.assistent)
 
             self.title.grid(row=0, column=0, columnspan=2)
@@ -606,6 +606,7 @@ class Hauptfenster(tk.Frame):
     def load_and_redraw(self):
         assistent = self.assistent.load_from_file()
         self.assistent = assistent
+        self.parent.assistent = assistent  #  der gesamten app bescheid sagen, dass es einen neuen AS gibt
 
         self.redraw(self.assistent)
 

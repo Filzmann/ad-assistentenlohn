@@ -33,20 +33,20 @@ class FensterNeueSchicht(tk.Toplevel):
                 if self.kuerzel != 'Bitte auswählen':
                     # kuerzel = parent.parent.asn_frame.selected_asn.get()
                     asn = self.assistent.get_asn_by_kuerzel(self.kuerzel)
-                    self.templates = asn.schicht_templates
-                    self.templates.insert(0, {'bezeichner': 'manuell'})
+                    arbeitstemplates = asn.schicht_templates
+
                     self.selected_template = tk.IntVar()
                     self.selected_template.set(0)
 
                     self.change_template()
+
                     col = 0
-                    row = 0
-                    counter = 0
-                    for template in self.templates:
+                    row = 1
+                    counter = 1
+                    for template in arbeitstemplates:
                         text = template['bezeichner']
-                        if template['bezeichner'] != 'manuell':
-                            text += " von " + template["start"].strftime('%H:%M') \
-                                   + " bis " + template["ende"].strftime('%H:%M')
+                        text += " von " + template["start"].strftime('%H:%M') \
+                                + " bis " + template["ende"].strftime('%H:%M')
                         button = tk.Radiobutton(self, text=text,
                                                 variable=self.selected_template, value=counter,
                                                 command=lambda: self.change_template())
@@ -58,12 +58,12 @@ class FensterNeueSchicht(tk.Toplevel):
                             row += 1
 
             def change_template(self):
-                if self.kuerzel != "Bitte auswählen" and self.kuerzel != "Neuer Assistent" and\
+                if self.kuerzel != "Bitte auswählen" and self.kuerzel != "Neuer Assistent" and \
                         self.selected_template.get() != 0:
 
                     asn = self.assistent.get_asn_by_kuerzel(self.kuerzel)
                     if asn.schicht_templates:
-                        template_index = self.selected_template.get()
+                        template_index = self.selected_template.get() - 1
                         template = asn.schicht_templates[template_index]
                         start = template["start"]
                         ende = template["ende"]
@@ -89,7 +89,7 @@ class FensterNeueSchicht(tk.Toplevel):
         def __init__(self, parent):
             super().__init__(parent)
             self.parent = parent
-            self.assistent = parent. assistent
+            self.assistent = parent.assistent
             self.asn_label = tk.Label(self, text="Assistenznehmer")
             all_asn = self.assistent.get_all_asn()
             # grundsätzliche Optionen für Dropdown
@@ -310,7 +310,8 @@ class FensterNeueSchicht(tk.Toplevel):
                         self.asn = self.assistent.get_asn_by_kuerzel(kuerzel)
                         if master.get() != self.assistent:
                             if self.asn.adressen:
-                                self.auswahl.append(*master.adressen)
+                                for adresse in self.asn.adressen:
+                                    self.auswahl.append(adresse)
                     self.selected = tk.StringVar()
                     self.selected.set(self.auswahl[0])
                     dropdown = tk.OptionMenu(self, self.selected, *self.auswahl, command=self.change_dropdown)
@@ -358,7 +359,7 @@ class FensterNeueSchicht(tk.Toplevel):
                         self.parent.parent.parent.asn.adressen.append(adresse)
                         return adresse
                     else:
-                        asn_adresse = self.parent.parent.parent.asn.get_adresse_by_kuerzel(self.selected.get())
+                        asn_adresse = self.asn.get_adresse_by_kuerzel(self.selected.get())
                         if asn_adresse:
                             return asn_adresse
                         else:

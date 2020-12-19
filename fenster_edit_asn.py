@@ -132,8 +132,11 @@ class FensterEditAsn(tk.Toplevel):
                     rowcounter += 1
                     for template in self.asn.schicht_templates:
                         text = template['bezeichner'] + ': '
-                        text += template['start'].strftime("%H:%M") + ' - '
-                        text += template['ende'].strftime("%H:%M")
+                        text = template['bezeichner']
+                        if template['bezeichner'] != 'manuell':
+                            text += " von " + template["start"].strftime('%H:%M') \
+                            + " bis " + template["ende"].strftime('%H:%M')
+
                         eintrag = tk.Label(self, text=text)
                         eintrag.grid(row=rowcounter, column=0)
 
