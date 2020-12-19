@@ -380,6 +380,41 @@ class FensterEditAsn(tk.Toplevel):
                     elif person not in assistent.pfk_liste and eb_oder_pfk == 'pfk':
                         assistent.pfk_liste.append(person)
 
+        class AddressenTabelle(tk.Frame):
+
+            def __init__(self, parent, asn):
+                self.assistent = parent.assistent
+                super().__init__(parent)
+                self.asn = asn
+                self.draw()
+
+            def draw(self):
+                for child in self.winfo_children():
+                    child.destroy()
+                rowcounter = 0
+                eintrag = tk.Label(self, text='Alternative Adressen\nin diesem Einsatz')
+                eintrag.grid(row=rowcounter, column=0)
+                rowcounter += 1
+                for adresse in self.asn.adressen:
+
+                    text = str(adresse)
+                    eintrag = tk.Label(self, text=text)
+                    eintrag.grid(row=rowcounter, column=0)
+
+                    image = "images/del.png"
+                    label = "Löschen"
+                    button = tk.Button(self, text=label,
+                                       command=lambda: self.kill_adresse(adresse))
+                    button.image = tk.PhotoImage(file=image, width=16, height=16)
+                    button.config(image=button.image, width=16, height=16)
+                    button.grid(row=rowcounter, column=1)
+
+                    rowcounter += 1
+
+            def kill_adresse(self, adresse):
+                self.asn.adressen.remove(adresse)
+                self.draw()
+
         def __init__(self, parent, kuerzel):
 
             super().__init__(parent)
@@ -403,6 +438,8 @@ class FensterEditAsn(tk.Toplevel):
             self.feste_schichten_frame.grid(row=2, column=0)
             self.schicht_templates_frame = self.SchichtTemplateForm(self, self.asn)
             self.schicht_templates_frame.grid(row=2, column=1)
+            self.adressen_frame = self.AddressenTabelle(self, self.asn)
+            self.adressen_frame.grid(row=3, column=1)
 
             save_button = tk.Button(self, text="Daten speichern", command=lambda: self.save_asn_edit_form())
             exit_button = tk.Button(self, text="Fenster schließen", command=lambda: self.parent.destroy())

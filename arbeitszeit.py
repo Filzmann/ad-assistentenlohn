@@ -26,8 +26,8 @@ class Schicht:
         self.ist_assistententreffen = 0
         self.ist_pcg = 0
         self.ist_schulung = 0
-        self.beginn_andere_adresse = ''
-        self.ende_andere_adresse = ''
+        self.beginn_andere_adresse = None
+        self.ende_andere_adresse = None
 
         if self.check_mehrtaegig() == 1:
             self.teilschichten = self.split_by_null_uhr()
@@ -37,6 +37,19 @@ class Schicht:
     def __str__(self):
         return self.asn.get_kuerzel() + " - " + self.beginn.strftime("%m/%d/%Y, %H:%M") + ' bis ' + \
                self.ende.strftime("%m/%d/%Y, %H:%M")
+
+    def calculate(self):
+        self.stundenzahl = self.berechne_stundenzahl()
+        self.stundenlohn = self.assistent.lohntabelle.get_grundlohn(self.beginn)
+        self.schichtlohn = self.stundenzahl * self.stundenlohn
+        self.wechselschichtzulage = self.assistent.lohntabelle.get_zuschlag('Wechselschicht', self.beginn)
+        self.wechselschichtzulage_schicht = self.wechselschichtzulage * self.stundenzahl
+        self.orgazulage = self.assistent.lohntabelle.get_zuschlag('Orga', self.beginn)
+        self.orgazulage_schicht = self.orgazulage * self.stundenzahl
+        self.nachtstunden = self.berechne_anzahl_nachtstunden()
+        self.nachtzuschlag = self.assistent.lohntabelle.get_zuschlag('Nacht', self.beginn)
+        self.nachtzuschlag_schicht = self.nachtstunden * self.nachtzuschlag
+        self.zuschlaege = self.berechne_sa_so_weisil_feiertagszuschlaege()
 
     def check_mehrtaegig(self):
         pseudoende = self.ende - datetime.timedelta(minutes=2)

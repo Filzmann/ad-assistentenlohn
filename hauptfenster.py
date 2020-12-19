@@ -268,7 +268,7 @@ class Hauptfenster(tk.Frame):
                         self.parent.parent.seitenleiste.arbeitsstunden += data[1].stundenzahl
                         self.stunden = data[1].berechne_stundenzahl()
 
-                    inhalt = str(self.stunden)
+                    inhalt = "{:,.2f}".format(self.stunden)
                     return inhalt
 
                 def get_inhalt_lohn(self, data):
@@ -352,7 +352,6 @@ class Hauptfenster(tk.Frame):
                     zaehler += 1
                     self.Zeile(self, zeilendaten, assistent=self.assistent,
                                zeilennummer=zaehler)
-
 
             def split_schichten_um_mitternacht(self):
                 ausgabe = []

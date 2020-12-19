@@ -4,7 +4,7 @@ from timepicker import TimePicker
 from tkcalendar import Calendar
 from fenster_edit_asn import FensterEditAsn
 from arbeitszeit import Schicht
-from person import Adresse
+from person import Adresse, ASN
 
 
 class FensterNeueSchicht(tk.Toplevel):
@@ -86,19 +86,17 @@ class FensterNeueSchicht(tk.Toplevel):
             def hide(self):
                 self.grid_remove()
 
-        def __init__(self, parent):
+        def __init__(self, parent, edit_schicht: Schicht):
             super().__init__(parent)
             self.parent = parent
+            self.edit_schicht = edit_schicht
             self.assistent = parent.assistent
             self.asn_label = tk.Label(self, text="Assistenznehmer")
             all_asn = self.assistent.get_all_asn()
             # grundsätzliche Optionen für Dropdown
             option_list = ["Bitte auswählen", "Neuer ASN", *all_asn]
             self.selected_asn = tk.StringVar()
-            if parent.edit_schicht:
-                self.selected_asn.set(self.parent.edit_schicht.asn.kuerzel)
-            else:
-                self.selected_asn.set(option_list[0])
+            self.selected_asn.set(self.edit_schicht.asn.kuerzel)
             self.asn_dropdown = tk.OptionMenu(self, self.selected_asn, *option_list,
                                               command=self.change_asn)
             self.neuer_asn = FensterEditAsn.AsnEditFrame.AsnStammdatenForm(self, "Neuer ASN")
@@ -122,13 +120,15 @@ class FensterNeueSchicht(tk.Toplevel):
                 self.parent.save_button.grid_remove()
                 self.parent.saveandnew_button.grid_remove()
             else:
-                self.parent.asn = self.assistent.get_asn_by_kuerzel(selected_asn)
+                # self.parent.asn = self.assistent.get_asn_by_kuerzel(selected_asn)
+                self.edit_schicht.asn = self.assistent.get_asn_by_kuerzel(selected_asn)
                 self.neuer_asn.hide()
                 self.parent.schicht_calendar_frame.templates.show()
+                self.parent.schicht_add_options.destroy()
+                self.parent.schicht_add_options = self.parent.SchichtAdditionalOptions(self.parent, self.edit_schicht)
+                self.parent.schicht_add_options.grid(row=2, column=0, columnspan=3)
                 self.parent.save_button.grid()
                 self.parent.saveandnew_button.grid()
-
-                # Schalter für Schicht ausser Haus
 
         def get_data(self):
             if self.selected_asn.get() == "Neuer ASN":
@@ -136,25 +136,18 @@ class FensterNeueSchicht(tk.Toplevel):
                 self.assistent.asn_dazu(asn)
             else:
                 asn = self.assistent.get_asn_by_kuerzel(self.selected_asn.get())
-            return asn
+            self.edit_schicht.asn = asn
 
     class SchichtCalendarFrame(tk.Frame):
-        def __init__(self, parent):
+        def __init__(self, parent, edit_schicht: Schicht):
             super().__init__(parent)
             self.parent = parent
+            self.edit_schicht = edit_schicht
             self.assistent = parent.assistent
-            if parent.edit_schicht:
-                day = parent.edit_schicht.beginn.day
-                month = parent.edit_schicht.beginn.month
-                year = parent.edit_schicht.beginn.year
-            elif self.assistent.letzte_eingetragene_schicht:
-                day = self.assistent.letzte_eingetragene_schicht.beginn.day
-                month = self.assistent.letzte_eingetragene_schicht.beginn.month
-                year = self.assistent.letzte_eingetragene_schicht.beginn.year
-            else:
-                day = datetime.date.today().day
-                month = datetime.date.today().month
-                year = datetime.date.today().year
+            day = self.edit_schicht.beginn.day
+            month = self.edit_schicht.beginn.month
+            year = self.edit_schicht.beginn.year
+
             self.startdatum_label = tk.Label(self, text="Datum (Beginn) der Schicht")
             self.startdatum_input = Calendar(self, date_pattern='MM/dd/yyyy',
                                              day=day,
@@ -162,48 +155,38 @@ class FensterNeueSchicht(tk.Toplevel):
                                              year=year)
             self.startzeit_label = tk.Label(self, text="Startzeit")
             self.startzeit_input = TimePicker(self)
-            if parent.edit_schicht:
-                hour = parent.edit_schicht.beginn.hour
-                minute = parent.edit_schicht.beginn.minute
-                self.startzeit_input.hourstr.set(str(hour))
-                self.startzeit_input.minstr.set(str(minute))
+
+            hour = self.edit_schicht.beginn.hour
+            minute = self.edit_schicht.beginn.minute
+            self.startzeit_input.hourstr.set(str(hour))
+            self.startzeit_input.minstr.set(str(minute))
             self.startzeit_input.bind('<FocusOut>', self.nachtschicht_durch_uhrzeit)
             self.endzeit_label = tk.Label(self, text="Schichtende")
             self.endzeit_input = TimePicker(self)
-            if parent.edit_schicht:
-                hour = parent.edit_schicht.ende.hour
-                minute = parent.edit_schicht.ende.minute
-                self.endzeit_input.hourstr.set(str(hour))
-                self.endzeit_input.minstr.set(str(minute))
+            hour = self.edit_schicht.ende.hour
+            minute = self.edit_schicht.ende.minute
+            self.endzeit_input.hourstr.set(str(hour))
+            self.endzeit_input.minstr.set(str(minute))
             self.endzeit_input.bind('<FocusOut>', self.nachtschicht_durch_uhrzeit)
 
             self.enddatum_label = tk.Label(self, text="Datum Ende der Schicht")
-            if parent.edit_schicht:
-                day = parent.edit_schicht.ende.day
-                month = parent.edit_schicht.ende.month
-                year = parent.edit_schicht.ende.year
-            elif self.assistent.letzte_eingetragene_schicht:
-                day = self.assistent.letzte_eingetragene_schicht.ende.day
-                month = self.assistent.letzte_eingetragene_schicht.ende.month
-                year = self.assistent.letzte_eingetragene_schicht.ende.year
-            else:
-                day = datetime.date.today().day
-                month = datetime.date.today().month
-                year = datetime.date.today().year
+            day = self.edit_schicht.ende.day
+            month = self.edit_schicht.ende.month
+            year = self.edit_schicht.ende.year
             self.enddatum_input = Calendar(self, date_pattern='MM/dd/yyyy', day=day, month=month, year=year)
             self.tag_nacht_reise_var = tk.IntVar()
             self.tag_nacht_reise_var.set(1)
-            if parent.edit_schicht:
-                b = parent.edit_schicht.beginn
-                e = parent.edit_schicht.ende
-                if datetime.date(b.year, b.month, b.day) == datetime.date(e.year, e.month, e.day):
-                    self.tag_nacht_reise_var.set(1)
-                elif datetime.date(b.year, b.month, b.day) + datetime.timedelta(days=1) == datetime.date(e.year,
-                                                                                                         e.month,
-                                                                                                         e.day):
-                    self.tag_nacht_reise_var.set(2)
-                else:
-                    self.tag_nacht_reise_var.set(3)
+
+            b = self.edit_schicht.beginn
+            e = self.edit_schicht.ende
+            if datetime.date(b.year, b.month, b.day) == datetime.date(e.year, e.month, e.day):
+                self.tag_nacht_reise_var.set(1)
+            elif datetime.date(b.year, b.month, b.day) + datetime.timedelta(days=1) == datetime.date(e.year,
+                                                                                                     e.month,
+                                                                                                     e.day):
+                self.tag_nacht_reise_var.set(2)
+            else:
+                self.tag_nacht_reise_var.set(3)
             self.anderes_enddatum_label = tk.Label(self,
                                                    text="Tagschicht, Nachtschicht\noder mehrtägig?")
             self.anderes_enddatum_input_radio1 = \
@@ -288,32 +271,36 @@ class FensterNeueSchicht(tk.Toplevel):
                 ende = datetime.datetime(int(enddatum[2]), int(enddatum[0]), int(enddatum[1]),
                                          int(self.endzeit_input.hourstr.get()),
                                          int(self.endzeit_input.minstr.get()))
-
-            return {'beginn': beginn, 'ende': ende}
+            # alles wird direkt in die edit schicht geschrieben, die dann nur noch an den AS angehängt wird
+            self.edit_schicht.beginn = beginn
+            self.edit_schicht.ende = ende
+            # return {'beginn': beginn, 'ende': ende}
 
     class SchichtAdditionalOptions(tk.Frame):
         class SchichtAusserHaus(tk.Frame):
             class AdressSelectOrInput(tk.Frame):
-                def __init__(self, parent, master):
+                def __init__(self, parent, selected_adresse: Adresse = None):
                     super().__init__(parent)
                     self.parent = parent
                     self.assistent = parent.assistent
+                    self.selected_adresse = selected_adresse
                     self.auswahl = []
                     self.auswahl.append('Keine abweichende Adresse')
                     self.auswahl.append('Neue Adresse eintragen')
                     standardadressen = self.assistent.adressen
                     for adresse in standardadressen:
                         self.auswahl.append(adresse)
-                    self.asn = ''
-                    kuerzel = master.get()
-                    if kuerzel != "Neuer ASN" and kuerzel != "Bitte auswählen":
-                        self.asn = self.assistent.get_asn_by_kuerzel(kuerzel)
-                        if master.get() != self.assistent:
-                            if self.asn.adressen:
-                                for adresse in self.asn.adressen:
-                                    self.auswahl.append(adresse)
+                    self.asn = self.parent.edit_schicht.asn
+
+                    if self.asn.kuerzel != "Bitte auswählen":
+                        if self.asn.adressen:
+                            for adresse in self.asn.adressen:
+                                self.auswahl.append(adresse)
                     self.selected = tk.StringVar()
-                    self.selected.set(self.auswahl[0])
+                    if self.selected_adresse:
+                        self.selected.set(self.selected_adresse)
+                    else:
+                        self.selected.set(self.auswahl[0])
                     dropdown = tk.OptionMenu(self, self.selected, *self.auswahl, command=self.change_dropdown)
                     dropdown.grid(row=0, column=0)
 
@@ -356,7 +343,8 @@ class FensterNeueSchicht(tk.Toplevel):
                                           hnr=self.hausnummer_input.get(),
                                           plz=self.plz_input.get(),
                                           stadt=self.stadt_input.get())
-                        self.parent.parent.parent.asn.adressen.append(adresse)
+                        if adresse not in self.parent.edit_schicht.asn.adressen:
+                            self.parent.edit_schicht.asn.adressen.append(adresse)
                         return adresse
                     else:
                         asn_adresse = self.asn.get_adresse_by_kuerzel(self.selected.get())
@@ -366,17 +354,22 @@ class FensterNeueSchicht(tk.Toplevel):
                             as_adresse = self.assistent.get_adresse_by_kuerzel(self.selected.get())
                             return as_adresse
 
-            def __init__(self, parent):
+            def __init__(self, parent, edit_schicht: Schicht = 0):
                 super().__init__(parent)
                 self.parent = parent
+                self.edit_schicht = edit_schicht
                 self.assistent = parent.assistent
-                master = self.parent.parent.asn_frame.selected_asn
+
                 self.alternative_adresse_beginn_label = tk.Label(self,
                                                                  text="Beginn der Schicht außer Haus")
-                self.alternative_adresse_beginn_input = self.AdressSelectOrInput(self, master)
+                adresse_beginn = self.edit_schicht.beginn_andere_adresse
+                self.alternative_adresse_beginn_input = \
+                    self.AdressSelectOrInput(self, adresse_beginn)
+                adresse_ende = self.edit_schicht.ende_andere_adresse
                 self.alternative_adresse_ende_label = tk.Label(self,
                                                                text="Ende der Schicht außer Haus")
-                self.alternative_adresse_ende_input = self.AdressSelectOrInput(self, master)
+                self.alternative_adresse_ende_input = \
+                    self.AdressSelectOrInput(self, adresse_ende)
 
                 self.alternative_adresse_beginn_label.grid(row=0, column=0)
                 self.alternative_adresse_beginn_input.grid(row=0, column=1)
@@ -384,23 +377,35 @@ class FensterNeueSchicht(tk.Toplevel):
                 self.alternative_adresse_ende_input.grid(row=1, column=1)
 
             def get_data(self):
-                return {'alt_adresse_beginn': self.alternative_adresse_beginn_input.get_data(),
-                        'alt_adresse_ende': self.alternative_adresse_ende_input.get_data()}
+                self.edit_schicht.beginn_andere_adresse = self.alternative_adresse_beginn_input.get_data()
+                self.edit_schicht.ende_andere_adresse = self.alternative_adresse_ende_input.get_data()
+                pass
 
-        def __init__(self, parent):
+        def __init__(self, parent, edit_schicht: Schicht = 0):
             super().__init__(parent)
             self.parent = parent
+            self.edit_schicht = edit_schicht
             self.assistent = parent.assistent
             self.ist_at = tk.IntVar()
             self.ist_pcg = tk.IntVar()
             self.ist_rb = tk.IntVar()
             self.ist_afg = tk.IntVar()
+
+            if self.edit_schicht.ist_assistententreffen:
+                self.ist_at.set(1)
+            if self.edit_schicht.ist_ausfallgeld:
+                self.ist_afg.set(1)
+            if self.edit_schicht.ist_kurzfristig:
+                self.ist_rb.set(1)
+            if self.edit_schicht.ist_pcg:
+                self.ist_pcg.set(1)
+
             self.ist_at_button = tk.Checkbutton(self, text="AT", variable=self.ist_at, onvalue=1, offvalue=0)
             self.ist_pcg_button = tk.Checkbutton(self, text="PCG", variable=self.ist_pcg, onvalue=1, offvalue=0)
             self.ist_rb_button = tk.Checkbutton(self, text="Kurzfristig (RB/BSD)", variable=self.ist_rb, onvalue=1,
                                                 offvalue=0)
             self.ist_afg_button = tk.Checkbutton(self, text="Ausfallgeld", variable=self.ist_afg, onvalue=1, offvalue=0)
-            self.ausser_haus = self.SchichtAusserHaus(self)
+            self.ausser_haus = self.SchichtAusserHaus(parent=self, edit_schicht=self.edit_schicht)
 
             # positionieren
             self.ist_at_button.grid(row=0, column=0)
@@ -411,28 +416,35 @@ class FensterNeueSchicht(tk.Toplevel):
             self.ausser_haus.grid(row=1, column=0, columnspan=4)
 
         def get_data(self):
-            return {"is_at": self.ist_at.get(),
-                    "is_pcg": self.ist_pcg.get(),
-                    "is_rb": self.ist_rb.get(),
-                    "is_afg": self.ist_afg.get(),
-                    "alternative adresse start": self.ausser_haus.get_data()["alt_adresse_beginn"],
-                    "alternative adresse ende": self.ausser_haus.get_data()["alt_adresse_ende"]}
+            self.ausser_haus.get_data()
+            self.edit_schicht.ist_assistententreffen = self.ist_at.get()
+            self.edit_schicht.ist_pcg = self.ist_pcg.get()
+            self.edit_schicht.ist_kurzfristig = self.ist_rb.get()
+            self.edit_schicht.ist_ausfallgeld = self.ist_afg.get()
 
-    def __init__(self, parent, assistent, edit_schicht=0):
+    def __init__(self, parent, assistent, edit_schicht: Schicht = None):
         super().__init__(parent)
         self.parent = parent
         self.assistent = assistent
-        self.asn = ''
-        if edit_schicht:
-            if edit_schicht.original_schicht == 'root':
-                self.edit_schicht = edit_schicht
-            else:
-                self.edit_schicht = assistent.schichten[edit_schicht.original_schicht]
+        # wenn neue Schicht, dann leere Schicht vordefinieren, die beim Speichern nur noch dem AS hinzugefügt wird
+        self.neu = 0
+        if not edit_schicht:
+            self.neu = 1
+            empty_asn = ASN(name='', vorname='', kuerzel='Bitte auswählen')
+            self.edit_schicht = Schicht(beginn=self.assistent.letzte_eingetragene_schicht.beginn,
+                                        ende=self.assistent.letzte_eingetragene_schicht.beginn,
+                                        asn=empty_asn,
+                                        assistent=assistent)
         else:
-            self.edit_schicht = 0
-        self.asn_frame = self.AsnFrame(self)
-        self.schicht_calendar_frame = self.SchichtCalendarFrame(self)
-        self.schicht_add_options = self.SchichtAdditionalOptions(self)
+            # falls die gewähle Schicht Teilschicht eines Splits ist.
+            if edit_schicht.original_schicht != 'root':
+                self.edit_schicht = edit_schicht.original_schicht
+            else:
+                self.edit_schicht = edit_schicht
+
+        self.asn_frame = self.AsnFrame(self, self.edit_schicht)
+        self.schicht_calendar_frame = self.SchichtCalendarFrame(self, self.edit_schicht)
+        self.schicht_add_options = self.SchichtAdditionalOptions(self, self.edit_schicht)
 
         # positionieren
         self.asn_frame.grid(row=0, column=0, columnspan=3)
@@ -456,34 +468,17 @@ class FensterNeueSchicht(tk.Toplevel):
             self.save_button.grid_remove()
 
     def action_save_neue_schicht(self, undneu=0):
-
-        calendar = self.schicht_calendar_frame.get_data()
-        beginn = calendar["beginn"]
-        ende = calendar["ende"]
-        asn = self.asn_frame.get_data()
-        additional = self.schicht_add_options.get_data()
-
+        self.schicht_calendar_frame.get_data()
+        self.asn_frame.get_data()
+        self.schicht_add_options.get_data()
+        self.edit_schicht.calculate()
         # Schicht erstellen und zum Assistenten stopfen
-        schicht = Schicht(beginn=beginn, ende=ende, asn=asn, assistent=self.assistent)
-
-        schicht.ist_pcg = additional["is_pcg"]
-        schicht.ist_assistententreffen = additional["is_at"]
-        schicht.ist_ausfallgeld = additional["is_afg"]
-        schicht.ist_kurzfristig = additional["is_rb"]
-
-        if additional["alternative adresse start"]:
-            schicht.beginn_andere_adresse = additional["alternative adresse start"]
-        if additional["alternative adresse ende"]:
-            schicht.beginn_andere_adresse = additional["alternative adresse ende"]
-
-        self.assistent.schicht_dazu(schicht)
-        self.assistent.letzte_eingetragene_schicht = schicht
-        if self.edit_schicht != 0:
-            self.assistent.delete_schicht(schicht=self.edit_schicht)
-
+        if self.neu:
+            self.assistent.schicht_dazu(self.edit_schicht)
+        self.assistent.letzte_eingetragene_schicht = self.edit_schicht
         assistent = self.assistent.save_to_file()
         # TODO quick'n'dirty Hack korrigieren
-        if self.edit_schicht == 0:
+        if self.neu:
             self.parent.fenster.redraw(assistent)
         else:
             self.parent.parent.redraw(assistent)
