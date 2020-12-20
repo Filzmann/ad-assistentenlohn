@@ -37,7 +37,6 @@ class FensterNeueSchicht(tk.Toplevel):
 
                     self.selected_template = tk.IntVar()
                     self.selected_template.set(0)
-
                     self.change_template()
 
                     col = 0
@@ -153,6 +152,7 @@ class FensterNeueSchicht(tk.Toplevel):
                                              day=day,
                                              month=month,
                                              year=year)
+            self.startdatum_input.bind('<FocusOut>', self.enddatum_durch_startdatum)
             self.startzeit_label = tk.Label(self, text="Startzeit")
             self.startzeit_input = TimePicker(self)
 
@@ -240,6 +240,15 @@ class FensterNeueSchicht(tk.Toplevel):
                 self.tag_nacht_reise_var.set(2)
             else:
                 self.tag_nacht_reise_var.set(1)
+
+        def enddatum_durch_startdatum(self, event):
+            startdatum = self.startdatum_input.get_date().split('/')
+            self.enddatum_input.parse_date(datetime.datetime(int(startdatum[2]),
+                                                             int(startdatum[0]),
+                                                             int(startdatum[1])))
+            self.edit_schicht.ende = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]),
+                                                       int(self.endzeit_input.hourstr.get()),
+                                                       int(self.endzeit_input.minstr.get()))
 
         @staticmethod
         def tag_nacht_reise(value, label, button):

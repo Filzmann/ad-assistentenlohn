@@ -56,7 +56,7 @@ class Hauptfenster(tk.Frame):
                 # lieber datum der letzten eingetragenen schicht
                 # aktuelles_datum = datetime.date.today()
                 dt = self.assistent.letzte_eingetragene_schicht.beginn
-                aktuelles_datum = datetime.date(year=dt.year, month=dt.month,day=1)
+                aktuelles_datum = datetime.date(year=dt.year, month=dt.month, day=1)
                 jahrmonat = divmod(aktuelles_datum.month + self.offset, 12)
                 jahroffset = jahrmonat[0]
                 monat = jahrmonat[1]
@@ -138,34 +138,38 @@ class Hauptfenster(tk.Frame):
                             self.zelle(inhalt=inhalt, row=zeilennummer, col=17, width=8)
 
                             # Nacht
-                            inhalt = str(data[1].nachtstunden)
-                            self.parent.parent.seitenleiste.nachtstunden += data[1].nachtstunden
-                            self.zelle(inhalt=inhalt, row=zeilennummer, col=18, width=8)
+                            if data[1].nachtstunden > 0:
+                                inhalt = "{:,.2f}".format(data[1].nachtstunden)
+                                self.parent.parent.seitenleiste.nachtstunden += data[1].nachtstunden
+                                self.zelle(inhalt=inhalt, row=zeilennummer, col=18, width=8)
 
-                            nachtzuschlag_schicht = data[1].nachtzuschlag_schicht
-                            self.parent.parent.seitenleiste.nachtzuschlag += data[1].nachtzuschlag_schicht
-                            self.parent.parent.seitenleiste.nachtzuschlag_pro_stunde = data[1].nachtzuschlag
-                            inhalt = "{:,.2f}€".format(nachtzuschlag_schicht)
-                            self.zelle(inhalt=inhalt, row=zeilennummer, col=19, width=8)
+                                nachtzuschlag_schicht = data[1].nachtzuschlag_schicht
+                                self.parent.parent.seitenleiste.nachtzuschlag += data[1].nachtzuschlag_schicht
+                                self.parent.parent.seitenleiste.nachtzuschlag_pro_stunde = data[1].nachtzuschlag
+                                inhalt = "{:,.2f}€".format(nachtzuschlag_schicht)
+                                self.zelle(inhalt=inhalt, row=zeilennummer, col=19, width=8)
+                                inhalt = ''
 
                             # Zuschläge Stunden und Grund
                             if data[1] != 'empty' and data[1].zuschlaege != {}:
                                 grund = data[1].zuschlaege['zuschlagsgrund']
                                 zuschlag_stunden = data[1].zuschlaege['stunden_gesamt']
-                                self.parent.parent.seitenleiste.zuschlaege[grund]['stunden_gesamt'] += zuschlag_stunden
-                                inhalt = str(zuschlag_stunden) + ' ' + data[1].zuschlaege['zuschlagsgrund']
-                            self.zelle(inhalt=inhalt, row=zeilennummer, col=20, width=15)
+                                if zuschlag_stunden > 0:
+                                    self.parent.parent.seitenleiste.zuschlaege[grund]['stunden_gesamt'] += zuschlag_stunden
+                                    inhalt = str(zuschlag_stunden) + ' ' + data[1].zuschlaege['zuschlagsgrund']
+                                    self.zelle(inhalt=inhalt, row=zeilennummer, col=20, width=15)
 
                             # Zuschläge Geld
                             if data[1] != 'empty' and data[1].zuschlaege != {}:
                                 grund = data[1].zuschlaege['zuschlagsgrund']
                                 zuschlag_schicht = data[1].zuschlaege['zuschlag_schicht']
-                                self.parent.parent.seitenleiste.zuschlaege[grund]['zuschlaege_gesamt'] \
-                                    += zuschlag_schicht
-                                self.parent.parent.seitenleiste.zuschlaege[grund]['zuschlag_pro_stunde'] = \
-                                    data[1].zuschlaege['zuschlag_pro_stunde']
-                                inhalt = "{:,.2f}€".format(zuschlag_schicht)
-                            self.zelle(inhalt=inhalt, row=zeilennummer, col=21, width=8)
+                                if zuschlag_schicht > 0:
+                                    self.parent.parent.seitenleiste.zuschlaege[grund]['zuschlaege_gesamt'] \
+                                        += zuschlag_schicht
+                                    self.parent.parent.seitenleiste.zuschlaege[grund]['zuschlag_pro_stunde'] = \
+                                        data[1].zuschlaege['zuschlag_pro_stunde']
+                                    inhalt = "{:,.2f}€".format(zuschlag_schicht)
+                                    self.zelle(inhalt=inhalt, row=zeilennummer, col=21, width=8)
 
                             # wechselschichtzulage
                             if data[1] != 'empty':
@@ -190,6 +194,7 @@ class Hauptfenster(tk.Frame):
                     self.zelle(inhalt=tag, row=zeilennummer, col=11, width=3)
 
                 def make_button(self, command, schicht, row=0, col=0):
+                    button = image = 0
                     if schicht.original_schicht != "root":
                         key_string = schicht.original_schicht
                     else:
@@ -227,6 +232,7 @@ class Hauptfenster(tk.Frame):
                         return zelle
 
                 def get_inhalt_asn_etc(self, data):
+                    inhalt = ''
                     if self.parent.assistent.check_au(datetime.datetime(self.arbeitsdatum.year,
                                                                         self.arbeitsdatum.month, data[0], 0, 1)):
                         inhalt = 'AU'
@@ -267,11 +273,12 @@ class Hauptfenster(tk.Frame):
                     elif data[1] != 'empty':
                         self.parent.parent.seitenleiste.arbeitsstunden += data[1].stundenzahl
                         self.stunden = data[1].berechne_stundenzahl()
-
-                    inhalt = "{:,.2f}".format(self.stunden)
-                    return inhalt
+                    if self.stunden > 0:
+                        inhalt = "{:,.2f}".format(self.stunden)
+                        return inhalt
 
                 def get_inhalt_lohn(self, data):
+                    inhalt = ''
                     assistent = self.parent.assistent
                     heute = datetime.datetime(self.arbeitsdatum.year, self.arbeitsdatum.month, data[0], 0, 1)
                     if assistent.check_au(heute):
@@ -280,24 +287,27 @@ class Hauptfenster(tk.Frame):
                         aulohn_pro_stunde = au.aulohn_pro_stunde
                         self.parent.parent.seitenleiste.grundlohn += aulohn
                         self.parent.parent.seitenleiste.grundlohn_pro_stunde = aulohn_pro_stunde
-                        inhalt = "{:,.2f}€".format(aulohn)
+                        if aulohn > 0:
+                            inhalt = "{:,.2f}€".format(aulohn)
                     elif assistent.check_urlaub(heute):
                         urlaub = assistent.check_urlaub(heute)
                         ulohn = urlaub.ulohn_pro_tag
                         ulohn_pro_stunde = urlaub.ulohn_pro_stunde
                         self.parent.parent.seitenleiste.grundlohn += ulohn
                         self.parent.parent.seitenleiste.grundlohn_pro_stunde = ulohn_pro_stunde
-                        inhalt = "{:,.2f}€".format(ulohn)
+                        if ulohn > 0:
+                            inhalt = "{:,.2f}€".format(ulohn)
                     elif data[1] != 'empty':
                         schichtlohn = data[1].schichtlohn
                         self.parent.parent.seitenleiste.grundlohn += data[1].schichtlohn
                         self.parent.parent.seitenleiste.grundlohn_pro_stunde = data[1].stundenlohn
-                        inhalt = "{:,.2f}€".format(schichtlohn)
+                        if schichtlohn > 0:
+                            inhalt = "{:,.2f}€".format(schichtlohn)
                     return inhalt
 
                 def get_inhalt_bsd_rb(self, data):
                     if data[1].ist_kurzfristig:
-                        kurzfr = self.schichtlohn * 0.2
+                        kurzfr = data[1].schichtlohn * 0.2
                         self.parent.parent.seitenleiste.kurzfr_pro_stunde = data[1].stundenlohn * 0.2
                         self.parent.parent.seitenleiste.kurzfr_stunden = data[1].stundenzahl
                         self.parent.parent.seitenleiste.kurzfr += kurzfr
@@ -605,7 +615,7 @@ class Hauptfenster(tk.Frame):
     def load_and_redraw(self):
         assistent = self.assistent.load_from_file()
         self.assistent = assistent
-        self.parent.assistent = assistent  #  der gesamten app bescheid sagen, dass es einen neuen AS gibt
+        self.parent.assistent = assistent  # der gesamten app bescheid sagen, dass es einen neuen AS gibt
 
         self.redraw(self.assistent)
 
