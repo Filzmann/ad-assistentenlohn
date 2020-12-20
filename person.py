@@ -67,6 +67,7 @@ class AS(Person):
                                      hnr="2a", plz="10961", stadt="Berlin"))
         self.adressen.append(Adresse(kuerzel="NO-W-BR-Büro", strasse="Wilhelm-Kabus-Str.",
                                      hnr="27-30", plz="10829", stadt="Berlin"))
+        self.bruttoloehne = {}
 
     def __del__(self):
         self.__class__.count -= 1
@@ -160,7 +161,12 @@ class AS(Person):
             infile = open(dateiname, 'rb')
             assistent = pickle.load(infile)
             infile.close()
+            assistent.set_filepath(dateiname)
+            assistent.urlaub = []
+            assistent.au = []
+
             self.__class__.assistent_is_loaded = 1
+
         return assistent
 
     def save_to_file(self, neu=0):

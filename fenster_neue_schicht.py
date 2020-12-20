@@ -243,9 +243,7 @@ class FensterNeueSchicht(tk.Toplevel):
 
         def enddatum_durch_startdatum(self, event):
             startdatum = self.startdatum_input.get_date().split('/')
-            self.enddatum_input.parse_date(datetime.datetime(int(startdatum[2]),
-                                                             int(startdatum[0]),
-                                                             int(startdatum[1])))
+            self.enddatum_input.parse_date(self.startdatum_input.get_date())
             self.edit_schicht.ende = datetime.datetime(int(startdatum[2]), int(startdatum[0]), int(startdatum[1]),
                                                        int(self.endzeit_input.hourstr.get()),
                                                        int(self.endzeit_input.minstr.get()))
@@ -388,7 +386,6 @@ class FensterNeueSchicht(tk.Toplevel):
             def get_data(self):
                 self.edit_schicht.beginn_andere_adresse = self.alternative_adresse_beginn_input.get_data()
                 self.edit_schicht.ende_andere_adresse = self.alternative_adresse_ende_input.get_data()
-                pass
 
         def __init__(self, parent, edit_schicht: Schicht = 0):
             super().__init__(parent)
@@ -431,7 +428,7 @@ class FensterNeueSchicht(tk.Toplevel):
             self.edit_schicht.ist_kurzfristig = self.ist_rb.get()
             self.edit_schicht.ist_ausfallgeld = self.ist_afg.get()
 
-    def __init__(self, parent, assistent, edit_schicht: Schicht = None):
+    def __init__(self, parent, assistent, edit_schicht: Schicht = None, datum: datetime.datetime = None):
         super().__init__(parent)
         self.parent = parent
         self.assistent = assistent
@@ -440,8 +437,13 @@ class FensterNeueSchicht(tk.Toplevel):
         if not edit_schicht:
             self.neu = 1
             empty_asn = ASN(name='', vorname='', kuerzel='Bitte auswählen')
-            self.edit_schicht = Schicht(beginn=self.assistent.letzte_eingetragene_schicht.beginn,
-                                        ende=self.assistent.letzte_eingetragene_schicht.beginn,
+            if datum:
+                init_date = datum
+            else:
+                init_date = self.assistent.letzte_eingetragene_schicht.beginn
+
+            self.edit_schicht = Schicht(beginn=init_date,
+                                        ende=init_date + datetime.timedelta(hours=1),
                                         asn=empty_asn,
                                         assistent=assistent)
         else:

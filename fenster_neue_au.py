@@ -48,5 +48,6 @@ class NeueAU(tk.Toplevel):
         self.assistent.au_dazu(au)
         self.assistent.save_to_file()
         self.destroy()
+        self.parent.fenster.redraw(self.assistent)
         if undneu == 1:
             NeueAU(self.parent, self.assistent)

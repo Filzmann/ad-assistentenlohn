@@ -44,6 +44,7 @@ class Hauptfenster(tk.Frame):
                 # offset = 0
                 vormonat = tk.Button(self, text='einen Monat Zurück', command=lambda: self.monat_change(-1))
                 self.arbeitsdate = self.berechne_arbeitsdate()
+                self.parent.seitenleiste.arbeitsdatum = self.arbeitsdate
                 self.aktueller_monat = tk.Label(self, text=self.arbeitsdate.strftime("%B %Y"))
                 naechster_monat = tk.Button(self, text='Nächster Monat', command=lambda: self.monat_change(+1))
 
@@ -77,7 +78,9 @@ class Hauptfenster(tk.Frame):
                 self.aktueller_monat.config(text=self.arbeitsdate.strftime("%B %Y"))
                 root.fenster.hauptseite.tab.destroy()
                 root.fenster.hauptseite.seitenleiste.destroy()
-                root.fenster.hauptseite.seitenleiste = root.fenster.hauptseite.Seitenleiste(root.fenster.hauptseite)
+                root.fenster.hauptseite.seitenleiste = \
+                    root.fenster.hauptseite.Seitenleiste(root.fenster.hauptseite, self.assistent)
+                root.fenster.hauptseite.seitenleiste.arbeitsdatum = self.arbeitsdate
                 root.fenster.hauptseite.tab = root.fenster.hauptseite.Tabelle(parent=root.fenster.hauptseite,
                                                                               assistent=self.assistent,
                                                                               arbeitsdatum=self.arbeitsdate)
@@ -104,6 +107,7 @@ class Hauptfenster(tk.Frame):
                                 and not self.assistent.check_au(self.heute):
                             self.make_button(command="edit", schicht=data[1], row=zeilennummer, col=0)
                             self.make_button(command="kill", schicht=data[1], row=zeilennummer, col=1)
+                            self.make_button(command="new", row=zeilennummer, col=2, datum=self.heute)
                         # Wochentag
                         tag = self.heute.strftime('%a')
                         self.zelle(inhalt=tag, row=zeilennummer, col=10, width=4)
@@ -188,18 +192,22 @@ class Hauptfenster(tk.Frame):
                             self.zelle(inhalt=inhalt, row=zeilennummer, col=23, width=8)
 
                 def leerzeile(self, zeilennummer):
+                    self.make_button(command="new", row=zeilennummer, col=2, datum=self.heute)
                     tag = self.heute.strftime('%a')
                     self.zelle(inhalt=tag, row=zeilennummer, col=10, width=4)
                     # Tag als Nummer
                     tag = self.heute.strftime('%d')
                     self.zelle(inhalt=tag, row=zeilennummer, col=11, width=3)
 
-                def make_button(self, command, schicht, row=0, col=0):
+                def make_button(self, command, schicht: Schicht = None, row=0, col=0, datum: datetime.datetime = None):
                     button = image = 0
-                    if schicht.original_schicht != "root":
-                        key_string = schicht.original_schicht
-                    else:
-                        key_string = schicht.beginn.strftime('%Y%m%d%H%M')
+                    if schicht:
+                        if schicht.original_schicht != "root":
+                            key_string = schicht.original_schicht
+                            schicht = self.assistent.schichten[schicht.original_schicht]
+                        else:
+                            key_string = schicht.beginn.strftime('%Y%m%d%H%M')
+
                     if command == 'kill':
                         image = "images/del.png"
                         label = "Löschen"
@@ -212,6 +220,15 @@ class Hauptfenster(tk.Frame):
                                                                               assistent=self.assistent,
                                                                               edit_schicht=schicht))
                         image = "images/edit.png"
+                    elif command == 'new':
+                        label = "Neue Schicht"
+
+                        button = tk.Button(self.parent,
+                                           text=label,
+                                           command=lambda: FensterNeueSchicht(parent=self.parent.parent,
+                                                                              assistent=self.assistent,
+                                                                              datum=datum))
+                        image = "images/add.png"
 
                     button.image = tk.PhotoImage(file=image, width=16, height=16)
                     button.config(image=button.image, width=16, height=16)
@@ -219,6 +236,8 @@ class Hauptfenster(tk.Frame):
                     return button
 
                 def kill_schicht(self, key):
+                    schicht = self.assistent.schichten[key]
+                    self.assistent.letzte_eingetragene_schicht = schicht
                     self.assistent.delete_schicht(key=key)
                     self.assistent.save_to_file()
                     self.parent.parent.parent.redraw(assistent=self.assistent)
@@ -259,7 +278,7 @@ class Hauptfenster(tk.Frame):
                         # krank
                         au = assistent.check_au(datetime.datetime(self.arbeitsdatum.year, self.arbeitsdatum.month,
                                                                   data[0], 0, 1))
-                        austunden = au.berechne_durchschnittliche_stundenzahl_pro_tag()
+                        austunden = au.berechne_durchschnittliche_stundenzahl_pro_tag()['stunden']
                         self.stunden = austunden
                         self.parent.parent.seitenleiste.arbeitsstunden += austunden
                     elif assistent.check_urlaub(datetime.datetime(self.arbeitsdatum.year,
@@ -268,7 +287,7 @@ class Hauptfenster(tk.Frame):
                         urlaub = assistent.check_urlaub(
                             datetime.datetime(self.arbeitsdatum.year, self.arbeitsdatum.month,
                                               data[0], 0, 1))
-                        ustunden = urlaub.berechne_durchschnittliche_stundenzahl_pro_tag()
+                        ustunden = urlaub.berechne_durchschnittliche_stundenzahl_pro_tag()['stunden']
                         self.stunden = ustunden
                         self.parent.parent.seitenleiste.arbeitsstunden += ustunden
                     elif data[1] != 'empty':
@@ -492,8 +511,11 @@ class Hauptfenster(tk.Frame):
                     c.grid(row=0, column=2, sticky="e")
                     d.grid(row=0, column=3, sticky="e")
 
-            def __init__(self, parent):
+            def __init__(self, parent, assistent=None):
                 super().__init__(parent)
+                self.assistent = assistent
+                self.parent = parent
+                self.arbeitsdatum = None
                 self.zuschlaege = {}
                 for zuschlag_name in parent.assistent.lohntabelle.zuschlaege.keys():
                     self.zuschlaege[zuschlag_name] = {
@@ -578,14 +600,17 @@ class Hauptfenster(tk.Frame):
                                    spalte4="{:,.2f}€".format(brutto))
                 zeile.grid(row=zeilenzaehler, column=0)
                 zeilenzaehler += 1
+                bruttokey = self.arbeitsdatum.strftime("%Y-%m")
+                self.assistent.bruttoloehne[bruttokey] = {'stunden': self.arbeitsstunden, 'geld': brutto}
 
         def __init__(self, parent, assistent):  # von Hauptseite
             super().__init__(parent)
             self.assistent = assistent
             self.parent = parent
             self.title = self.Title(self, assistent=assistent)
+            self.seitenleiste = self.Seitenleiste(self, assistent=assistent)
             self.nav = self.Navigation(self, assistent=assistent)
-            self.seitenleiste = self.Seitenleiste(self)
+
             dt = self.assistent.letzte_eingetragene_schicht.beginn
             arbeitsdatum = datetime.datetime(dt.year, dt.month, 1)
             self.tab = self.Tabelle(self, arbeitsdatum=arbeitsdatum, assistent=self.assistent)

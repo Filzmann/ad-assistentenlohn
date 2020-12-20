@@ -65,5 +65,6 @@ class NeuerUrlaub(tk.Toplevel):
         self.assistent.urlaub_dazu(urlaub)
         self.assistent.save_to_file()
         self.destroy()
+        self.parent.fenster.redraw(self.assistent)
         if undneu == 1:
             NeuerUrlaub(self.parent, self.assistent)

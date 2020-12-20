@@ -7,7 +7,7 @@ class App(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         self.assistent = AS()
-        self.geometry('1200x1000')
+        self.geometry('1200x800')
         self.title("Dein Assistentenlohn")
         self.config(menu="")
         self.fenster = Hauptfenster(self, self.assistent)

@@ -50,6 +50,10 @@ class Schicht:
         self.nachtzuschlag = self.assistent.lohntabelle.get_zuschlag('Nacht', self.beginn)
         self.nachtzuschlag_schicht = self.nachtstunden * self.nachtzuschlag
         self.zuschlaege = self.berechne_sa_so_weisil_feiertagszuschlaege()
+        if self.check_mehrtaegig() == 1:
+            self.teilschichten = self.split_by_null_uhr()
+        else:
+            self.teilschichten = []
 
     def check_mehrtaegig(self):
         pseudoende = self.ende - datetime.timedelta(minutes=2)
@@ -67,7 +71,10 @@ class Schicht:
                 neuer_start_rest_y = int(r_start.strftime('%Y'))
                 neuer_start_rest_m = int(r_start.strftime('%m'))
                 neuer_start_rest_d = int(r_start.strftime('%d'))
-                neuer_start_rest = datetime.datetime(neuer_start_rest_y, neuer_start_rest_m, neuer_start_rest_d + 1)
+                neuer_start_rest = datetime.datetime(neuer_start_rest_y,
+                                                     neuer_start_rest_m,
+                                                     neuer_start_rest_d) + datetime.timedelta(days=1)
+
                 if neuer_start_rest <= rest['ende']:
                     ausgabe.append(Schicht(beginn=rest['start'],
                                            ende=neuer_start_rest,
@@ -143,6 +150,8 @@ class Schicht:
         feiertagsstunden_steuerpflichtig = 0
         feiertagsarray = {}
         zuschlagsgrund = ''
+
+        test = self.check_feiertag()
 
         if self.check_feiertag() != '':
             if self.check_mehrtaegig() == 1:
@@ -266,23 +275,23 @@ class Schicht:
         ostersonntag = self.berechne_ostern(jahr)
         karfreitag = ostersonntag - datetime.timedelta(days=2)
         feiertag = {'name': 'Karfreitag', 'd': int(karfreitag.strftime('%d')),
-                    'm': int(karfreitag.strftime('%d')), 'Y': 0}
+                    'm': int(karfreitag.strftime('%m')), 'Y': 0}
         feiertage.append(feiertag)
         ostermontag = ostersonntag + datetime.timedelta(days=1)
         feiertag = {'name': 'Ostermontag', 'd': int(ostermontag.strftime('%d')),
-                    'm': int(ostermontag.strftime('%d')), 'Y': 0}
+                    'm': int(ostermontag.strftime('%m')), 'Y': 0}
         feiertage.append(feiertag)
         himmelfahrt = ostersonntag + datetime.timedelta(days=40)
         feiertag = {'name': 'Christi Himmelfahrt', 'd': int(himmelfahrt.strftime('%d')),
-                    'm': int(himmelfahrt.strftime('%d')), 'Y': 0}
+                    'm': int(himmelfahrt.strftime('%m')), 'Y': 0}
         feiertage.append(feiertag)
         pfingstsonntag = ostersonntag + datetime.timedelta(days=49)
         feiertag = {'name': 'Pfingstsonntag', 'd': int(pfingstsonntag.strftime('%d')),
-                    'm': int(pfingstsonntag.strftime('%d')), 'Y': 0}
+                    'm': int(pfingstsonntag.strftime('%m')), 'Y': 0}
         feiertage.append(feiertag)
         pfingstmontag = ostersonntag + datetime.timedelta(days=50)
         feiertag = {'name': 'Pfingstmontag', 'd': int(pfingstmontag.strftime('%d')),
-                    'm': int(pfingstmontag.strftime('%d')), 'Y': 0}
+                    'm': int(pfingstmontag.strftime('%m')), 'Y': 0}
         feiertage.append(feiertag)
         ausgabe = ''
         for feiertag in feiertage:
@@ -300,55 +309,109 @@ class Schicht:
 
     @staticmethod
     def berechne_ostern(jahr):
-        m = 0
+
         # Berechnung von Ostern mittels Gaußscher Osterformel
         # siehe http://www.ptb.de/de/org/4/44/441/oste.htm
         # mindestens bis 2031 richtig
-        K = jahr / 100
-        M = 15 + ((3 * K + 3) / 4) - ((8 * K + 13) / 25)
-        S = 2 - ((3 * K + 3) / 4)
+        K = jahr // 100
+        M = 15 + ((3 * K + 3) // 4) - ((8 * K + 13) // 25)
+        S = 2 - ((3 * K + 3) // 4)
         A = jahr % 19
         D = (19 * A + M) % 30
-        R = (D / 29) + ((D / 28) - (D / 29)) * (A / 11)
+        R = (D + (A // 11)) // 29
         OG = 21 + D - R
-        SZ = 7 - (jahr + (jahr / 4) + S) % 7
+        SZ = 7 - (jahr + (jahr // 4) + S) % 7
         OE = 7 - ((OG - SZ) % 7)
 
         tmp = OG + OE  # das Osterdatum als Tages des März, also 32 entspricht 1. April
 
         if tmp > 31:  # Monat erhöhen, tmp=tag erniedriegen
-            m = int(tmp / 31)
+            m = tmp // 31
+            if tmp == 31:
+                m = 0
             tmp = tmp - 31
-        tmp = int(round(tmp))
+
         return datetime.date(jahr, 3 + m, tmp)
 
 
 class Urlaub:
     def __init__(self, beginn, ende, assistent, status='notiert'):
+        self.assistent = assistent
         self.beginn = beginn
         self.ende = ende
         # status 3 Möglichkeiten: notiert, beantragt, genehmigt
         self.status = status
-        self.stundenzahl = self.berechne_durchschnittliche_stundenzahl_pro_tag()
+        self.stundenzahl = self.berechne_durchschnittliche_stundenzahl_pro_tag()['stunden']
         # todo Änderung des Stundensatzes während des Urlaubes
-        self.ulohn_pro_stunde = assistent.lohntabelle.get_grundlohn(self.beginn)
+        self.ulohn_pro_stunde = self.berechne_durchschnittliche_stundenzahl_pro_tag()['lohn']
         self.ulohn_pro_tag = self.stundenzahl * self.ulohn_pro_stunde
+        schichten = assistent.get_all_schichten(start=beginn, end=ende)
+        for schicht in schichten:
+            assistent.delete_schicht(key=schicht)
 
     def berechne_durchschnittliche_stundenzahl_pro_tag(self):
-        # todo durchschnittliche Stundenzahl aus letzten ausgefüllten 6 Monaten
-        return 6
+
+        keys = []
+        date = datetime.date(self.beginn.year, self.beginn.month, 1)
+        for zaehler in range(1, 7):
+            letzter_des_vormonats = date - datetime.timedelta(days=1)
+            anzahl_tage_vormonat = int(letzter_des_vormonats.strftime('%d'))
+            date = letzter_des_vormonats - datetime.timedelta(days=anzahl_tage_vormonat - 1)
+            key = date.strftime('%Y-%m')
+            keys.append(key)
+        summe_brutto = 0
+        summe_stunden = 0
+        anzahl_monate = 0
+        for key in keys:
+            if key in self.assistent.bruttoloehne:
+                summe_brutto += self.assistent.bruttoloehne[key]['geld']
+                summe_stunden += self.assistent.bruttoloehne[key]['stunden']
+                anzahl_monate += 1
+
+        schnitt_stundenlohn = summe_brutto/summe_stunden
+        # wir rechnen mit durchschnittlich 30 Tage pro Monat
+        schnitt_stunden_pro_tag = summe_stunden/(30 * anzahl_monate)
+
+        return {'stunden': schnitt_stunden_pro_tag, 'lohn': schnitt_stundenlohn}
 
 
 class Arbeitsunfaehigkeit:
     def __init__(self, beginn, ende, assistent):
         self.beginn = beginn
         self.ende = ende
+        self.assistent = assistent
 
-        self.stundenzahl = self.berechne_durchschnittliche_stundenzahl_pro_tag()
+        self.stundenzahl = self.berechne_durchschnittliche_stundenzahl_pro_tag()['stunden']
         # todo Änderung des Stundensatzes während des Urlaubes
-        self.aulohn_pro_stunde = assistent.lohntabelle.get_grundlohn(self.beginn)
+        self.aulohn_pro_stunde = self.berechne_durchschnittliche_stundenzahl_pro_tag()['lohn']
         self.aulohn_pro_tag = self.stundenzahl * self.aulohn_pro_stunde
+        schichten = assistent.get_all_schichten(start=beginn, end=ende)
+        for schicht in schichten:
+            assistent.delete_schicht(key=schicht)
+
+
 
     def berechne_durchschnittliche_stundenzahl_pro_tag(self):
-        # todo durchschnittliche Stundenzahl aus letzten ausgefüllten 6 Monaten
-        return 6
+
+        keys = []
+        date = datetime.date(self.beginn.year, self.beginn.month, 1)
+        for zaehler in range(1, 7):
+            letzter_des_vormonats = date - datetime.timedelta(days=1)
+            anzahl_tage_vormonat = int(letzter_des_vormonats.strftime('%d'))
+            date = letzter_des_vormonats - datetime.timedelta(days=anzahl_tage_vormonat - 1)
+            key = date.strftime('%Y-%m')
+            keys.append(key)
+        summe_brutto = 0
+        summe_stunden = 0
+        anzahl_monate = 0
+        for key in keys:
+            if key in self.assistent.bruttoloehne:
+                summe_brutto += self.assistent.bruttoloehne[key]['geld']
+                summe_stunden += self.assistent.bruttoloehne[key]['stunden']
+                anzahl_monate += 1
+
+        schnitt_stundenlohn = summe_brutto / summe_stunden
+        # wir rechnen mit durchschnittlich 30 Tage pro Monat
+        schnitt_stunden_pro_tag = summe_stunden / (30 * anzahl_monate)
+
+        return {'stunden': schnitt_stunden_pro_tag, 'lohn': schnitt_stundenlohn}
