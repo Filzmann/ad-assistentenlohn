@@ -155,7 +155,8 @@ class Hauptfenster(tk.Frame):
                                 grund = data[1].zuschlaege['zuschlagsgrund']
                                 zuschlag_stunden = data[1].zuschlaege['stunden_gesamt']
                                 if zuschlag_stunden > 0:
-                                    self.parent.parent.seitenleiste.zuschlaege[grund]['stunden_gesamt'] += zuschlag_stunden
+                                    self.parent.parent.seitenleiste.zuschlaege[grund]['stunden_gesamt'] += \
+                                        zuschlag_stunden
                                     inhalt = str(zuschlag_stunden) + ' ' + data[1].zuschlaege['zuschlagsgrund']
                                     self.zelle(inhalt=inhalt, row=zeilennummer, col=20, width=15)
 
