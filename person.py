@@ -116,6 +116,18 @@ class AS(Person):
                 key = schicht.beginn.strftime('%Y%m%d%H%M')
             del self.schichten[key]
 
+    def delete_urlaub(self, datum: datetime.datetime):
+        for urlaub in self.urlaub:
+            if urlaub.beginn <= datum <= urlaub.ende:
+                self.urlaub.remove(urlaub)
+                return True
+
+    def delete_au(self, datum: datetime.datetime):
+        for arbeitsunfaehigkeit in self.au:
+            if arbeitsunfaehigkeit.beginn <= datum <= arbeitsunfaehigkeit.ende:
+                self.au.remove(arbeitsunfaehigkeit)
+                return True
+
     def set_all_schichten(self, schichten):
         """ Nimmt ein dict von Schichten entgegen und weist diese dem AS zu"""
         self.schichten = schichten
@@ -156,15 +168,13 @@ class AS(Person):
     def load_from_file(self):
         files = [('Assistenten-Dateien', '*.dat')]
         dateiname = filedialog.askopenfilename(filetypes=files, defaultextension=files)
+        assistent = None
         if not dateiname == '':
             self.set_filepath(dateiname)
             infile = open(dateiname, 'rb')
             assistent = pickle.load(infile)
             infile.close()
             assistent.set_filepath(dateiname)
-            assistent.urlaub = []
-            assistent.au = []
-
             self.__class__.assistent_is_loaded = 1
 
         return assistent

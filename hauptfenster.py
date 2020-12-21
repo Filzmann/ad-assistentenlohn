@@ -79,7 +79,7 @@ class Hauptfenster(tk.Frame):
                 root.fenster.hauptseite.tab.destroy()
                 root.fenster.hauptseite.seitenleiste.destroy()
                 root.fenster.hauptseite.seitenleiste = \
-                    root.fenster.hauptseite.Seitenleiste(root.fenster.hauptseite, self.assistent)
+                    root.fenster.hauptseite.Seitenleiste(root.fenster.hauptseite, self.assistent, self.arbeitsdate)
                 root.fenster.hauptseite.seitenleiste.arbeitsdatum = self.arbeitsdate
                 root.fenster.hauptseite.tab = root.fenster.hauptseite.Tabelle(parent=root.fenster.hauptseite,
                                                                               assistent=self.assistent,
@@ -108,6 +108,8 @@ class Hauptfenster(tk.Frame):
                             self.make_button(command="edit", schicht=data[1], row=zeilennummer, col=0)
                             self.make_button(command="kill", schicht=data[1], row=zeilennummer, col=1)
                             self.make_button(command="new", row=zeilennummer, col=2, datum=self.heute)
+                        else:
+                            self.make_button(command="kill", datum=self.heute, row=zeilennummer, col=1)
                         # Wochentag
                         tag = self.heute.strftime('%a')
                         self.zelle(inhalt=tag, row=zeilennummer, col=10, width=4)
@@ -199,7 +201,11 @@ class Hauptfenster(tk.Frame):
                     tag = self.heute.strftime('%d')
                     self.zelle(inhalt=tag, row=zeilennummer, col=11, width=3)
 
-                def make_button(self, command, schicht: Schicht = None, row=0, col=0, datum: datetime.datetime = None):
+                def make_button(self, command,
+                                schicht: Schicht = None,
+                                row=0,
+                                col=0,
+                                datum: datetime.datetime = None):
                     button = image = 0
                     if schicht:
                         if schicht.original_schicht != "root":
@@ -211,7 +217,10 @@ class Hauptfenster(tk.Frame):
                     if command == 'kill':
                         image = "images/del.png"
                         label = "Löschen"
-                        button = tk.Button(self.parent, text=label, command=lambda: self.kill_schicht(key_string))
+                        if schicht:
+                            button = tk.Button(self.parent, text=label, command=lambda: self.kill_schicht(key_string))
+                        else:
+                            button = tk.Button(self.parent, text=label, command=lambda: self.kill_au_urlaub(datum))
                     elif command == 'edit':
                         label = "Bearbeiten"
                         button = tk.Button(self.parent,
@@ -239,6 +248,12 @@ class Hauptfenster(tk.Frame):
                     schicht = self.assistent.schichten[key]
                     self.assistent.letzte_eingetragene_schicht = schicht
                     self.assistent.delete_schicht(key=key)
+                    self.assistent.save_to_file()
+                    self.parent.parent.parent.redraw(assistent=self.assistent)
+
+                def kill_au_urlaub(self, datum):
+                    if not self.assistent.delete_urlaub(datum):
+                        self.assistent.delete_au(datum)
                     self.assistent.save_to_file()
                     self.parent.parent.parent.redraw(assistent=self.assistent)
 
@@ -278,18 +293,20 @@ class Hauptfenster(tk.Frame):
                         # krank
                         au = assistent.check_au(datetime.datetime(self.arbeitsdatum.year, self.arbeitsdatum.month,
                                                                   data[0], 0, 1))
+                        au.calculate()
                         austunden = au.berechne_durchschnittliche_stundenzahl_pro_tag()['stunden']
                         self.stunden = austunden
-                        self.parent.parent.seitenleiste.arbeitsstunden += austunden
+                        self.parent.parent.seitenleiste.austunden += austunden
                     elif assistent.check_urlaub(datetime.datetime(self.arbeitsdatum.year,
                                                                   self.arbeitsdatum.month, data[0], 0, 1)):
                         # Urlaub
                         urlaub = assistent.check_urlaub(
                             datetime.datetime(self.arbeitsdatum.year, self.arbeitsdatum.month,
                                               data[0], 0, 1))
+                        urlaub.calculate()
                         ustunden = urlaub.berechne_durchschnittliche_stundenzahl_pro_tag()['stunden']
                         self.stunden = ustunden
-                        self.parent.parent.seitenleiste.arbeitsstunden += ustunden
+                        self.parent.parent.seitenleiste.ustunden += ustunden
                     elif data[1] != 'empty':
                         self.parent.parent.seitenleiste.arbeitsstunden += data[1].stundenzahl
                         self.stunden = data[1].berechne_stundenzahl()
@@ -303,18 +320,20 @@ class Hauptfenster(tk.Frame):
                     heute = datetime.datetime(self.arbeitsdatum.year, self.arbeitsdatum.month, data[0], 0, 1)
                     if assistent.check_au(heute):
                         au = assistent.check_au(heute)
+                        au.calculate()
                         aulohn = au.aulohn_pro_tag
                         aulohn_pro_stunde = au.aulohn_pro_stunde
-                        self.parent.parent.seitenleiste.grundlohn += aulohn
-                        self.parent.parent.seitenleiste.grundlohn_pro_stunde = aulohn_pro_stunde
+                        self.parent.parent.seitenleiste.aulohn += aulohn
+                        self.parent.parent.seitenleiste.aulohn_pro_stunde = aulohn_pro_stunde
                         if aulohn > 0:
                             inhalt = "{:,.2f}€".format(aulohn)
                     elif assistent.check_urlaub(heute):
                         urlaub = assistent.check_urlaub(heute)
+                        urlaub.calculate()
                         ulohn = urlaub.ulohn_pro_tag
                         ulohn_pro_stunde = urlaub.ulohn_pro_stunde
-                        self.parent.parent.seitenleiste.grundlohn += ulohn
-                        self.parent.parent.seitenleiste.grundlohn_pro_stunde = ulohn_pro_stunde
+                        self.parent.parent.seitenleiste.ulohn += ulohn
+                        self.parent.parent.seitenleiste.ulohn_pro_stunde = ulohn_pro_stunde
                         if ulohn > 0:
                             inhalt = "{:,.2f}€".format(ulohn)
                     elif data[1] != 'empty':
@@ -511,11 +530,11 @@ class Hauptfenster(tk.Frame):
                     c.grid(row=0, column=2, sticky="e")
                     d.grid(row=0, column=3, sticky="e")
 
-            def __init__(self, parent, assistent=None):
+            def __init__(self, parent, assistent=None, arbeitsdatum=None):
                 super().__init__(parent)
                 self.assistent = assistent
                 self.parent = parent
-                self.arbeitsdatum = None
+                self.arbeitsdatum = arbeitsdatum
                 self.zuschlaege = {}
                 for zuschlag_name in parent.assistent.lohntabelle.zuschlaege.keys():
                     self.zuschlaege[zuschlag_name] = {
@@ -528,6 +547,12 @@ class Hauptfenster(tk.Frame):
                 self.arbeitsstunden = 0
                 self.grundlohn = 0
                 self.grundlohn_pro_stunde = 0
+                self.ustunden = 0
+                self.ulohn = 0
+                self.ulohn_pro_stunde = 0
+                self.austunden = 0
+                self.aulohn = 0
+                self.aulohn_pro_stunde = 0
                 self.kurzfr = 0
                 self.kurzfr_pro_stunde = 0
                 self.kurzfr_stunden = 0
@@ -538,6 +563,8 @@ class Hauptfenster(tk.Frame):
                 self.wechselschichtzulage_pro_stunde = 0
                 self.orga = 0
                 self.orga_pro_stunde = 0
+                self.anzahl_feiertage = self.zaehle_feiertage(self.arbeitsdatum)
+                self.freizeitausgleich = self.berechne_freizeitausgleich(self.anzahl_feiertage)
 
             def draw(self):
                 zeilenzaehler = 0
@@ -554,6 +581,22 @@ class Hauptfenster(tk.Frame):
                                    spalte3="{:,.2f}€".format(self.grundlohn_pro_stunde),
                                    spalte4="{:,.2f}€".format(self.grundlohn))
                 zeile.grid(row=zeilenzaehler, column=0)
+                if self.ulohn:
+                    zeilenzaehler += 1
+                    zeile = self.Zeile(self,
+                                       spalte1='Entgelt Urlaub',
+                                       spalte2="{:,.2f}".format(self.ustunden),
+                                       spalte3="{:,.2f}€".format(self.ulohn_pro_stunde),
+                                       spalte4="{:,.2f}€".format(self.ulohn))
+                    zeile.grid(row=zeilenzaehler, column=0)
+                if self.aulohn:
+                    zeilenzaehler += 1
+                    zeile = self.Zeile(self,
+                                       spalte1='Entgelt Arbeitsunfähigkeit',
+                                       spalte2="{:,.2f}".format(self.austunden),
+                                       spalte3="{:,.2f}€".format(self.aulohn_pro_stunde),
+                                       spalte4="{:,.2f}€".format(self.aulohn))
+                    zeile.grid(row=zeilenzaehler, column=0)
                 zeilenzaehler += 1
                 zeile = self.Zeile(self,
                                    spalte1='Kurzfr. RB',
@@ -583,7 +626,8 @@ class Hauptfenster(tk.Frame):
                                    spalte4="{:,.2f}€".format(self.orga))
                 zeile.grid(row=zeilenzaehler, column=0)
                 zeilenzaehler += 1
-                brutto = self.grundlohn + self.wechselschichtzulage + self.nachtzuschlag + self.orga + self.kurzfr
+                brutto = self.grundlohn + self.aulohn + self.ulohn + self.wechselschichtzulage + \
+                         self.nachtzuschlag + self.orga + self.kurzfr
                 for zuschlag in self.zuschlaege:
                     if self.zuschlaege[zuschlag]["stunden_gesamt"] > 0:
                         zeile = self.Zeile(self,
@@ -596,6 +640,12 @@ class Hauptfenster(tk.Frame):
                         zeilenzaehler += 1
 
                 zeile = self.Zeile(self,
+                                   spalte1='Nicht gewährter Freizeitausgleich',
+                                   spalte4="{:,.2f}€".format(self.freizeitausgleich))
+                zeile.grid(row=zeilenzaehler, column=0)
+                brutto += self.freizeitausgleich
+                zeilenzaehler += 1
+                zeile = self.Zeile(self,
                                    spalte1='Bruttolohn',
                                    spalte4="{:,.2f}€".format(brutto))
                 zeile.grid(row=zeilenzaehler, column=0)
@@ -603,16 +653,134 @@ class Hauptfenster(tk.Frame):
                 bruttokey = self.arbeitsdatum.strftime("%Y-%m")
                 self.assistent.bruttoloehne[bruttokey] = {'stunden': self.arbeitsstunden, 'geld': brutto}
 
+            def zaehle_feiertage(self, datum: datetime.datetime = None):
+
+                startdatum = datum
+                feiertage = 0
+                while datum.month == startdatum.month:
+                    if self.check_feiertag(datum=datum):
+                        feiertage += 1
+                    datum += datetime.timedelta(days=1)
+                return feiertage
+
+            def berechne_freizeitausgleich(self, anzahl_feiertage=0):
+                return anzahl_feiertage * self.berechne_tagessatz()
+
+            def berechne_tagessatz(self):
+                keys = []
+                date = datetime.date(self.arbeitsdatum.year, self.arbeitsdatum.month, 1)
+                for zaehler in range(1, 7):
+                    letzter_des_vormonats = date - datetime.timedelta(days=1)
+                    anzahl_tage_vormonat = int(letzter_des_vormonats.strftime('%d'))
+                    date = letzter_des_vormonats - datetime.timedelta(days=anzahl_tage_vormonat - 1)
+                    key = date.strftime('%Y-%m')
+                    keys.append(key)
+                summe_brutto = 0
+                summe_stunden = 0
+                anzahl_monate = 0
+                for key in keys:
+                    if key in self.assistent.bruttoloehne:
+                        summe_brutto += self.assistent.bruttoloehne[key]['geld']
+                        summe_stunden += self.assistent.bruttoloehne[key]['stunden']
+                        anzahl_monate += 1
+
+                schnitt_stundenlohn = summe_brutto / summe_stunden
+                # wir rechnen mit durchschnittlich 30 Tage pro Monat
+                schnitt_stunden_pro_tag = summe_stunden / (30 * anzahl_monate)
+
+                return schnitt_stunden_pro_tag * schnitt_stundenlohn
+
+            def check_feiertag(self, datum):
+                # TODO in einer funktion mit gleichnamiger methode in Schicht zusammenführen
+                jahr = datum.year
+                feiertage = []
+                feiertag = {'name': 'Neujahr', 'd': 1, 'm': 1, 'Y': 0}
+                feiertage.append(feiertag)
+                feiertag = {'name': 'Internationaler Frauentag', 'd': 8, 'm': 3, 'Y': 0}
+                feiertage.append(feiertag)
+                feiertag = {'name': 'Tag der Arbeit', 'd': 1, 'm': 5, 'Y': 0}
+                feiertage.append(feiertag)
+                feiertag = {'name': 'Tag der deutschen Einheit', 'd': 3, 'm': 10, 'Y': 0}
+                feiertage.append(feiertag)
+                feiertag = {'name': '1. Weihnachtsfeiertagt', 'd': 25, 'm': 12, 'Y': 0}
+                feiertage.append(feiertag)
+                feiertag = {'name': '2. Weihnachtsfeiertag', 'd': 26, 'm': 12, 'Y': 0}
+                feiertage.append(feiertag)
+                feiertag = {'name': 'Tag der Befreiung', 'd': 26, 'm': 12, 'Y': 2020}
+                feiertage.append(feiertag)
+
+                # kein Feiertag in Berlin TODO Prio = 1000, andere Bundesländer
+                ostersonntag = self.berechne_ostern(jahr)
+                karfreitag = ostersonntag - datetime.timedelta(days=2)
+                feiertag = {'name': 'Karfreitag', 'd': int(karfreitag.strftime('%d')),
+                            'm': int(karfreitag.strftime('%m')), 'Y': 0}
+                feiertage.append(feiertag)
+                ostermontag = ostersonntag + datetime.timedelta(days=1)
+                feiertag = {'name': 'Ostermontag', 'd': int(ostermontag.strftime('%d')),
+                            'm': int(ostermontag.strftime('%m')), 'Y': 0}
+                feiertage.append(feiertag)
+                himmelfahrt = ostersonntag + datetime.timedelta(days=40)
+                feiertag = {'name': 'Christi Himmelfahrt', 'd': int(himmelfahrt.strftime('%d')),
+                            'm': int(himmelfahrt.strftime('%m')), 'Y': 0}
+                feiertage.append(feiertag)
+                pfingstsonntag = ostersonntag + datetime.timedelta(days=49)
+                feiertag = {'name': 'Pfingstsonntag', 'd': int(pfingstsonntag.strftime('%d')),
+                            'm': int(pfingstsonntag.strftime('%m')), 'Y': 0}
+                feiertage.append(feiertag)
+                pfingstmontag = ostersonntag + datetime.timedelta(days=50)
+                feiertag = {'name': 'Pfingstmontag', 'd': int(pfingstmontag.strftime('%d')),
+                            'm': int(pfingstmontag.strftime('%m')), 'Y': 0}
+                feiertage.append(feiertag)
+                ausgabe = ''
+                for feiertag in feiertage:
+                    if feiertag['Y'] > 0:
+                        if feiertag['Y'] == datum.year \
+                                and datum.day == feiertag['d'] \
+                                and datum.month == feiertag['m']:
+                            ausgabe = feiertag['name']
+                            break
+                    elif feiertag['Y'] == 0:
+                        if datum.day == feiertag['d'] and datum.month == feiertag['m']:
+                            ausgabe = feiertag['name']
+                            break
+                return ausgabe
+
+            @staticmethod
+            def berechne_ostern(jahr):
+
+                # Berechnung von Ostern mittels Gaußscher Osterformel
+                # siehe http://www.ptb.de/de/org/4/44/441/oste.htm
+                # mindestens bis 2031 richtig
+                K = jahr // 100
+                M = 15 + ((3 * K + 3) // 4) - ((8 * K + 13) // 25)
+                S = 2 - ((3 * K + 3) // 4)
+                A = jahr % 19
+                D = (19 * A + M) % 30
+                R = (D + (A // 11)) // 29
+                OG = 21 + D - R
+                SZ = 7 - (jahr + (jahr // 4) + S) % 7
+                OE = 7 - ((OG - SZ) % 7)
+
+                tmp = OG + OE  # das Osterdatum als Tages des März, also 32 entspricht 1. April
+                m = 0
+                if tmp > 31:  # Monat erhöhen, tmp=tag erniedriegen
+                    m = tmp // 31
+                    if tmp == 31:
+                        m = 0
+                    tmp = tmp - 31
+
+                return datetime.date(jahr, 3 + m, tmp)
+
         def __init__(self, parent, assistent):  # von Hauptseite
             super().__init__(parent)
             self.assistent = assistent
             self.parent = parent
-            self.title = self.Title(self, assistent=assistent)
-            self.seitenleiste = self.Seitenleiste(self, assistent=assistent)
-            self.nav = self.Navigation(self, assistent=assistent)
-
             dt = self.assistent.letzte_eingetragene_schicht.beginn
             arbeitsdatum = datetime.datetime(dt.year, dt.month, 1)
+            self.title = self.Title(self, assistent=assistent)
+            self.seitenleiste = self.Seitenleiste(self, assistent=assistent, arbeitsdatum=arbeitsdatum)
+            self.nav = self.Navigation(self, assistent=assistent)
+
             self.tab = self.Tabelle(self, arbeitsdatum=arbeitsdatum, assistent=self.assistent)
 
             self.title.grid(row=0, column=0, columnspan=2)

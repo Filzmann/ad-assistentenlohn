@@ -151,7 +151,6 @@ class Schicht:
         feiertagsarray = {}
         zuschlagsgrund = ''
 
-        test = self.check_feiertag()
 
         if self.check_feiertag() != '':
             if self.check_mehrtaegig() == 1:
@@ -324,7 +323,7 @@ class Schicht:
         OE = 7 - ((OG - SZ) % 7)
 
         tmp = OG + OE  # das Osterdatum als Tages des März, also 32 entspricht 1. April
-
+        m = 0
         if tmp > 31:  # Monat erhöhen, tmp=tag erniedriegen
             m = tmp // 31
             if tmp == 31:
@@ -342,12 +341,16 @@ class Urlaub:
         # status 3 Möglichkeiten: notiert, beantragt, genehmigt
         self.status = status
         self.stundenzahl = self.berechne_durchschnittliche_stundenzahl_pro_tag()['stunden']
-        # todo Änderung des Stundensatzes während des Urlaubes
         self.ulohn_pro_stunde = self.berechne_durchschnittliche_stundenzahl_pro_tag()['lohn']
         self.ulohn_pro_tag = self.stundenzahl * self.ulohn_pro_stunde
         schichten = assistent.get_all_schichten(start=beginn, end=ende)
         for schicht in schichten:
             assistent.delete_schicht(key=schicht)
+
+    def calculate(self):
+        self.stundenzahl = self.berechne_durchschnittliche_stundenzahl_pro_tag()['stunden']
+        self.ulohn_pro_stunde = self.berechne_durchschnittliche_stundenzahl_pro_tag()['lohn']
+        self.ulohn_pro_tag = self.stundenzahl * self.ulohn_pro_stunde
 
     def berechne_durchschnittliche_stundenzahl_pro_tag(self):
 
@@ -382,14 +385,16 @@ class Arbeitsunfaehigkeit:
         self.assistent = assistent
 
         self.stundenzahl = self.berechne_durchschnittliche_stundenzahl_pro_tag()['stunden']
-        # todo Änderung des Stundensatzes während des Urlaubes
         self.aulohn_pro_stunde = self.berechne_durchschnittliche_stundenzahl_pro_tag()['lohn']
         self.aulohn_pro_tag = self.stundenzahl * self.aulohn_pro_stunde
         schichten = assistent.get_all_schichten(start=beginn, end=ende)
         for schicht in schichten:
             assistent.delete_schicht(key=schicht)
 
-
+    def calculate(self):
+        self.stundenzahl = self.berechne_durchschnittliche_stundenzahl_pro_tag()['stunden']
+        self.aulohn_pro_stunde = self.berechne_durchschnittliche_stundenzahl_pro_tag()['lohn']
+        self.aulohn_pro_tag = self.stundenzahl * self.aulohn_pro_stunde
 
     def berechne_durchschnittliche_stundenzahl_pro_tag(self):
 
