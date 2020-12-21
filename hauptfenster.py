@@ -597,13 +597,14 @@ class Hauptfenster(tk.Frame):
                                        spalte3="{:,.2f}€".format(self.aulohn_pro_stunde),
                                        spalte4="{:,.2f}€".format(self.aulohn))
                     zeile.grid(row=zeilenzaehler, column=0)
-                zeilenzaehler += 1
-                zeile = self.Zeile(self,
-                                   spalte1='Kurzfr. RB',
-                                   spalte2="{:,.2f}".format(self.kurzfr_stunden),
-                                   spalte3="{:,.2f}€".format(self.kurzfr_pro_stunde),
-                                   spalte4="{:,.2f}€".format(self.kurzfr))
-                zeile.grid(row=zeilenzaehler, column=0)
+                if self.kurzfr:
+                    zeilenzaehler += 1
+                    zeile = self.Zeile(self,
+                                       spalte1='Kurzfr. RB',
+                                       spalte2="{:,.2f}".format(self.kurzfr_stunden),
+                                       spalte3="{:,.2f}€".format(self.kurzfr_pro_stunde),
+                                       spalte4="{:,.2f}€".format(self.kurzfr))
+                    zeile.grid(row=zeilenzaehler, column=0)
                 zeilenzaehler += 1
                 zeile = self.Zeile(self,
                                    spalte1='Nacht',
@@ -659,7 +660,8 @@ class Hauptfenster(tk.Frame):
                 feiertage = 0
                 while datum.month == startdatum.month:
                     if self.check_feiertag(datum=datum):
-                        feiertage += 1
+                        if not self.assistent.check_au(datum) and not self.assistent.check_urlaub(datum):
+                            feiertage += 1
                     datum += datetime.timedelta(days=1)
                 return feiertage
 

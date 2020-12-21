@@ -37,6 +37,7 @@ class FensterNeuerAS(tk.Toplevel):
             self.hausnummer_input.insert(0, self.assistent.home.hnr)
             self.plz_input.insert(0, self.assistent.home.plz)
             self.stadt_input.insert(0, self.assistent.home.stadt)
+            self.einstellungsdatum_input.selection_set(self.assistent.einstellungsdatum)
 
         # ins Fenster packen
         headline.grid(row=0, column=0, columnspan=3)

@@ -4,6 +4,7 @@ from fenster_neue_schicht import FensterNeueSchicht
 from neuer_urlaub import NeuerUrlaub
 from fenster_neue_au import NeueAU
 from fenster_edit_asn import FensterEditAsn
+from fenster_verpflegungsmehraufwand import FensterVerpflegungsMehraufwand
 
 
 class Menuleiste(tk.Menu):
@@ -32,7 +33,8 @@ class Menuleiste(tk.Menu):
                                                                                                  edit=1))
 
         taxes_menu = tk.Menu(self, tearoff=0)
-        taxes_menu.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand")
+        taxes_menu.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand",
+                               command=lambda: FensterVerpflegungsMehraufwand(root, assistent))
         taxes_menu.add_command(label="Berechne Fahrtzeiten für Reisekosten")
 
         help_menu = tk.Menu(self, tearoff=0)
