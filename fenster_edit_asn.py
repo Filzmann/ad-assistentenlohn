@@ -1,7 +1,7 @@
 import tkinter as tk
 import datetime
 from timepicker import TimePicker
-from person import ASN, EB
+from person import ASN, EB, Adresse
 
 
 class FensterEditAsn(tk.Toplevel):
@@ -131,7 +131,6 @@ class FensterEditAsn(tk.Toplevel):
                     eintrag.grid(row=rowcounter, column=0)
                     rowcounter += 1
                     for template in self.asn.schicht_templates:
-                        text = template['bezeichner'] + ': '
                         text = template['bezeichner']
                         if template['bezeichner'] != 'manuell':
                             text += " von " + template["start"].strftime('%H:%M') \
@@ -221,10 +220,10 @@ class FensterEditAsn(tk.Toplevel):
                         self.kuerzel_input.config(state='disabled')
                     self.vorname_input.insert(0, self.asn.vorname)
                     self.nachname_input.insert(0, self.asn.name)
-                    self.strasse_input.insert(0, self.asn.strasse)
-                    self.hausnummer_input.insert(0, self.asn.hausnummer)
-                    self.plz_input.insert(0, self.asn.plz)
-                    self.stadt_input.insert(0, self.asn.stadt)
+                    self.strasse_input.insert(0, self.asn.home.strasse)
+                    self.hausnummer_input.insert(0, self.asn.home.hnr)
+                    self.plz_input.insert(0, self.asn.home.plz)
+                    self.stadt_input.insert(0, self.asn.home.stadt)
 
                 # positionieren
                 kuerzel_label.grid(row=0, column=0)
@@ -270,6 +269,8 @@ class FensterEditAsn(tk.Toplevel):
                     asn.stadt = stadt
                     asn.plz = plz
                     asn.kuerzel = neues_kuerzel
+                    asn.home = Adresse(kuerzel="Zu Hause", strasse=strasse, hnr=hnr, plz=plz, stadt=stadt)
+
 
                 asn.buero = self.selected_buero.get()
                 return asn

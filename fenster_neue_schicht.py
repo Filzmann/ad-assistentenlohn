@@ -307,7 +307,7 @@ class FensterNeueSchicht(tk.Toplevel):
                     if self.selected_adresse:
                         self.selected.set(self.selected_adresse)
                     else:
-                        self.selected.set(self.auswahl[0])
+                        self.selected.set(self.asn.home)
                     dropdown = tk.OptionMenu(self, self.selected, *self.auswahl, command=self.change_dropdown)
                     dropdown.grid(row=0, column=0)
 
@@ -342,7 +342,7 @@ class FensterNeueSchicht(tk.Toplevel):
                         self.neue_adresse.grid_remove()
 
                 def get_data(self):
-                    if self.selected.get() == "Keine abweichende Adresse":
+                    if self.selected.get() == self.asn.home:
                         return []
                     elif self.selected.get() == "Neue Adresse eintragen":
                         adresse = Adresse(kuerzel=self.kuerzel_input.get(),

@@ -33,6 +33,14 @@ class Adresse:
         return self.kuerzel
 
 
+class Weg:
+    def __init__(self, address1: Adresse, address2: Adresse, reisezeit_minuten: int, entfernung_km: float):
+        self.address1 = address1
+        self.address2 = address2
+        self.reisezeit_minuten = reisezeit_minuten
+        self.entfernung_km = entfernung_km
+
+
 # erstellt den einen AS, kommt genau einmal pro Datei vor
 class AS(Person):
     count = 0
@@ -60,6 +68,7 @@ class AS(Person):
                                                    asn="Neuer ASN", assistent=self)
 
         self.adressen = []
+        self.wege = []
         # TODO in Config auslagern
         self.adressen.append(Adresse(kuerzel="Hauptstelle - Urbanstraße", strasse="Urbanstr.",
                                      hnr="100", plz="10967", stadt="Berlin"))
@@ -96,7 +105,7 @@ class AS(Person):
                 return adresse
         return []
 
-    def get_all_schichten(self, start=0, end=0):
+    def get_all_schichten(self, start: datetime.datetime = 0, end: datetime.datetime = 0):
         """ wenn keine datetimes für start und end angegeben sind, werden alle Schichten ausgegeben,
          ansonsten alle schichten, die größer als start und <= end sind """
         ausgabe = {}
@@ -203,6 +212,9 @@ class AS(Person):
                         return pfk
                 return pfk
 
+    def get_fahrtzeit(self, adresse1: Adresse, adresse2: Adresse):
+        for self.wege:
+
 
 # ein AS kann bei mehreren ASN arbeiten
 
@@ -218,10 +230,13 @@ class ASN(Person):
         self.hausnummer = hausnummer
         self.plz = plz
         self.stadt = stadt
+        self.adressen = []
+        self.home = Adresse(kuerzel='zu Hause', strasse=strasse, hnr=hausnummer, plz=plz, stadt=stadt)
+        self.adressen.append(self.home)
         self.schicht_templates = []
         self.eb = EB('', '', '')
         self.pfk = PFK('', '', '')
-        self.adressen = []
+
 
     def get_kuerzel(self):
         return self.kuerzel
