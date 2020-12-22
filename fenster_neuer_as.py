@@ -5,7 +5,7 @@ from person import AS, Adresse
 
 
 class FensterNeuerAS(tk.Toplevel):
-    def __init__(self, parent, assistent,  edit=0):
+    def __init__(self, parent, assistent, edit=0):
         super().__init__(parent)
         self.parent = parent
         self.assistent = assistent
@@ -64,14 +64,24 @@ class FensterNeuerAS(tk.Toplevel):
     def action_save_neuer_as(self):
         einstellungsdatum_date_obj = datetime.datetime.strptime(self.einstellungsdatum_input.get_date(),
                                                                 '%m/%d/%y')
-        assistent = AS(self.nachname_input.get(), self.vorname_input.get(),
-                       self.email_input.get(), einstellungsdatum_date_obj)
+        if not self.edit:
+            assistent = AS(self.nachname_input.get(), self.vorname_input.get(),
+                           self.email_input.get(), einstellungsdatum_date_obj)
+        else:
+            assistent = self.assistent
+            assistent.name = self.nachname_input.get()
+            assistent.vorname = self.vorname_input.get()
+            assistent.email = self.email_input.get()
+
+        einstellungsdatum = self.einstellungsdatum_input.get_date()
+        assistent.einstellungsdatum = datetime.datetime.strptime(einstellungsdatum, "%m/%d/%y")
         assistent.home = Adresse(kuerzel='home',
-                                 strasse=self.strasse_input.get(),
-                                 hnr=self.hausnummer_input.get(),
-                                 plz=self.plz_input.get(),
-                                 stadt=self.stadt_input.get())
+                                  strasse=self.strasse_input.get(),
+                                  hnr=self.hausnummer_input.get(),
+                                  plz=self.plz_input.get(),
+                                  stadt=self.stadt_input.get())
         assistent.__class__.assistent_is_loaded = 1
+
 
         neu = 0 if self.edit == 1 else 1
         assistent.save_to_file(neu=neu)

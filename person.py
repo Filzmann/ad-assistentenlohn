@@ -213,7 +213,16 @@ class AS(Person):
                 return pfk
 
     def get_fahrtzeit(self, adresse1: Adresse, adresse2: Adresse):
-        for self.wege:
+        for weg in self.wege:
+            if (weg.adresse1 == adresse1 and weg.adresse2 == adresse2) \
+                    or (weg.adresse1 == adresse2 and weg.adresse2 == adresse1):
+                return weg.reisezeit_minuten
+
+    def get_km(self, adresse1: Adresse, adresse2: Adresse):
+        for weg in self.wege:
+            if (weg.adresse1 == adresse1 and weg.adresse2 == adresse2) \
+                    or (weg.adresse1 == adresse2 and weg.adresse2 == adresse1):
+                return weg.entfernung_km
 
 
 # ein AS kann bei mehreren ASN arbeiten
@@ -236,7 +245,6 @@ class ASN(Person):
         self.schicht_templates = []
         self.eb = EB('', '', '')
         self.pfk = PFK('', '', '')
-
 
     def get_kuerzel(self):
         return self.kuerzel

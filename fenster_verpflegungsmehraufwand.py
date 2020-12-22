@@ -17,15 +17,33 @@ class FensterVerpflegungsMehraufwand(tk.Toplevel):
             end = datetime.datetime(self.jahr.get() + 1, 1, 1) - datetime.timedelta(seconds=1)
             schichten = self.assistent.get_all_schichten(start=start, end=end)
             # TODO Randschichten prüfen, ob sie in anderes Jahr gehören (größter Anteil Stunden)
-
+            steuerarray = {"über 24":0, "über 8": 0, "unter 8": 0}
             for schicht in schichten:
-                beginnadresse = endadresse = schicht.asn.home
-                if schicht.beginn_andere_adresse:
-                    beginnadresse = schicht.beginn_andere_adresse
-                if schicht.ende_andere_adresse:
-                    endadresse = schicht.ende_andere_adresse
+                beginnadresse = endadresse = schichten[schicht].asn.home
+                if schichten[schicht].beginn_andere_adresse:
+                    beginnadresse = schichten[schicht].beginn_andere_adresse
+                if schichten[schicht].ende_andere_adresse:
+                    endadresse = schichten[schicht].ende_andere_adresse
+                abwesenheit = schichten[schicht].ende - schichten[schicht].beginn
+                zeit_hinfahrt = self.assistent.get_fahrtzeit(self.assistent.home, beginnadresse)
+                abwesenheit += datetime.timedelta(minutes=zeit_hinfahrt)
+                zeit_rueckfahrt = self.assistent.get_fahrtzeit(self.assistent.home, endadresse)
+                abwesenheit += datetime.timedelta(minutes=zeit_rueckfahrt)
+                if abwesenheit.hours > 24:
+                    steuerarray['über 24'] += 1
+                elif abwesenheit.hours > 8:
+                    steuerarray['über 8'] += 1
+                else:
+                    steuerarray['unter 8'] += 1
 
-             #   if schicht.alternative_adresse_beginn
+            zeilennummer = 0
+            for zeile in steuerarray:
+                label = tk.Label(self, text =zeile)
+                label.grid(row=zeilennummer, column=0)
+                label = tk.Label(self, text=steuerarray[zeile])
+                label.grid(row=zeilennummer, column=1)
+                zeilennummer += 1
+
 
             return schichten
 
