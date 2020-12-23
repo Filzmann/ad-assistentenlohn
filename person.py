@@ -217,13 +217,14 @@ class AS(Person):
             if (weg.adresse1 == adresse1 and weg.adresse2 == adresse2) \
                     or (weg.adresse1 == adresse2 and weg.adresse2 == adresse1):
                 return weg.reisezeit_minuten
+        return 0
 
     def get_km(self, adresse1: Adresse, adresse2: Adresse):
         for weg in self.wege:
             if (weg.adresse1 == adresse1 and weg.adresse2 == adresse2) \
                     or (weg.adresse1 == adresse2 and weg.adresse2 == adresse1):
                 return weg.entfernung_km
-
+        return 0
 
 # ein AS kann bei mehreren ASN arbeiten
 
