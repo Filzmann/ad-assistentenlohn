@@ -13,14 +13,14 @@ class Hauptfenster(tk.Frame):
             self.parent = parent
             self.assistent = assistent
             self.info_text = tk.Label(self, text="Bitte erstelle oder öffne eine Assistenten-Datei")
-            self.info_text.grid(row=0, column=0, columnspan=2)
+            self.info_text.grid(row=0, column=0, columnspan=2, sticky="e")
             self.button_oeffnen = tk.Button(self,
                                             text="Gespeicherten Assistenten laden",
                                             command=parent.load_and_redraw)
-            self.button_oeffnen.grid(row=1, column=0)
+            self.button_oeffnen.grid(row=1, column=0, sticky="e")
             self.button_neu = tk.Button(self, text="Neuen Assistenten anlegen",
                                         command=lambda: FensterNeuerAS(parent.parent, assistent=assistent))
-            self.button_neu.grid(row=1, column=1)
+            self.button_neu.grid(row=1, column=1, sticky="e")
 
         def show(self):
             self.grid()
@@ -49,9 +49,9 @@ class Hauptfenster(tk.Frame):
                 naechster_monat = tk.Button(self, text='Nächster Monat', command=lambda: self.monat_change(+1))
 
                 # in den frame packen
-                vormonat.grid(row=0, column=0)
+                vormonat.grid(row=0, column=0, sticky="w")
                 self.aktueller_monat.grid(row=0, column=1)
-                naechster_monat.grid(row=0, column=2)
+                naechster_monat.grid(row=0, column=2, sticky="e")
 
             def berechne_arbeitsdate(self):
                 # lieber datum der letzten eingetragenen schicht
@@ -112,7 +112,7 @@ class Hauptfenster(tk.Frame):
                             self.make_button(command="kill", datum=self.heute, row=zeilennummer, col=1)
                         # Wochentag
                         tag = self.heute.strftime('%a')
-                        self.zelle(inhalt=tag, row=zeilennummer, col=10, width=4)
+                        self.zelle(inhalt=tag, row=zeilennummer, col=10, width=4, justify="left")
 
                         # Tag als Nummer
                         tag = data[0]
@@ -257,10 +257,10 @@ class Hauptfenster(tk.Frame):
                     self.assistent.save_to_file()
                     self.parent.parent.parent.redraw(assistent=self.assistent)
 
-                def zelle(self, inhalt='', width=5, row=0, col=0):
+                def zelle(self, inhalt='', width=5, row=0, col=0, justify="right"):
                     if inhalt:
-                        zelle = tk.Entry(self.parent, width=width)
-                        zelle.grid(row=row, column=col)
+                        zelle = tk.Entry(self.parent, width=width, justify=justify)
+                        zelle.grid(row=row, column=col, sticky="e")
                         zelle.delete(0, "end")
                         zelle.insert(0, inhalt)
                         zelle.config(state='readonly')
@@ -515,10 +515,10 @@ class Hauptfenster(tk.Frame):
             class Zeile(tk.Frame):
                 def __init__(self, parent, spalte1, spalte4, spalte2='', spalte3=''):
                     super().__init__(parent)
-                    a = tk.Label(self, text=spalte1, justify="left")
-                    b = tk.Label(self, text=spalte2, justify="right")
-                    c = tk.Label(self, text=spalte3, justify="right")
-                    d = tk.Label(self, text=spalte4, justify="right")
+                    a = tk.Label(self, text=spalte1, justify="left", anchor="w")
+                    b = tk.Label(self, text=spalte2, justify="right", anchor="e")
+                    c = tk.Label(self, text=spalte3, justify="right", anchor="e")
+                    d = tk.Label(self, text=spalte4, justify="right", anchor="e")
 
                     a.config(width=15)
                     b.config(width=10)
@@ -573,14 +573,14 @@ class Hauptfenster(tk.Frame):
                                    spalte2="Stunden",
                                    spalte3="pro Stunde",
                                    spalte4="gesamt")
-                zeile.grid(row=zeilenzaehler, column=0)
+                zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 zeilenzaehler += 1
                 zeile = self.Zeile(self,
                                    spalte1='Grundlohn',
                                    spalte2="{:,.2f}".format(self.arbeitsstunden),
                                    spalte3="{:,.2f}€".format(self.grundlohn_pro_stunde),
                                    spalte4="{:,.2f}€".format(self.grundlohn))
-                zeile.grid(row=zeilenzaehler, column=0)
+                zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 if self.ulohn:
                     zeilenzaehler += 1
                     zeile = self.Zeile(self,
@@ -588,7 +588,7 @@ class Hauptfenster(tk.Frame):
                                        spalte2="{:,.2f}".format(self.ustunden),
                                        spalte3="{:,.2f}€".format(self.ulohn_pro_stunde),
                                        spalte4="{:,.2f}€".format(self.ulohn))
-                    zeile.grid(row=zeilenzaehler, column=0)
+                    zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 if self.aulohn:
                     zeilenzaehler += 1
                     zeile = self.Zeile(self,
@@ -596,7 +596,7 @@ class Hauptfenster(tk.Frame):
                                        spalte2="{:,.2f}".format(self.austunden),
                                        spalte3="{:,.2f}€".format(self.aulohn_pro_stunde),
                                        spalte4="{:,.2f}€".format(self.aulohn))
-                    zeile.grid(row=zeilenzaehler, column=0)
+                    zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 if self.kurzfr:
                     zeilenzaehler += 1
                     zeile = self.Zeile(self,
@@ -604,28 +604,28 @@ class Hauptfenster(tk.Frame):
                                        spalte2="{:,.2f}".format(self.kurzfr_stunden),
                                        spalte3="{:,.2f}€".format(self.kurzfr_pro_stunde),
                                        spalte4="{:,.2f}€".format(self.kurzfr))
-                    zeile.grid(row=zeilenzaehler, column=0)
+                    zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 zeilenzaehler += 1
                 zeile = self.Zeile(self,
                                    spalte1='Nacht',
                                    spalte2="{:,.2f}".format(self.nachtstunden),
                                    spalte3="{:,.2f}€".format(self.nachtzuschlag_pro_stunde),
                                    spalte4="{:,.2f}€".format(self.nachtstunden))
-                zeile.grid(row=zeilenzaehler, column=0)
+                zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 zeilenzaehler += 1
                 zeile = self.Zeile(self,
                                    spalte1='Wechselschicht',
                                    spalte2="{:,.2f}".format(self.arbeitsstunden),
                                    spalte3="{:,.2f}€".format(self.wechselschichtzulage_pro_stunde),
                                    spalte4="{:,.2f}€".format(self.wechselschichtzulage))
-                zeile.grid(row=zeilenzaehler, column=0)
+                zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 zeilenzaehler += 1
                 zeile = self.Zeile(self,
                                    spalte1='Orga',
                                    spalte2="{:,.2f}".format(self.arbeitsstunden),
                                    spalte3="{:,.2f}€".format(self.orga_pro_stunde),
                                    spalte4="{:,.2f}€".format(self.orga))
-                zeile.grid(row=zeilenzaehler, column=0)
+                zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 zeilenzaehler += 1
                 brutto = self.grundlohn + self.aulohn + self.ulohn + self.wechselschichtzulage + \
                          self.nachtzuschlag + self.orga + self.kurzfr
@@ -636,20 +636,20 @@ class Hauptfenster(tk.Frame):
                                            spalte2="{:,.2f}".format(self.zuschlaege[zuschlag]["stunden_gesamt"]),
                                            spalte3="{:,.2f}€".format(self.zuschlaege[zuschlag]["zuschlag_pro_stunde"]),
                                            spalte4="{:,.2f}€".format(self.zuschlaege[zuschlag]["zuschlaege_gesamt"]))
-                        zeile.grid(row=zeilenzaehler, column=0)
+                        zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                         brutto += self.zuschlaege[zuschlag]["zuschlaege_gesamt"]
                         zeilenzaehler += 1
 
                 zeile = self.Zeile(self,
-                                   spalte1='Nicht gewährter Freizeitausgleich',
+                                   spalte1='Nicht gewährter\n Freizeitausgleich',
                                    spalte4="{:,.2f}€".format(self.freizeitausgleich))
-                zeile.grid(row=zeilenzaehler, column=0)
+                zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 brutto += self.freizeitausgleich
                 zeilenzaehler += 1
                 zeile = self.Zeile(self,
                                    spalte1='Bruttolohn',
                                    spalte4="{:,.2f}€".format(brutto))
-                zeile.grid(row=zeilenzaehler, column=0)
+                zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 zeilenzaehler += 1
                 bruttokey = self.arbeitsdatum.strftime("%Y-%m")
                 self.assistent.bruttoloehne[bruttokey] = {'stunden': self.arbeitsstunden, 'geld': brutto}
