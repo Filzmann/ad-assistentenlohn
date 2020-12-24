@@ -55,8 +55,7 @@ class FensterNeuerAS(tk.Toplevel):
         stadt_label.grid(row=6, column=0)
         self.stadt_input.grid(row=6, column=1, columnspan=2)
 
-        # TODO Text nach oben
-        einstellungsdatum_label.grid(row=7, column=0)
+        einstellungsdatum_label.grid(row=7, column=0, sticky="nw")
         self.einstellungsdatum_input.grid(row=7, column=1)
         self.exit_button.grid(row=8, column=0)
         self.save_button.grid(row=8, column=1)

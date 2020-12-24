@@ -29,6 +29,22 @@ class Hauptfenster(tk.Frame):
             self.grid_remove()
 
     class Hauptseite(tk.Frame):
+        class Infotext(tk.Frame):
+            def __init__(self, parent):
+                super().__init__(parent)
+                infotext = "Achtung, \n" \
+                           "diese Version des Programmes ist noch absolut alpha, sprich \n" \
+                           "eine Testversion. Ich verbreite diese, damit sie auf Herz und \n" \
+                           "Nieren geprüft werden kann. \n \n  " \
+                           "Sollten Berechnungen unrichtig sein, geht davon aus, dass der \n" \
+                           "Fehler eher bei dem Programm, als bei der Lohnbuchhaltung \n" \
+                           "liegt. Das soll sich natürlich bald ändern. \n \n" \
+                           "Daher bitte ich Euch, mir alle sachdienlichen Hinweise an \n " \
+                           "simonbeyer79@gmail.com zu schicken.\n" \
+
+                hallo = tk.Label(self, text=infotext, justify="left")
+                hallo.grid(row=0, column=0)
+
         class Title(tk.Frame):
             def __init__(self, parent, assistent):
                 super().__init__(parent)
@@ -423,7 +439,6 @@ class Hauptfenster(tk.Frame):
                     offset_arbeitsjahr -= 1
                 if offset_arbeitsjahr < 0:
                     # modulo einer negativen Zahl ist ein Arschloch..hoffentlich stimmts
-                    # TODO eventuell jahr korrigieren? Testen, was passiert
                     arbeitsmonat = 12 - arbeitsmonat
                 arbeitsjahr = datum.year + offset_arbeitsjahr
                 arbeitsdatum = datetime.datetime(arbeitsjahr, arbeitsmonat, 1, 0, 0, 0)
@@ -784,11 +799,13 @@ class Hauptfenster(tk.Frame):
             self.nav = self.Navigation(self, assistent=assistent)
 
             self.tab = self.Tabelle(self, arbeitsdatum=arbeitsdatum, assistent=self.assistent)
+            self.infotext = self.Infotext(self)
 
             self.title.grid(row=0, column=0, columnspan=2)
             self.nav.grid(row=1, column=0, columnspan=2)
-            self.tab.grid(row=2, column=0)
+            self.tab.grid(row=2, column=0, rowspan=2)
             self.seitenleiste.grid(row=2, column=1)
+            self.infotext.grid(row=3, column=1)
             self.seitenleiste.draw()
 
         def show(self):
