@@ -4,8 +4,8 @@ import datetime
 from person import AS, Adresse, Weg
 
 
-class FensterVerpflegungsMehraufwand(tk.Toplevel):
-    class TabelleVerpflegungsMehraufwand(tk.Frame):
+class FensterKilometergeld(tk.Toplevel):
+    class TabelleKilometergeld(tk.Frame):
         def __init__(self, parent, assistent: AS, jahr: tk.IntVar):
             super().__init__(parent)
             self.alle_unklarheiten_beseitigt = True
@@ -20,10 +20,7 @@ class FensterVerpflegungsMehraufwand(tk.Toplevel):
             end = datetime.datetime(self.jahr + 1, 1, 1) - datetime.timedelta(seconds=1)
             schichten = self.assistent.get_all_schichten(start=start, end=end)
             # TODO Randschichten prüfen, ob sie in anderes Jahr gehören (größter Anteil Stunden)
-            steuerarray = {"Abwesenheit über 24 Stunden": 0,
-                           "An-/Abreisetag": 0,
-                           "Abwesenheit über 8 Stunden": 0,
-                           "Abwesenheit unter 8 Stunden": 0}
+            kmgeld_array = {}
             for schicht in schichten:
                 if not schichten[schicht].ist_ausfallgeld:
                     beginnadresse = endadresse = schichten[schicht].asn.home
@@ -31,52 +28,48 @@ class FensterVerpflegungsMehraufwand(tk.Toplevel):
                         beginnadresse = schichten[schicht].beginn_andere_adresse
                     if schichten[schicht].ende_andere_adresse:
                         endadresse = schichten[schicht].ende_andere_adresse
-                    abwesenheit = schichten[schicht].ende - schichten[schicht].beginn
-                    zeit_hinfahrt = self.assistent.get_weg(self.assistent.home, beginnadresse).reisezeit_minuten
-                    if not zeit_hinfahrt:
+                    weg_hinfahrt = self.assistent.get_weg(self.assistent.home, beginnadresse)
+                    if not weg_hinfahrt:
                         self.alle_unklarheiten_beseitigt = False
                         self.ask_wegzeit(self.assistent.home,
                                          beginnadresse,
                                          asn=schichten[schicht].asn.kuerzel,
                                          is_at=schichten[schicht].ist_assistententreffen,
                                          is_pcg=schichten[schicht].ist_pcg)
-                    abwesenheit += datetime.timedelta(minutes=zeit_hinfahrt)
-                    zeit_rueckfahrt = self.assistent.get_weg(self.assistent.home, endadresse).reisezeit_minuten
-                    if not zeit_rueckfahrt:
+                    if not str(weg_hinfahrt) in kmgeld_array:
+                        kmgeld_array[str(weg_hinfahrt)] = {"anzahl": 1, "km": weg_hinfahrt.entfernung_km}
+                    else:
+                        kmgeld_array[str(weg_hinfahrt)]["anzahl"] += 1
+
+                    weg_rueckfahrt = self.assistent.get_weg(self.assistent.home, endadresse)
+                    if not weg_rueckfahrt:
                         self.alle_unklarheiten_beseitigt = False
                         self.ask_wegzeit(self.assistent.home,
-                                         endadresse,
+                                         beginnadresse,
                                          asn=schichten[schicht].asn.kuerzel,
                                          is_at=schichten[schicht].ist_assistententreffen,
                                          is_pcg=schichten[schicht].ist_pcg)
-                    abwesenheit += datetime.timedelta(minutes=zeit_rueckfahrt)
+                    if not kmgeld_array[str(weg_hinfahrt)]:
+                        kmgeld_array[str(weg_hinfahrt)] = {"anzahl": 1, "km": weg_rueckfahrt.entfernung_km}
+                    else:
+                        kmgeld_array[str(weg_hinfahrt)]["anzahl"] += 1
+
                     if not self.alle_unklarheiten_beseitigt:
                         break
-                    if self.alle_unklarheiten_beseitigt:
-
-                        abwesenheit_stunden = abwesenheit.days * 24 + abwesenheit.seconds / 3600
-                        if abwesenheit_stunden > 24:
-                            if schichten[schicht].teilschichten:
-                                for teilschicht in schichten[schicht].teilschichten:
-                                    differenz = (teilschicht.ende - teilschicht.beginn).days * 24 + (
-                                            teilschicht.ende - teilschicht.beginn).seconds / 3600
-                                    if differenz == 24:
-                                        steuerarray['Abwesenheit über 24 Stunden'] += 1
-                                    else:
-                                        steuerarray['An-/Abreisetag'] += 1
-                            else:
-                                steuerarray['Abwesenheit über 24 Stunden'] += 1
-                        elif abwesenheit.seconds / 3600 > 8:
-                            steuerarray['Abwesenheit über 8 Stunden'] += 1
-                        else:
-                            steuerarray['Abwesenheit unter 8 Stunden'] += 1
 
             if self.alle_unklarheiten_beseitigt:
                 zeilennummer = 4
-                for zeile in steuerarray:
-                    label = tk.Label(self, text=zeile)
+                for zeile in kmgeld_array:
+                    anzahl_fahrten = kmgeld_array[zeile]["anzahl"]
+                    km = "{:,.1f}".format(kmgeld_array[zeile]["km"])
+                    labeltext = str(anzahl_fahrten) + " Fahrten "
+                    labeltext += zeile + " = " + str(anzahl_fahrten) + " * " + km + "km * 0,30€ = "
+
+                    entrytext = "{:,.2f}€".format(anzahl_fahrten * kmgeld_array[zeile]["km"] * 0.3)
+
+                    label = tk.Label(self, text=labeltext)
                     label.grid(row=zeilennummer, column=0, sticky="w")
-                    entry = tk.Label(self, text=steuerarray[zeile])
+                    entry = tk.Label(self, text=entrytext)
                     entry.grid(row=zeilennummer, column=1, sticky="e")
                     zeilennummer += 1
                     self.grid()
@@ -148,14 +141,14 @@ class FensterVerpflegungsMehraufwand(tk.Toplevel):
         super().__init__(parent)
         self.assistent = assistent
         self.parent = parent
-        self.headline = tk.Label(self, text="Verpflegungsmehraufwand")
+        self.headline = tk.Label(self, text="Kilometergeld")
         heute = datetime.datetime.now()
         start = self.assistent.einstellungsdatum
         jahre = list(range(start.year, heute.year + 1))
         self.selected_year = tk.IntVar()
         self.selected_year.set(heute.year)
         self.jahr_dropdown = tk.OptionMenu(self, self.selected_year, *jahre, command=self.change_jahr)
-        self.tabelle_vma = self.TabelleVerpflegungsMehraufwand(self, assistent, self.selected_year)
+        self.tabelle_vma = self.TabelleKilometergeld(self, assistent, self.selected_year)
         self.change_jahr(self.selected_year.get())
         # ins Fenster packen
         self.headline.grid(row=0, column=0)

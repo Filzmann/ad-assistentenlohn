@@ -1,4 +1,7 @@
 import tkinter as tk
+from tkinter import messagebox as messagebox
+
+from fenster_kilometergeld import FensterKilometergeld
 from fenster_neuer_as import FensterNeuerAS
 from fenster_neue_schicht import FensterNeueSchicht
 from neuer_urlaub import NeuerUrlaub
@@ -35,7 +38,8 @@ class Menuleiste(tk.Menu):
         taxes_menu = tk.Menu(self, tearoff=0)
         taxes_menu.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand",
                                command=lambda: FensterVerpflegungsMehraufwand(root, assistent))
-        taxes_menu.add_command(label="Berechne Fahrtzeiten für Reisekosten")
+        taxes_menu.add_command(label="Berechne Fahrtzeiten für Reisekosten",
+                               command=lambda: FensterKilometergeld(root, assistent))
 
         help_menu = tk.Menu(self, tearoff=0)
         help_menu.add_command(label="Info!", command=self.action_get_info_dialog)
@@ -54,4 +58,4 @@ class Menuleiste(tk.Menu):
     Date: 16.11.2020\n\
     Version: 0.01\n\
     ************************"
-        tk.messagebox.showinfo(message=m_text, title="Infos")
+        messagebox.showinfo(message=m_text, title="Infos")

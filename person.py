@@ -40,6 +40,11 @@ class Weg:
         self.reisezeit_minuten = reisezeit_minuten
         self.entfernung_km = entfernung_km
 
+    def __str__(self):
+        text = "zwischen " + self.address1.strasse + ", " + self.address1.plz + " " + self.address1.stadt
+        text += " und " + self.address2.strasse + ", " + self.address2.plz + " " + self.address2.stadt
+        return text
+
 
 # erstellt den einen AS, kommt genau einmal pro Datei vor
 class AS(Person):
@@ -212,18 +217,11 @@ class AS(Person):
                         return pfk
                 return pfk
 
-    def get_fahrtzeit(self, adresse1: Adresse, adresse2: Adresse):
+    def get_weg(self, adresse1: Adresse, adresse2: Adresse):
         for weg in self.wege:
-            if (weg.adresse1 == adresse1 and weg.adresse2 == adresse2) \
-                    or (weg.adresse1 == adresse2 and weg.adresse2 == adresse1):
-                return weg.reisezeit_minuten
-        return 0
-
-    def get_km(self, adresse1: Adresse, adresse2: Adresse):
-        for weg in self.wege:
-            if (weg.adresse1 == adresse1 and weg.adresse2 == adresse2) \
-                    or (weg.adresse1 == adresse2 and weg.adresse2 == adresse1):
-                return weg.entfernung_km
+            if (weg.address1 == adresse1 and weg.address2 == adresse2) \
+                    or (weg.address1 == adresse2 and weg.address2 == adresse1):
+                return weg
         return 0
 
 # ein AS kann bei mehreren ASN arbeiten
