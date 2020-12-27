@@ -54,6 +54,7 @@ class AS(Person):
     def __init__(self, name='', vorname='', email="keine@email.de",
                  einstellungsdatum=datetime.datetime(1970, 1, 1, 0, 0, 0)):
         self.filepath = ''
+        self.einstellungsdatum = einstellungsdatum
         self.lohntabelle = LohnTabelle(self)
         self.schichten = {}
         self.asn = {}
@@ -61,7 +62,6 @@ class AS(Person):
         self.vorname = vorname
         self.email = email
         self.home = Adresse('home', '', '', '', '')
-        self.einstellungsdatum = einstellungsdatum
         self.__class__.count += 1
         self.festeSchichten = []
         self.urlaub = []
