@@ -490,9 +490,9 @@ class FensterNeueSchicht(tk.Toplevel):
         assistent = self.assistent.save_to_file()
         # TODO quick'n'dirty Hack korrigieren
         if self.neu:
-            self.parent.fenster.redraw(assistent)
+            self.parent.fenster.draw()
         else:
-            self.parent.parent.redraw(assistent)
+            self.parent.parent.draw()
         self.destroy()
         if undneu == 1:
             FensterNeueSchicht(self.parent, assistent=assistent)

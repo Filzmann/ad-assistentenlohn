@@ -4,6 +4,7 @@ import tkinter as tk
 from fenster_neuer_as import FensterNeuerAS
 from fenster_neue_schicht import FensterNeueSchicht
 from menueleiste import Menuleiste
+from scollable_frame import VerticalScrolledFrame
 
 
 class Hauptfenster(tk.Frame):
@@ -92,18 +93,10 @@ class Hauptfenster(tk.Frame):
                                                      self.arbeitsdate.month,
                                                      1)
                 self.aktueller_monat.config(text=self.arbeitsdate.strftime("%B %Y"))
-                root.fenster.hauptseite.tab.destroy()
-                root.fenster.hauptseite.seitenleiste.destroy()
-                root.fenster.hauptseite.seitenleiste = \
-                    root.fenster.hauptseite.Seitenleiste(root.fenster.hauptseite, self.assistent, self.arbeitsdate)
+                root.fenster.hauptseite.seitenleiste.reset()
                 root.fenster.hauptseite.seitenleiste.arbeitsdatum = self.arbeitsdate
-                root.fenster.hauptseite.tab = root.fenster.hauptseite.Tabelle(parent=root.fenster.hauptseite,
-                                                                              assistent=self.assistent,
-                                                                              arbeitsdatum=self.arbeitsdate)
-
-                root.fenster.hauptseite.tab.grid(row=2, column=0, rowspan=2)
+                root.fenster.hauptseite.tab.draw(arbeitsdatum=self.arbeitsdate)
                 root.fenster.hauptseite.seitenleiste.draw()
-                root.fenster.hauptseite.seitenleiste.grid(row=2, column=1)
 
         class Tabelle(tk.Frame):
             class Zeile:
@@ -390,13 +383,22 @@ class Hauptfenster(tk.Frame):
 
             def __init__(self,
                          parent,
+                         hauptseite,
                          assistent,
                          arbeitsdatum=datetime.datetime(datetime.date.today().year,
                                                         datetime.date.today().month,
                                                         1)):
                 super().__init__(parent, bd=1)
-                self.parent = parent
+                self.parent = hauptseite
                 self.assistent = assistent
+                self.start = self.arbeitsdatum = arbeitsdatum
+                self.end = self.verschiebe_monate(1, arbeitsdatum)
+                self.schichten = self.assistent.get_all_schichten(self.start, self.end)
+                self.draw(self.start)
+
+            def draw(self, arbeitsdatum):
+                for child in self.winfo_children():
+                    child.destroy()
                 self.start = self.arbeitsdatum = arbeitsdatum
                 self.end = self.verschiebe_monate(1, arbeitsdatum)
                 self.schichten = self.assistent.get_all_schichten(self.start, self.end)
@@ -581,7 +583,46 @@ class Hauptfenster(tk.Frame):
                 self.anzahl_feiertage = self.zaehle_feiertage(self.arbeitsdatum)
                 self.freizeitausgleich = self.berechne_freizeitausgleich(self.anzahl_feiertage)
 
+            def reset(self):
+                self.zuschlaege = {}
+                for zuschlag_name in self.parent.assistent.lohntabelle.zuschlaege.keys():
+                    self.zuschlaege[zuschlag_name] = {
+                        'stunden_gesamt': 0,
+                        'zuschlaege_gesamt': 0,
+                        'stunden_steuerfrei': 0,
+                        'stunden_steuerpflichtig': 0,
+                        'zuschlag_pro_stunde': 0,
+                    }
+                if isinstance(self.arbeitsdatum, datetime.date):
+                    self.arbeitsdatum = datetime.datetime(self.arbeitsdatum.year,
+                                                          self.arbeitsdatum.month,
+                                                          self.arbeitsdatum.day)
+                self.arbeitsstunden = 0
+                self.grundlohn = 0
+                self.grundlohn_pro_stunde = 0
+                self.ustunden = 0
+                self.ulohn = 0
+                self.ulohn_pro_stunde = 0
+                self.austunden = 0
+                self.aulohn = 0
+                self.aulohn_pro_stunde = 0
+                self.kurzfr = 0
+                self.kurzfr_pro_stunde = 0
+                self.kurzfr_stunden = 0
+                self.nachtstunden = 0
+                self.nachtzuschlag = 0
+                self.nachtzuschlag_pro_stunde = 0
+                self.wechselschichtzulage = 0
+                self.wechselschichtzulage_pro_stunde = 0
+                self.orga = 0
+                self.orga_pro_stunde = 0
+                self.anzahl_feiertage = self.zaehle_feiertage(self.arbeitsdatum)
+                self.freizeitausgleich = self.berechne_freizeitausgleich(self.anzahl_feiertage)
+
             def draw(self):
+                for child in self.winfo_children():
+                    child.destroy()
+
                 zeilenzaehler = 0
                 zeile = self.Zeile(self,
                                    spalte1='Bezeichnung',
@@ -589,13 +630,14 @@ class Hauptfenster(tk.Frame):
                                    spalte3="pro Stunde",
                                    spalte4="gesamt")
                 zeile.grid(row=zeilenzaehler, column=0, sticky="w")
-                zeilenzaehler += 1
-                zeile = self.Zeile(self,
-                                   spalte1='Grundlohn',
-                                   spalte2="{:,.2f}".format(self.arbeitsstunden),
-                                   spalte3="{:,.2f}€".format(self.grundlohn_pro_stunde),
-                                   spalte4="{:,.2f}€".format(self.grundlohn))
-                zeile.grid(row=zeilenzaehler, column=0, sticky="w")
+                if self.grundlohn:
+                    zeilenzaehler += 1
+                    zeile = self.Zeile(self,
+                                       spalte1='Grundlohn',
+                                       spalte2="{:,.2f}".format(self.arbeitsstunden),
+                                       spalte3="{:,.2f}€".format(self.grundlohn_pro_stunde),
+                                       spalte4="{:,.2f}€".format(self.grundlohn))
+                    zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 if self.ulohn:
                     zeilenzaehler += 1
                     zeile = self.Zeile(self,
@@ -620,30 +662,34 @@ class Hauptfenster(tk.Frame):
                                        spalte3="{:,.2f}€".format(self.kurzfr_pro_stunde),
                                        spalte4="{:,.2f}€".format(self.kurzfr))
                     zeile.grid(row=zeilenzaehler, column=0, sticky="w")
-                zeilenzaehler += 1
-                zeile = self.Zeile(self,
-                                   spalte1='Nacht',
-                                   spalte2="{:,.2f}".format(self.nachtstunden),
-                                   spalte3="{:,.2f}€".format(self.nachtzuschlag_pro_stunde),
-                                   spalte4="{:,.2f}€".format(self.nachtstunden))
-                zeile.grid(row=zeilenzaehler, column=0, sticky="w")
-                zeilenzaehler += 1
-                zeile = self.Zeile(self,
-                                   spalte1='Wechselschicht',
-                                   spalte2="{:,.2f}".format(self.arbeitsstunden),
-                                   spalte3="{:,.2f}€".format(self.wechselschichtzulage_pro_stunde),
-                                   spalte4="{:,.2f}€".format(self.wechselschichtzulage))
-                zeile.grid(row=zeilenzaehler, column=0, sticky="w")
-                zeilenzaehler += 1
-                zeile = self.Zeile(self,
-                                   spalte1='Orga',
-                                   spalte2="{:,.2f}".format(self.arbeitsstunden),
-                                   spalte3="{:,.2f}€".format(self.orga_pro_stunde),
-                                   spalte4="{:,.2f}€".format(self.orga))
-                zeile.grid(row=zeilenzaehler, column=0, sticky="w")
+                if self.nachtzuschlag:
+                    zeilenzaehler += 1
+                    zeile = self.Zeile(self,
+                                       spalte1='Nacht',
+                                       spalte2="{:,.2f}".format(self.nachtstunden),
+                                       spalte3="{:,.2f}€".format(self.nachtzuschlag_pro_stunde),
+                                       spalte4="{:,.2f}€".format(self.nachtzuschlag))
+                    zeile.grid(row=zeilenzaehler, column=0, sticky="w")
+                if self.wechselschichtzulage:
+                    zeilenzaehler += 1
+                    zeile = self.Zeile(self,
+                                       spalte1='Wechselschicht',
+                                       spalte2="{:,.2f}".format(self.arbeitsstunden),
+                                       spalte3="{:,.2f}€".format(self.wechselschichtzulage_pro_stunde),
+                                       spalte4="{:,.2f}€".format(self.wechselschichtzulage))
+                    zeile.grid(row=zeilenzaehler, column=0, sticky="w")
+                if self.orga:
+                    zeilenzaehler += 1
+                    zeile = self.Zeile(self,
+                                       spalte1='Orga',
+                                       spalte2="{:,.2f}".format(self.arbeitsstunden),
+                                       spalte3="{:,.2f}€".format(self.orga_pro_stunde),
+                                       spalte4="{:,.2f}€".format(self.orga))
+                    zeile.grid(row=zeilenzaehler, column=0, sticky="w")
                 zeilenzaehler += 1
                 brutto = self.grundlohn + self.aulohn + self.ulohn + self.wechselschichtzulage + \
                          self.nachtzuschlag + self.orga + self.kurzfr
+
                 for zuschlag in self.zuschlaege:
                     if self.zuschlaege[zuschlag]["stunden_gesamt"] > 0:
                         zeile = self.Zeile(self,
@@ -788,8 +834,8 @@ class Hauptfenster(tk.Frame):
 
                 return datetime.date(jahr, 3 + m, tmp)
 
-        def __init__(self, parent, assistent):  # von Hauptseite
-            super().__init__(parent)
+        def __init__(self, parent, assistent, **kwargs):  # von Hauptseite
+            super().__init__(parent, **kwargs)
             self.assistent = assistent
             self.parent = parent
             dt = self.assistent.letzte_eingetragene_schicht.beginn
@@ -797,16 +843,24 @@ class Hauptfenster(tk.Frame):
             self.title = self.Title(self, assistent=assistent)
             self.seitenleiste = self.Seitenleiste(self, assistent=assistent, arbeitsdatum=arbeitsdatum)
             self.nav = self.Navigation(self, assistent=assistent)
-
-            self.tab = self.Tabelle(self, arbeitsdatum=arbeitsdatum, assistent=self.assistent)
+            self.scrollframe = VerticalScrolledFrame(self)
+            self.tab = self.Tabelle(parent=self.scrollframe.interior,
+                                    hauptseite=self,
+                                    arbeitsdatum=arbeitsdatum,
+                                    assistent=self.assistent)
+            self.seitenleiste.draw()
             self.infotext = self.Infotext(self)
 
-            self.title.grid(row=0, column=0, columnspan=2)
-            self.nav.grid(row=1, column=0, columnspan=2)
-            self.tab.grid(row=2, column=0, rowspan=2)
-            self.seitenleiste.grid(row=2, column=1)
-            self.infotext.grid(row=3, column=1)
-            self.seitenleiste.draw()
+            self.grid_rowconfigure(2, weight=1)
+            self.grid_columnconfigure(0, weight=1)
+
+            self.title.grid(row=0, column=0, columnspan=2, sticky=tk.EW)
+            self.nav.grid(row=1, column=0, columnspan=2, sticky=tk.EW)
+            self.scrollframe.grid(row=2, column=0, rowspan=3, sticky=tk.NSEW)
+            self.seitenleiste.grid(row=2, column=1, sticky=tk.NS)
+            self.infotext.grid(row=3, column=1, sticky=tk.NS, pady=100)
+
+            self.tab.grid(row=0, column=0, sticky=tk.NSEW)
 
         def show(self):
             self.grid()
@@ -814,30 +868,37 @@ class Hauptfenster(tk.Frame):
         def hide(self):
             self.grid_remove()
 
-    def __init__(self, parent, assistent):  # von Hauptfenster
-        super().__init__(parent)
+    def __init__(self, parent, assistent, **kwargs):  # von Hauptfenster
+        super().__init__(parent, **kwargs)
         self.parent = parent
         self.assistent = assistent
+        self.hauptseite = None
+        self.draw()
+
+    def draw(self):
+        for child in self.winfo_children():
+            child.destroy()
         if not self.assistent.assistent_is_loaded:
-            self.hello = self.Begruessung(self, self.assistent)
-            self.hello.grid(row=0, column=0)
+            hello = self.Begruessung(self, self.assistent)
+            hello.grid(row=0, column=0, sticky=tk.NSEW)
         else:
             self.hauptseite = self.Hauptseite(parent=self, assistent=self.assistent)
-            self.hauptseite.grid(row=0, column=0)
+            self.hauptseite.grid(row=0, column=0, sticky=tk.NSEW)
+            menuleiste = Menuleiste(self.parent)
+            self.parent.config(menu=menuleiste)
 
     def load_and_redraw(self):
         assistent = self.assistent.load_from_file()
         self.assistent = assistent
         self.parent.assistent = assistent  # der gesamten app bescheid sagen, dass es einen neuen AS gibt
+        self.draw()
 
-        self.redraw(self.assistent)
-
-    def redraw(self, assistent):
-        # menueleiste laden
-        self.assistent = assistent
-        menuleiste = Menuleiste(self.parent)
-        self.parent.config(menu=menuleiste)
-
-        self.parent.fenster.destroy()
-        self.parent.fenster = Hauptfenster(self.parent, self.assistent)
-        self.parent.fenster.grid(row=0, column=0)
+    # def redraw(self, assistent):
+    #     # menueleiste laden
+    #     self.assistent = assistent
+    #     menuleiste = Menuleiste(self.parent)
+    #     self.parent.config(menu=menuleiste)
+    #
+    #     self.parent.fenster.destroy()
+    #     self.parent.fenster = Hauptfenster(self.parent, self.assistent)
+    #     self.parent.fenster.grid(row=0, column=0)
