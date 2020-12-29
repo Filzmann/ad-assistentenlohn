@@ -72,10 +72,14 @@ class LohnTabelle:
         output = None
         akt_gueltig_ab = datetime.datetime(1970, 1, 1)
         for datensatz in self.erfahrungsstufen:
+            if not hasattr(datensatz, 'gueltig_ab'):
+                datensatz.gueltig_ab = datetime.datetime(1970, 1, 1)
             if datensatz.get_erfahrungsstufe() == erfahrungsstufe and datensatz.gueltig_ab < datum:
+                output = datensatz
                 if datensatz.gueltig_ab > akt_gueltig_ab:
-                    output = datensatz
                     akt_gueltig_ab = datensatz.gueltig_ab
+
+
         return output
 
     def get_grundlohn(self, datum):

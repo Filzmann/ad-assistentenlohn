@@ -40,7 +40,7 @@ class Hauptfenster(tk.Frame):
                            "Fehler eher bei dem Programm, als bei der Lohnbuchhaltung \n" \
                            "liegt. Das soll sich natürlich bald ändern. \n \n" \
                            "Daher bitte ich Euch, mir alle sachdienlichen Hinweise an \n " \
-                           "simonbeyer79@gmail.com zu schicken.\n" \
+                           "simonbeyer79@gmail.com zu schicken.\n"
 
                 hallo = tk.Label(self, text=infotext, justify="left")
                 hallo.grid(row=0, column=0)
@@ -101,7 +101,7 @@ class Hauptfenster(tk.Frame):
                                                                               assistent=self.assistent,
                                                                               arbeitsdatum=self.arbeitsdate)
 
-                root.fenster.hauptseite.tab.grid(row=2, column=0)
+                root.fenster.hauptseite.tab.grid(row=2, column=0, rowspan=2)
                 root.fenster.hauptseite.seitenleiste.draw()
                 root.fenster.hauptseite.seitenleiste.grid(row=2, column=1)
 
