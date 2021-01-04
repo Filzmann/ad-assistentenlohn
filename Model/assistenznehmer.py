@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import declarative_base, relationship
 engine = create_engine("sqlite+pysqlite:///:memory:", echo=True, future=True)
 Base = declarative_base()
@@ -13,6 +13,14 @@ class ASN(Base):
     vorname = Column(String(30))
     email = Column(String(30))
     home = relationship("Address", back_populates="user")
+    adressen = relationship("Address")
+    schicht_templates = relationship("SchichtTemplates")
+    schichten = relationship("Schicht")
+    eb_id = Column(Integer, ForeignKey('einsatzbegleitung.id'))
+    einsatzbegleitung = relationship("EB", back_populates="children")
+    pfk_id = Column(Integer, ForeignKey('pflegefachkraft.id'))
+    pflegefachkraft = relationship("PFK", back_populates="children")
+
 
     def __repr__(self):
         return f"Assistent(id={self.id!r}, Name={self.name!r}, Vorname={self.vorname!r})"
