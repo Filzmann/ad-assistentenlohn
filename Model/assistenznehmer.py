@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import declarative_base, relationship
-engine = create_engine("sqlite+pysqlite:///:memory:", echo=True, future=True)
+
 Base = declarative_base()
 
 
@@ -20,7 +20,6 @@ class ASN(Base):
     einsatzbegleitung = relationship("EB", back_populates="children")
     pfk_id = Column(Integer, ForeignKey('pflegefachkraft.id'))
     pflegefachkraft = relationship("PFK", back_populates="children")
-
 
     def __repr__(self):
         return f"Assistent(id={self.id!r}, Name={self.name!r}, Vorname={self.vorname!r})"

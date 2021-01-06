@@ -1,7 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import Table, Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import declarative_base, relationship
-engine = create_engine("sqlite+pysqlite:///:memory:", echo=True, future=True)
-Base = declarative_base()
+from Model.base import Base
 
 
 class Schicht(Base):
@@ -11,10 +10,10 @@ class Schicht(Base):
     beginn = Column(DateTime)
     ende = Column(DateTime)
     asn = Column(Integer, ForeignKey('assistenznehmer.id'))
-    assistent = Column(Integer, ForeignKey('assistent.id'))
-    teilschichten = relationship("Schicht", back_populates="schicht")
-    original_schicht_id = Column(Integer, ForeignKey('schicht.id'))
-    original_schicht = relationship("Schicht", back_populates='schicht')
+    assistent = Column(Integer, ForeignKey('assistenten.id'))
+    # teilschichten = relationship("Schicht", back_populates="schicht")
+    # original_schicht_id = Column(Integer, ForeignKey('schicht.id'))
+    # original_schicht = relationship("Schicht", back_populates='schicht')
     # TODO delete-orphan anschauen um vermüllen der Tabelle zu verhindern
     ist_kurzfristig = Column(Boolean)
     ist_ausfallgeld = Column(Boolean)

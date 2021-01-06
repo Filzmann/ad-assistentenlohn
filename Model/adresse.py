@@ -1,8 +1,7 @@
-from sqlalchemy import create_engine, ForeignKey, Column, Integer, String
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy import ForeignKey, Column, Integer, String
+from sqlalchemy.orm import relationship
 
-engine = create_engine("sqlite+pysqlite:///:memory:", echo=True, future=True)
-Base = declarative_base()
+from Model.base import Base
 
 
 class Adresse(Base):
@@ -13,9 +12,10 @@ class Adresse(Base):
     hausnummer = Column(String(8))
     plz = Column(String(5))
     stadt = Column(String(30))
-    assistent_id = Column(Integer, ForeignKey('assistent.id'))
+    assistent_id = Column(Integer, ForeignKey('assistenten.id'))
+    assistent = relationship("Assistent", back_populates="home")
     assistenznehmer_id = Column(Integer, ForeignKey('assistenznehmer.id'))
-    wege = relationship("Weg", back_populates="adressen")
+    wege = relationship("Weg", primaryjoin="or_(Adresse.id==Weg.adresse1_id, Adresse.id==Weg.adresse2_id)")
 
 
     def __repr__(self):

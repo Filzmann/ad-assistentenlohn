@@ -1,17 +1,19 @@
-from sqlalchemy import create_engine, ForeignKey, Column, Integer
+from sqlalchemy import create_engine, ForeignKey, Column, Integer, Float
 from sqlalchemy.orm import declarative_base, relationship
 
-engine = create_engine("sqlite+pysqlite:///:memory:", echo=True, future=True)
-Base = declarative_base()
+from Model.base import Base
 
 
 class Weg(Base):
-    __tablename__ = 'weg'
+    __tablename__ = 'wege'
 
     id = Column(Integer, primary_key=True)
-    adresse1 = Column(Integer, ForeignKey('adresse.id'))
-    adresse2 = Column(Integer, ForeignKey('adresse.id'))
-
+    entfernung = Column(Float)
+    dauer_in_minuten = Column(Integer)
+    adresse1_id = Column(Integer, ForeignKey('adressen.id'))
+    adresse2_id = Column(Integer, ForeignKey('adressen.id'))
 
     def __repr__(self):
-        return f"Address(id={self.id!r}, email_address={self.email_address!r})"
+        return f"Address(id={self.id!r}, " \
+               f"Adresse1={self.adresse1_id!r}, " \
+               f"Adresse2={self.adresse2_id!r})"
