@@ -15,6 +15,7 @@ class Adresse(Base):
     assistent_id = Column(Integer, ForeignKey('assistenten.id'))
     assistent = relationship("Assistent", back_populates="home")
     assistenznehmer_id = Column(Integer, ForeignKey('assistenznehmer.id'))
+    assistenznehmer = relationship("ASN", back_populates="home")
     wege = relationship("Weg", primaryjoin="or_(Adresse.id==Weg.adresse1_id, Adresse.id==Weg.adresse2_id)")
 
 

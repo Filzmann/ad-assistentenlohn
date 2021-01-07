@@ -1,12 +1,10 @@
 from sqlalchemy import create_engine, ForeignKey, Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base, relationship
-
-engine = create_engine("sqlite+pysqlite:///:memory:", echo=True, future=True)
-Base = declarative_base()
+from Model.base import Base
 
 
 class SchichtTemplates(Base):
-    __tablename__ = 'adressen'
+    __tablename__ = 'schicht_templates'
 
     id = Column(Integer, primary_key=True)
     beginn = Column(DateTime)

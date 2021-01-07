@@ -1,25 +1,24 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import declarative_base, relationship
-
-Base = declarative_base()
+from Model.base import Base
 
 
 class ASN(Base):
-    __tablename__ = 'assistenten'
+    __tablename__ = 'assistenznehmer'
 
     id = Column(Integer, primary_key=True)
     kuerzel = Column(String, nullable=False)
     name = Column(String(30))
     vorname = Column(String(30))
     email = Column(String(30))
-    home = relationship("Address", back_populates="user")
-    adressen = relationship("Address")
+    home = relationship("Adresse", back_populates="assistenznehmer")
+    adressen = relationship("Adresse")
     schicht_templates = relationship("SchichtTemplates")
     schichten = relationship("Schicht")
-    eb_id = Column(Integer, ForeignKey('einsatzbegleitung.id'))
-    einsatzbegleitung = relationship("EB", back_populates="children")
-    pfk_id = Column(Integer, ForeignKey('pflegefachkraft.id'))
-    pflegefachkraft = relationship("PFK", back_populates="children")
+    eb_id = Column(Integer, ForeignKey('einsatzbegleitungen.id'))
+    einsatzbegleitungen = relationship("EB", back_populates="assistenznehmer")
+    pfk_id = Column(Integer, ForeignKey('pflegefachkraefte.id'))
+    pflegefachkraefte = relationship("PFK", back_populates="assistenznehmer")
 
     def __repr__(self):
         return f"Assistent(id={self.id!r}, Name={self.name!r}, Vorname={self.vorname!r})"

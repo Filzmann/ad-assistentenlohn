@@ -3,6 +3,7 @@ from Model.main_model import MainModel
 from View.main_view import MainView
 from Controller.neuer_assistent_controller import NeuerAssistentController
 from sqlalchemy import create_engine
+from Model.base import Base
 
 
 class MainController:
@@ -10,6 +11,8 @@ class MainController:
 
         engine = create_engine("sqlite+pysqlite:///assistenten.db", echo=True, future=True)
         self.Session = sessionmaker(bind=engine)
+        Base.metadata.create_all(engine)
+
         self.callbacks = {}
 
         self.model = MainModel()
