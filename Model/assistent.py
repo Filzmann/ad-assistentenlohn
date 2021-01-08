@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from Model.base import Base
 
@@ -11,9 +11,13 @@ class Assistent(Base):
     vorname = Column(String(30))
     email = Column(String(30))
     einstellungsdatum = Column(DateTime)
-    home = relationship("Adresse", back_populates="assistent")
+    home_id = Column(Integer, ForeignKey('adressen.id'))
+    home = relationship("Adresse",
+                        back_populates="assistent",
+                        primaryjoin="Assistent.home_id==Adresse.id")
+
     schichten = relationship("Schicht")
     urlaub = relationship("Urlaub")
 
     def __repr__(self):
-        return f"Assistent(id={self.id!r}, Name={self.name!r}, Vorname={self.vorname!r})"
+        return f"Assistent({self.name!r}, {self.vorname!r})"
