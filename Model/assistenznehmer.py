@@ -11,8 +11,16 @@ class ASN(Base):
     name = Column(String(30))
     vorname = Column(String(30))
     email = Column(String(30))
-    home = relationship("Adresse", back_populates="assistenznehmer")
-    adressen = relationship("Adresse")
+    # one to one
+    home_id = Column(Integer, ForeignKey('adressen.id'))
+    home = relationship("Adresse",
+                        back_populates="assistenznehmer",
+                        primaryjoin="ASN.home_id==Adresse.id")
+
+    # one to many
+    # adressbuch = relationship("Adresse")
+
+
     schicht_templates = relationship("SchichtTemplates")
     schichten = relationship("Schicht")
     eb_id = Column(Integer, ForeignKey('einsatzbegleitungen.id'))
