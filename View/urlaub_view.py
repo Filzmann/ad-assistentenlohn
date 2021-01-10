@@ -4,9 +4,9 @@ from tkcalendar import Calendar
 
 
 class UrlaubView(tk.Toplevel):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.parent = parent
+    def __init__(self, parent_view):
+        super().__init__(parent_view)
+        self.parent = parent_view
         headline = tk.Label(self, text="Urlaub eintragen")
         startdatum_label = tk.Label(self, text="von")
         self.startdatum_input = Calendar(self, date_pattern='MM/dd/yyyy')

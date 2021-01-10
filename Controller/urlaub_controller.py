@@ -10,7 +10,7 @@ class UrlaubController:
     def __init__(self, parent_controller, assistent: Assistent = None, urlaub: Urlaub = None):
         self.parent = parent_controller
         self.assistent = assistent
-        self.view = UrlaubView(parent=self.parent.view)
+        self.view = UrlaubView(parent_view=self.parent.view)
         self.urlaub = urlaub
         self.view.save_button.config(command=self.save_urlaub)
         self.view.saveandnew_button.config(command=lambda: self.save_urlaub(undneu=1))

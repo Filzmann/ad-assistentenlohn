@@ -4,10 +4,10 @@ from tkcalendar import Calendar
 
 
 class AUView(tk.Toplevel):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.parent = parent
-        headline = tk.Label(self, text="Urlaub eintragen")
+    def __init__(self, parent_view):
+        super().__init__(parent_view)
+        self.parent = parent_view
+        self.title('AU/krank Eintragen')
         startdatum_label = tk.Label(self, text="von")
         self.startdatum_input = Calendar(self, date_pattern='MM/dd/yyyy')
         enddatum_label = tk.Label(self, text="bis")
@@ -19,7 +19,6 @@ class AUView(tk.Toplevel):
         self.saveandnew_button = tk.Button(self, text="Daten speichern und neu")
 
         # ins Fenster packen
-        headline.grid(row=0, column=0, columnspan=4)
         startdatum_label.grid(row=1, column=0)
         self.startdatum_input.grid(row=1, column=1, columnspan=2)
         enddatum_label.grid(row=1, column=3)

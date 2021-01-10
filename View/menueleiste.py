@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox as messagebox
 
 from Controller.arbeitsunfaehigkeit_controller import AUController
+from Controller.asn_edit_controller import ASNEditController
 from Controller.assistent_controller import AssistentController
 from Controller.urlaub_controller import UrlaubController
 from fenster_kilometergeld import FensterKilometergeld
@@ -33,7 +34,9 @@ class Menuleiste(tk.Menu):
                                    command=lambda: AUController(parent_controller, assistent))
 
         bearbeiten_menu = tk.Menu(self, tearoff=0)
-        # bearbeiten_menu.add_command(label="ASN bearbeiten", command=lambda: FensterEditAsn(root, assistent))
+        bearbeiten_menu.add_command(label="ASN bearbeiten",
+                                    command=lambda: ASNEditController(parent_controller=parent_controller,
+                                                                      assistent=assistent))
         bearbeiten_menu.add_command(label="Assistent bearbeiten",
                                     command=lambda: AssistentController(parent_controller=parent_controller,
                                                                         assistent=assistent))
