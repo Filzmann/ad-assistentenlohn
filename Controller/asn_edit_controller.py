@@ -1,27 +1,28 @@
-from datetime import datetime
-
+from Controller.asn_stammdaten_controller import AsnStammdatenController
+from Controller.eb_controller import EbController
+from Controller.pfk_controller import PfkController
 from Model.assistent import Assistent
 from Model.assistenznehmer import ASN
-from View.asn_edit_view import ASNEditView
+from View.asn_edit_view import AsnEditView
 
 
-class ASNEditController:
+class AsnEditController:
 
     def __init__(self, parent_controller, assistent: Assistent = None, asn: ASN = None):
         self.parent = parent_controller
         self.assistent = assistent
-        self.view = ASNEditView(parent_view=self.parent.view)
+        self.view = AsnEditView(parent_view=self.parent.view)
         self.asn = asn
-
+        self.session = self.parent.Session()
+        self.stammdaten = AsnStammdatenController(parent_controller=self,
+                                                  asn=self.asn)
+        self.view.eb = EbController(self)
+        self.view.pfk = PfkController(self)
+        # self.view.feste_schichten = FesteSchichtenController(self.assistent, self)
+        # self.view.templates = SchichtTemplatesController(self.assistent, self)
+        self.view.edit.draw()
 
         # self.view.save_button.config(command=self.save_au)
         # self.view.saveandnew_button.config(command=lambda: self.save_au(undneu=1))
         self.session = self.parent.Session()
-
-    def save_au(self, undneu=0):
-        data = self.view.get_data()
-        session = self.session
-        ende = datetime(data['ende'].year, data['ende'].month, data['ende'].day, 23, 59)
-
-
 

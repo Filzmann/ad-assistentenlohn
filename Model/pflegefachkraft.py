@@ -11,3 +11,6 @@ class PFK(Base):
     vorname = Column(String(30))
     email = Column(String(30))
     assistenznehmer = relationship("ASN", back_populates="pflegefachkraefte")
+
+    def __repr__(self):
+        return f"{self.name!r}, {self.vorname!r})"

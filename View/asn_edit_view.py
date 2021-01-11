@@ -1,9 +1,44 @@
 import tkinter as tk
 
 
-class ASNEditView(tk.Toplevel):
-    choose: tk.Frame = None
-    edit: tk.Frame = None
+class AsnAuswahllisteFrame(tk.Frame):
+    def __init__(self, parent_view, asn_liste, selected_asn):
+        super().__init__(parent_view)
+        self.parent_view = parent_view
+        self.selected_asn = tk.StringVar()
+        self.selected_asn.set(selected_asn)
+
+        for kuerzel in asn_liste:
+            button = tk.Radiobutton(self,
+                                    text=kuerzel,
+                                    padx=20,
+                                    variable=self.selected_asn,
+                                    value=kuerzel)
+            button.pack()
+
+
+class AsnEditorFrame(tk.Frame):
+
+    def __init__(self, parent_view, selected_asn):
+        super().__init__(parent_view)
+        self.stammdaten = tk.Label(self, text="Stammdaten")
+        self.eb = tk.Label(self, text="EB")
+        self.pfk = tk.Label(self, text="PFK")
+        self.feste_schichten = tk.Label(self, text="feste Schichten")
+        self.templates = tk.Label(self, text="Templates")
+        self.draw()
+
+    def draw(self):
+        self.stammdaten.grid(row=0, column=0, rowspan=2)
+        self.eb.grid(row=0, column=1)
+        self.pfk.grid(row=1, column=1)
+        self.feste_schichten.grid(row=2, column=0)
+        self.templates.grid(row=2, column=1)
+
+
+class AsnEditView(tk.Toplevel):
+    choose: AsnAuswahllisteFrame = None
+    edit: AsnEditorFrame = None
 
     def __init__(self, parent_view,
                  asn_liste=['Neuer ASN'],
@@ -25,29 +60,6 @@ class ASNEditView(tk.Toplevel):
                                            asn_liste=self.asn_liste,
                                            selected_asn=self.selected_asn)
         self.choose.grid(row=0, column=0)
-        self.edit = ASNEditorFrame(parent_view=self,
+        self.edit = AsnEditorFrame(parent_view=self,
                                    selected_asn=self.selected_asn)
         self.edit.grid(row=0, column=1)
-
-
-class AsnAuswahllisteFrame(tk.Frame):
-    def __init__(self, parent_view, asn_liste, selected_asn):
-        super().__init__(parent_view)
-        self.parent_view = parent_view
-        self.selected_asn = tk.StringVar()
-        self.selected_asn.set(selected_asn)
-
-        for kuerzel in asn_liste:
-            button = tk.Radiobutton(self,
-                                    text=kuerzel,
-                                    padx=20,
-                                    variable=self.selected_asn,
-                                    value=kuerzel)
-            button.pack()
-
-
-class ASNEditorFrame(tk.Frame):
-    def __init__(self, parent_view, selected_asn):
-        super().__init__(parent_view)
-        label = tk.Label(self, text="editor")
-        label.pack()

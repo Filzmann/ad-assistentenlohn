@@ -20,7 +20,7 @@ class ASN(Base):
     # one to many
     # adressbuch = relationship("Adresse")
 
-
+    einsatzbuero = Column(String(30))
     schicht_templates = relationship("SchichtTemplates")
     schichten = relationship("Schicht")
     eb_id = Column(Integer, ForeignKey('einsatzbegleitungen.id'))
