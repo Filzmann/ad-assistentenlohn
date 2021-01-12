@@ -41,8 +41,10 @@ class AsnEditView(tk.Toplevel):
     edit: AsnEditorFrame = None
 
     def __init__(self, parent_view,
-                 asn_liste=['Neuer ASN'],
+                 asn_liste: list = None,
                  selected_asn='Neuer ASN'):
+        if not asn_liste:
+            asn_liste = ['Neuer ASN']
         super().__init__(parent_view)
         self.asn_liste = asn_liste
         self.selected_asn = selected_asn

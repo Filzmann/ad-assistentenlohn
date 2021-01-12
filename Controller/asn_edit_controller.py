@@ -1,5 +1,6 @@
 from Controller.asn_stammdaten_controller import AsnStammdatenController
 from Controller.eb_controller import EbController
+from Controller.feste_schichten_controller import FesteSchichtenController
 from Controller.pfk_controller import PfkController
 from Model.assistent import Assistent
 from Model.assistenznehmer import ASN
@@ -16,10 +17,10 @@ class AsnEditController:
         self.session = self.parent.Session()
         self.stammdaten = AsnStammdatenController(parent_controller=self,
                                                   asn=self.asn)
-        self.view.eb = EbController(self)
-        self.view.pfk = PfkController(self)
-        # self.view.feste_schichten = FesteSchichtenController(self.assistent, self)
-        # self.view.templates = SchichtTemplatesController(self.assistent, self)
+        self.view.eb = EbController(parent_controller=self)
+        self.view.pfk = PfkController(parent_controller=self)
+        self.view.feste_schichten = FesteSchichtenController(parent_controller=self)
+        # self.view.templates = SchichtTemplatesController(parent_controller=self)
         self.view.edit.draw()
 
         # self.view.save_button.config(command=self.save_au)
