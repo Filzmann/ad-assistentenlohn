@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Table
 from sqlalchemy.orm import declarative_base, relationship
 from Model.base import Base
+from Model.association_as_asn import AssociationAsAsn
 
 
 class ASN(Base):
@@ -17,6 +18,9 @@ class ASN(Base):
                         back_populates="assistenznehmer",
                         primaryjoin="ASN.home_id==Adresse.id")
 
+    assistenten = relationship(
+        "AssociationAsAsn", back_populates="asn")
+
     # one to many
     # adressbuch = relationship("Adresse")
 
@@ -29,4 +33,4 @@ class ASN(Base):
     pflegefachkraefte = relationship("PFK", back_populates="assistenznehmer")
 
     def __repr__(self):
-        return f"Assistent(id={self.id!r}, Name={self.name!r}, Vorname={self.vorname!r})"
+        return f"(id={self.id!r}, Name={self.name!r}, Vorname={self.vorname!r})"

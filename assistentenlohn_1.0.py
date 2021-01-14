@@ -1,4 +1,8 @@
+from sqlalchemy import Table, Column, Integer, ForeignKey
+
 from Controller.main_controller import MainController
+from Model.base import Base
+
 
 from Model.adresse import Adresse
 from Model.assistent import Assistent

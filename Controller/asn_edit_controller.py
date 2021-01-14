@@ -2,8 +2,10 @@ from Controller.asn_stammdaten_controller import AsnStammdatenController
 from Controller.eb_controller import EbController
 from Controller.feste_schichten_controller import FesteSchichtenController
 from Controller.pfk_controller import PfkController
+from Model.adresse import Adresse
 from Model.assistent import Assistent
 from Model.assistenznehmer import ASN
+from Model.association_as_asn import AssociationAsAsn
 from View.asn_edit_view import AsnEditView
 
 
@@ -22,8 +24,37 @@ class AsnEditController:
         self.view.feste_schichten = FesteSchichtenController(parent_controller=self)
         # self.view.templates = SchichtTemplatesController(parent_controller=self)
         self.view.edit.draw()
-
-        # self.view.save_button.config(command=self.save_au)
+        self.view.edit.save_button.config(command=self.save_asn)
         # self.view.saveandnew_button.config(command=lambda: self.save_au(undneu=1))
         self.session = self.parent.Session()
 
+    def save_asn(self):
+        stammdaten = self.stammdaten.get_data()
+        if not self.asn:
+            home = Adresse(strasse=stammdaten['strasse'],
+                           hausnummer=stammdaten['hnr'],
+                           stadt=stammdaten['stadt'],
+                           plz=stammdaten['plz'])
+            asn = ASN(
+                kuerzel=stammdaten["kuerzel"],
+                name=stammdaten["nachname"],
+                vorname=stammdaten["vorname"],
+                email=stammdaten["email"],
+
+            )
+            asn.home = home
+            self.session.add(asn)
+
+            # many_2_many as - asn
+            # 1. Zusatzdaten in Asociation,
+            # 2. ASN der  Aso zuweisen,
+            # 3. Aso dem Assistenten
+            # Todo auswahl fest/vertretung/feste_vertretung
+            # association = AssociationAsAsn(fest_vertretung="fest")
+            # association.asn = asn
+            asn.assistenten.append(self.assistent)
+
+
+        # eb=self.view.eb.get_eb()
+        # pfk=self.view.pfk.get_pfk()
+        self.session.commit()

@@ -32,3 +32,5 @@ class EbController:
         self.eb.name = data['nachname']
         self.eb.email = data['email']
 
+    def get_eb(self):
+        pass

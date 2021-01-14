@@ -3,12 +3,14 @@ from sqlalchemy.orm import declarative_base, relationship
 from Model.base import Base
 
 
-class SchichtRegelmaessig(Base):
-    __tablename__ = 'schichten_regelmaessig'
+class FesteSchicht(Base):
+    __tablename__ = 'feste_schichten'
 
     id = Column(Integer, primary_key=True)
+    assistent = Column(Integer, ForeignKey('assistenten.id'))
+    asn = Column(Integer, ForeignKey('assistenznehmer.id'))
+
+    # extra Data
+    wochentag = Column(String(10))
     beginn = Column(DateTime)
     ende = Column(DateTime)
-    asn = Column(Integer, ForeignKey('assistenznehmer.id'))
-    assistent = Column(Integer, ForeignKey('assistenten.id'))
-    wochentag = Column(Integer)

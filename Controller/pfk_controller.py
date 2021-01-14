@@ -31,3 +31,6 @@ class PfkController:
         self.pfk.name = data['nachname']
         self.pfk.email = data['email']
 
+    def get_pfk(self):
+        pass
+

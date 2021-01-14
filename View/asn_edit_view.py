@@ -26,14 +26,19 @@ class AsnEditorFrame(tk.Frame):
         self.pfk = tk.Label(self, text="PFK")
         self.feste_schichten = tk.Label(self, text="feste Schichten")
         self.templates = tk.Label(self, text="Templates")
+        self.save_button = tk.Button(self, text="ASN speichern")
+        self.exit_button = tk.Button(self, text="Abbrechen", command=self.destroy)
+
         self.draw()
 
     def draw(self):
         self.stammdaten.grid(row=0, column=0, rowspan=2)
         self.eb.grid(row=0, column=1)
         self.pfk.grid(row=1, column=1)
-        self.feste_schichten.grid(row=2, column=0)
-        self.templates.grid(row=2, column=1)
+        self.save_button.grid(row=2, column=0)
+        self.exit_button.grid(row=2, column=1)
+        self.feste_schichten.grid(row=3, column=0)
+        self.templates.grid(row=3, column=1)
 
 
 class AsnEditView(tk.Toplevel):

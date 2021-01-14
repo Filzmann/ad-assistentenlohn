@@ -34,3 +34,6 @@ class AsnStammdatenController:
         self.asn.home.hnr = data['hnr']
         self.asn.home.plz = data['plz']
         self.asn.home.stadt = data['stadt']
+
+    def get_data(self):
+        return self.view.get_data()

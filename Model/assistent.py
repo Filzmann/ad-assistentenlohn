@@ -1,6 +1,9 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from Model.base import Base
+from Model.association_as_asn import AssociationAsAsn
+
+
 
 
 class Assistent(Base):
@@ -16,6 +19,10 @@ class Assistent(Base):
                         back_populates="assistent",
                         primaryjoin="Assistent.home_id==Adresse.id")
 
+    asn = relationship(
+        "AssociationAsAsn", back_populates="assistenten")
+
+    feste_schichten = relationship("FesteSchicht")
     schichten = relationship("Schicht")
     urlaub = relationship("Urlaub")
 
