@@ -56,6 +56,7 @@ class AssistentController:
             self.assistent.home.plz = data['plz']
             self.assistent.home.stadt = data['stadt']
             session.commit()
+            session.close()
             self.view.destroy()
             self.parent.model.assistent = self.assistent
             self.parent.draw()

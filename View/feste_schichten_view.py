@@ -64,11 +64,11 @@ class FesteSchichtenView(tk.Frame):
 
     def get_data(self):
         startzeit = datetime(year=0, month=0, day=0,
-                             hour=int(self.startzeit_input.hourstr),
-                             minute=int(self.startzeit_input.minstr))
+                             hour=int(self.startzeit_input.hourstr.get()),
+                             minute=int(self.startzeit_input.minstr.get()))
         endzeit = datetime(year=0, month=0, day=0,
-                           hour=int(self.endzeit_input.hourstr),
-                           minute=int(self.endzeit_input.minstr))
+                           hour=int(self.endzeit_input.hourstr.get()),
+                           minute=int(self.endzeit_input.minstr.get()))
         return {
             "startzeit": startzeit,
             "endzeit": endzeit,

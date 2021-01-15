@@ -1,3 +1,5 @@
+from sqlalchemy.future import select
+
 from Controller.asn_stammdaten_controller import AsnStammdatenController
 from Controller.eb_controller import EbController
 from Controller.feste_schichten_controller import FesteSchichtenController
@@ -50,9 +52,12 @@ class AsnEditController:
             # 2. ASN der  Aso zuweisen,
             # 3. Aso dem Assistenten
             # Todo auswahl fest/vertretung/feste_vertretung
-            # association = AssociationAsAsn(fest_vertretung="fest")
-            # association.asn = asn
-            asn.assistenten.append(self.assistent)
+            result = self.session.execute(select(Assistent).where(Assistent.id == self.assistent.id))
+            assistent = result.scalars().one()
+            association = AssociationAsAsn(fest_vertretung="fest")
+            association.asn = asn
+            association.as_id = assistent.id
+            asn.assistenten.append(association)
 
 
         # eb=self.view.eb.get_eb()
