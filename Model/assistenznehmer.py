@@ -33,4 +33,4 @@ class ASN(Base):
     pflegefachkraefte = relationship("PFK", back_populates="assistenznehmer")
 
     def __repr__(self):
-        return f"(id={self.id!r}, Name={self.name!r}, Vorname={self.vorname!r})"
+        return f"(id={self.id!r}, Kürzel={self.kuerzel!r}, Name={self.name!r}, Vorname={self.vorname!r})"

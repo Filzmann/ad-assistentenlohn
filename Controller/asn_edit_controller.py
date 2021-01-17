@@ -18,9 +18,12 @@ class AsnEditController:
         self.assistent = assistent
         self.view = AsnEditView(parent_view=self.parent.view)
         self.asn = asn
+        asnliste = []
+        for asn in assistent.asn:
+            asnliste.append(asn.asn)
+
         self.session = self.parent.Session()
-        self.stammdaten = AsnStammdatenController(parent_controller=self,
-                                                  asn=self.asn)
+        self.stammdaten = AsnStammdatenController(parent_controller=self, asn=self.asn)
         self.view.eb = EbController(parent_controller=self)
         self.view.pfk = PfkController(parent_controller=self)
         self.view.feste_schichten = FesteSchichtenController(parent_controller=self)
