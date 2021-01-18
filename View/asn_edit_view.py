@@ -5,15 +5,15 @@ class AsnAuswahllisteFrame(tk.Frame):
     def __init__(self, parent_view, asn_liste, selected_asn):
         super().__init__(parent_view)
         self.parent_view = parent_view
-        self.selected_asn = tk.StringVar()
-        self.selected_asn.set(selected_asn)
+        self.selected_asn = tk.IntVar()
+        self.selected_asn.set(selected_asn.id)
 
-        for kuerzel in asn_liste:
+        for asn in asn_liste:
             button = tk.Radiobutton(self,
-                                    text=kuerzel,
+                                    text=asn["kuerzel"],
                                     padx=20,
                                     variable=self.selected_asn,
-                                    value=kuerzel)
+                                    value=int(asn["id"]))
             button.pack()
 
 
@@ -46,10 +46,10 @@ class AsnEditView(tk.Toplevel):
     edit: AsnEditorFrame = None
 
     def __init__(self, parent_view,
-                 asn_liste: list = None,
+                 asn_liste: dict = None,
                  selected_asn='Neuer ASN'):
         if not asn_liste:
-            asn_liste = ['Neuer ASN']
+            asn_liste = [{'id': 999999999, 'kuerzel': 'Neuer ASN'}]
         super().__init__(parent_view)
         self.asn_liste = asn_liste
         self.selected_asn = selected_asn

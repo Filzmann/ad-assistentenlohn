@@ -16,11 +16,13 @@ class AsnEditController:
     def __init__(self, parent_controller, assistent: Assistent = None, asn: ASN = None):
         self.parent = parent_controller
         self.assistent = assistent
-        self.view = AsnEditView(parent_view=self.parent.view)
         self.asn = asn
         asnliste = []
         for asn in assistent.asn:
-            asnliste.append(asn.asn)
+            asnliste.append({"id": asn.asn.id, "kuerzel": asn.asn.kuerzel})
+        self.view = AsnEditView(parent_view=self.parent.view, asn_liste=asnliste)
+        for child in self.view.choose.winfo_children():
+            child.config(command=self.change_asn)
 
         self.session = self.parent.Session()
         self.stammdaten = AsnStammdatenController(parent_controller=self, asn=self.asn)
@@ -32,6 +34,11 @@ class AsnEditController:
         self.view.edit.save_button.config(command=self.save_asn)
         # self.view.saveandnew_button.config(command=lambda: self.save_au(undneu=1))
         self.session = self.parent.Session()
+
+    def change_asn(self):
+        self.asn = self.view.choose.selected_asn
+        self.stammdaten = AsnStammdatenController(parent_controller=self, asn=self.asn)
+
 
     def save_asn(self):
         stammdaten = self.stammdaten.get_data()
