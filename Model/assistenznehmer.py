@@ -28,9 +28,9 @@ class ASN(Base):
     schicht_templates = relationship("SchichtTemplates")
     schichten = relationship("Schicht")
     eb_id = Column(Integer, ForeignKey('einsatzbegleitungen.id'))
-    einsatzbegleitungen = relationship("EB", back_populates="assistenznehmer")
+    einsatzbegleitung = relationship("EB", back_populates="assistenznehmer")
     pfk_id = Column(Integer, ForeignKey('pflegefachkraefte.id'))
-    pflegefachkraefte = relationship("PFK", back_populates="assistenznehmer")
+    pflegefachkraft = relationship("PFK", back_populates="assistenznehmer")
 
     def __repr__(self):
         return f"(id={self.id!r}, Kürzel={self.kuerzel!r}, Name={self.name!r}, Vorname={self.vorname!r})"

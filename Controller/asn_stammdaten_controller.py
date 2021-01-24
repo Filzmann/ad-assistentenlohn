@@ -8,8 +8,10 @@ class AsnStammdatenController:
         self.parent = parent_controller
         self.view = AsnStammdatenView(parent_view=self.parent.view.edit)
         self.parent.view.edit.stammdaten = self.view
-
+        self.asn = asn
         self.session = self.parent.session
+
+    def set_asn(self, asn=None):
         if asn:
             result = self.session.execute(select(ASN).where(ASN.id == asn.id))
             asn = result.scalars().one()
@@ -19,13 +21,25 @@ class AsnStammdatenController:
                 vorname=asn.vorname,
                 name=asn.name,
                 email=asn.email,
+                buero=asn.einsatzbuero,
                 strasse=asn.home.strasse,
-                hnr=asn.home.hnr,
+                hnr=asn.home.hausnummer,
                 plz=asn.home.plz,
                 stadt=asn.home.stadt)
+        else:
+            self.view.set_data(
+                kuerzel="Neuer ASN",
+                vorname='',
+                name='',
+                email='',
+                buero=None,
+                strasse='',
+                hnr='',
+                plz='',
+                stadt='')
 
     def save(self):
-        data = self.view.get_data()
+        data = self.get_data()
         self.asn.vorname = data['vorname']
         self.asn.name = data['nachname']
         self.asn.email = data['email']

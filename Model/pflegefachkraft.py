@@ -10,7 +10,7 @@ class PFK(Base):
     name = Column(String(30))
     vorname = Column(String(30))
     email = Column(String(30))
-    assistenznehmer = relationship("ASN", back_populates="pflegefachkraefte")
+    assistenznehmer = relationship("ASN", back_populates="pflegefachkraft")
 
     def __repr__(self):
         return f"{self.name!r}, {self.vorname!r})"

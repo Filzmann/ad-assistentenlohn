@@ -26,8 +26,9 @@ class AsnEditController:
 
         self.session = self.parent.Session()
         self.stammdaten = AsnStammdatenController(parent_controller=self, asn=self.asn)
-        self.view.eb = EbController(parent_controller=self)
-        self.view.pfk = PfkController(parent_controller=self)
+
+        self.view.eb = EbController(parent_controller=self, eb=self.asn.eb if self.asn else None)
+        self.view.pfk = PfkController(parent_controller=self, pfk=self.asn.pfk if self.asn else None)
         self.view.feste_schichten = FesteSchichtenController(parent_controller=self)
         # self.view.templates = SchichtTemplatesController(parent_controller=self)
         self.view.edit.draw()
@@ -36,17 +37,35 @@ class AsnEditController:
         self.session = self.parent.Session()
 
     def change_asn(self):
-        self.asn = self.view.choose.selected_asn
-        self.stammdaten = AsnStammdatenController(parent_controller=self, asn=self.asn)
-
+        if self.view.choose.selected_asn.get() < 999999999:
+            result = self.session.execute(select(ASN).where(ASN.id == self.view.choose.selected_asn.get()))
+            asn = result.scalars().one()
+        else:
+            asn = None
+        self.asn = asn
+        self.stammdaten.set_asn(asn=self.asn)
 
     def save_asn(self):
         stammdaten = self.stammdaten.get_data()
-        if not self.asn:
+        if self.asn:
+            self.asn.kuerzel = stammdaten['kuerzel']
+            self.asn.vorname = stammdaten['vorname']
+            self.asn.name = stammdaten['nachname']
+            self.asn.email = stammdaten['email']
+            self.asn.einsatzbuero = stammdaten['buero']
+
+            self.asn.home.strasse = stammdaten['strasse']
+            self.asn.home.hausnmummer = stammdaten['hnr']
+            self.asn.home.plz = stammdaten['plz']
+            self.asn.home.stadt = stammdaten['stadt']
+
+        else:
+            # create new home
             home = Adresse(strasse=stammdaten['strasse'],
                            hausnummer=stammdaten['hnr'],
                            stadt=stammdaten['stadt'],
                            plz=stammdaten['plz'])
+            # create new asn
             asn = ASN(
                 kuerzel=stammdaten["kuerzel"],
                 name=stammdaten["nachname"],
@@ -54,6 +73,7 @@ class AsnEditController:
                 email=stammdaten["email"],
 
             )
+            # connect
             asn.home = home
             self.session.add(asn)
 
@@ -69,7 +89,6 @@ class AsnEditController:
             association.as_id = assistent.id
             asn.assistenten.append(association)
 
-
-        # eb=self.view.eb.get_eb()
+        self.asn.eb = self.view.eb.save()
         # pfk=self.view.pfk.get_pfk()
         self.session.commit()

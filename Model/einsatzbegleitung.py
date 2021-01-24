@@ -10,7 +10,7 @@ class EB(Base):
     name = Column(String(30))
     vorname = Column(String(30))
     email = Column(String(30))
-    assistenznehmer = relationship("ASN", back_populates="einsatzbegleitungen")
+    assistenznehmer = relationship("ASN", back_populates="einsatzbegleitung")
 
     def __repr__(self):
         return f"{self.name!r}, {self.vorname!r})"

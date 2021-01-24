@@ -25,17 +25,19 @@
     <show-object-properties value="true" />
     <loaded-nodes>
       <connection connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f">
-        <schema name="main" object-types="table, view" />
+        <schema name="main" object-types="dataset trigger, index, constraint, table, column, view" />
       </connection>
     </loaded-nodes>
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f">
-      <console name="Connection" type="STANDARD" schema="main" session="Main" />
+      <console name="Connection" type="STANDARD" schema="" session="Main" />
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files />
+    <open-files>
+      <object connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" object-ref="schemas/main/tables/einsatzbegleitungen" />
+    </open-files>
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
     <connection id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" />
@@ -44,6 +46,7 @@
     <filter-actions connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" dataset="main.association_as_asn" active-filter-id="EMPTY_FILTER" />
     <filter-actions connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" dataset="main.assistenten" active-filter-id="EMPTY_FILTER" />
     <filter-actions connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" dataset="main.assistenznehmer" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" dataset="main.einsatzbegleitungen" active-filter-id="EMPTY_FILTER" />
   </component>
   <component name="DBNavigator.Project.EditorStateManager">
     <last-used-providers>
