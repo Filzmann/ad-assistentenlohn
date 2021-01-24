@@ -17,9 +17,11 @@ class AsnEditController:
         self.parent = parent_controller
         self.assistent = assistent
         self.asn = asn
+        self.session = self.parent.Session()
+        result = self.session.query(Assistent).count()
         asnliste = []
-        for asn in assistent.asn:
-            asnliste.append({"id": asn.asn.id, "kuerzel": asn.asn.kuerzel})
+        for asn_item in assistent.asn:
+            asnliste.append({"id": asn_item.asn.id, "kuerzel": asn_item.asn.kuerzel})
         self.view = AsnEditView(parent_view=self.parent.view, asn_liste=asnliste)
         for child in self.view.choose.winfo_children():
             child.config(command=self.change_asn)
@@ -27,7 +29,9 @@ class AsnEditController:
         self.session = self.parent.Session()
         self.stammdaten = AsnStammdatenController(parent_controller=self, asn=self.asn)
 
-        self.view.eb = EbController(parent_controller=self, eb=self.asn.eb if self.asn else None)
+        self.eb_controller = EbController(parent_controller=self,
+                                          parent_view=self.view.edit,
+                                          eb=self.asn.eb if self.asn else None)
         self.view.pfk = PfkController(parent_controller=self, pfk=self.asn.pfk if self.asn else None)
         self.view.feste_schichten = FesteSchichtenController(parent_controller=self)
         # self.view.templates = SchichtTemplatesController(parent_controller=self)
@@ -89,6 +93,6 @@ class AsnEditController:
             association.as_id = assistent.id
             asn.assistenten.append(association)
 
-        self.asn.eb = self.view.eb.save()
+        # self.asn.eb = self.view.eb.save()
         # pfk=self.view.pfk.get_pfk()
         self.session.commit()
