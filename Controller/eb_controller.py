@@ -5,7 +5,7 @@ from View.eb_view import EbView
 
 
 class EbController:
-    def __init__(self, parent_controller, parent_view, eb: EB = None):
+    def __init__(self, parent_controller, eb: EB = None):
         self.parent = parent_controller
         self.session = self.parent.session
         self.eb = eb
@@ -15,7 +15,7 @@ class EbController:
             ebs = result.scalars().all()
             for eb_item in ebs:
                 self.ebliste.append(eb_item)
-        self.view = EbView(parent_view=parent_view, ebliste=self.ebliste, akt_eb=self.eb)
+        self.view = EbView(parent_view=self.parent.view.edit, ebliste=self.ebliste, akt_eb=self.eb)
 
         self.parent.view.edit.eb = self.view
 
@@ -29,21 +29,22 @@ class EbController:
                                email=eb.email)
 
     def save(self):
-        eb = None
+
         data = self.view.get_data()
-        if data['vorname'] or data['name'] or data['email']:
-            if self.eb:
-                #  Update
-                self.eb.vorname = data['vorname']
-                self.eb.name = data['name']
-                self.eb.email = data['email']
-            else:
-                eb = EB(name=data['name'],
-                        vorname=data['vorname'],
-                        email=data['email'])
-                self.session.add(eb)
-                self.ebliste.append(eb)
-                self.eb = eb
+
+        if self.eb:
+            #  Update
+            self.eb.vorname = data['vorname']
+            self.eb.name = data['name']
+            self.eb.email = data['email']
+        else:
+            eb = EB(name=data['nachname'],
+                    vorname=data['vorname'],
+                    email=data['email'])
+            self.session.add(eb)
+            self.ebliste.append(eb)
+            self.eb = eb
+
         return eb
 
 

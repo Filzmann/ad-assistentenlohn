@@ -24,24 +24,29 @@
     <autoscroll-from-editor value="true" />
     <show-object-properties value="true" />
     <loaded-nodes>
-      <connection connection-id="1a8cd391-4415-44c8-b3b7-e5ae89ab490d">
-        <schema name="main" object-types="view, table, constraint, column, index, dataset trigger" />
+      <connection connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f">
+        <schema name="main" object-types="dataset trigger, constraint, column, view, table, index" />
       </connection>
     </loaded-nodes>
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
-    <connection id="1a8cd391-4415-44c8-b3b7-e5ae89ab490d">
-      <console name="Connection" type="STANDARD" schema="main" session="Main" />
+    <connection id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f">
+      <console name="Connection" type="STANDARD" schema="" session="Main" />
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files />
+    <open-files>
+      <object connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" object-ref="schemas/main/tables/einsatzbegleitungen" />
+    </open-files>
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
-    <connection id="1a8cd391-4415-44c8-b3b7-e5ae89ab490d" />
+    <connection id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" />
   </component>
   <component name="DBNavigator.Project.DatasetFilterManager">
-    <filter-actions connection-id="1a8cd391-4415-44c8-b3b7-e5ae89ab490d" dataset="main.assistenznehmer" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" dataset="main.association_as_asn" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" dataset="main.assistenten" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" dataset="main.assistenznehmer" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" dataset="main.einsatzbegleitungen" active-filter-id="EMPTY_FILTER" />
   </component>
   <component name="DBNavigator.Project.EditorStateManager">
     <last-used-providers>
@@ -71,7 +76,7 @@
   </component>
   <component name="DBNavigator.Project.Settings">
     <connections>
-      <connection id="1a8cd391-4415-44c8-b3b7-e5ae89ab490d" active="true">
+      <connection id="c7b9b19f-20c1-4960-b588-d2cedffd5d9f" active="true">
         <database>
           <name value="Connection" />
           <description value="" />
