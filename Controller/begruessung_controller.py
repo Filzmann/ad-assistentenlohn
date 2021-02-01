@@ -12,7 +12,6 @@ class BegruessungController:
         self.model = MainModel()
         self.parent_controller = parent_controller
         result = session.execute(select(Assistent).order_by(Assistent.name))
-        session.commit()
         assistenten = result.scalars().all()
         assistentenliste = []
         for assistent in assistenten:
@@ -20,7 +19,7 @@ class BegruessungController:
         self.view = BegruessungsView(parent=parent_view, assistentenliste=assistentenliste)
         if assistentenliste:
             self.view.button_oeffnen.config(
-                command=lambda: self.parent_controller.oeffne_as(email=self.view.get_selected())
+                command=lambda: self.parent_controller.oeffne_as(email=self.view.get_selected(), session=session)
             )
         self.view.button_neu.config(
             command=lambda: AssistentController(parent_controller=self.parent_controller))

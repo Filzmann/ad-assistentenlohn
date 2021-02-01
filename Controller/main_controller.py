@@ -7,6 +7,9 @@ from Controller.begruessung_controller import BegruessungController
 from Controller.hauptseite_controller import HauptseiteController
 from sqlalchemy import create_engine, select
 from Model.base import Base
+from Model.schicht_templates import SchichtTemplates
+from Model.weg import Weg
+from Model.schicht import Schicht
 from Model.assistent import Assistent
 from View.menueleiste import Menuleiste
 
@@ -14,7 +17,7 @@ from View.menueleiste import Menuleiste
 class MainController:
     def __init__(self):
 
-        engine = create_engine("sqlite+pysqlite:///assistenten.db", echo=True, future=True)
+        engine = create_engine("sqlite+pysqlite:///assistenten.db", echo=True, future=True, pool_pre_ping=True)
         self.Session = sessionmaker(bind=engine, expire_on_commit=False)
         Base.metadata.create_all(engine)
 
