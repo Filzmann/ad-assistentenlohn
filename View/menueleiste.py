@@ -15,7 +15,7 @@ from fenster_verpflegungsmehraufwand import FensterVerpflegungsMehraufwand
 
 
 class Menuleiste(tk.Menu):
-    def __init__(self, parent_view, assistent, parent_controller):
+    def __init__(self, parent_view, assistent, parent_controller, session):
         tk.Menu.__init__(self, parent_view)
         # Menü Datei und Help erstellen
         datei_menu = tk.Menu(self, tearoff=0)
@@ -36,10 +36,10 @@ class Menuleiste(tk.Menu):
         bearbeiten_menu = tk.Menu(self, tearoff=0)
         bearbeiten_menu.add_command(label="ASN bearbeiten",
                                     command=lambda: AsnEditController(parent_controller=parent_controller,
-                                                                      assistent=assistent))
+                                                                      assistent=assistent, session=session))
         bearbeiten_menu.add_command(label="Assistent bearbeiten",
                                     command=lambda: AssistentController(parent_controller=parent_controller,
-                                                                        assistent=assistent))
+                                                                        assistent=assistent, session=session))
 
         taxes_menu = tk.Menu(self, tearoff=0)
         # taxes_menu.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand",

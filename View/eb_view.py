@@ -1,4 +1,5 @@
 import tkinter as tk
+from Helpers.combobox_dict import Combobox
 
 
 class EbView(tk.Frame):
@@ -7,8 +8,10 @@ class EbView(tk.Frame):
         super().__init__(parent_view)
         self.eb = akt_eb
         self.selected = tk.StringVar()
-        self.selected.set(ebliste[0])
-        self.eb_dropdown = tk.OptionMenu(self, self.selected, *ebliste, command=self.change_eb)
+
+        self.eb_dropdown = Combobox(self, values=ebliste, width=38)
+        self.eb_dropdown.set("0")
+
         self.vorname_input = tk.Entry(self, bd=5, width=40)
         self.nachname_input = tk.Entry(self, bd=5, width=40)
         self.email_input = tk.Entry(self, bd=5, width=40)
@@ -34,20 +37,10 @@ class EbView(tk.Frame):
         self.vorname_input.insert(0, kwargs['vorname'])
         self.nachname_input.insert(0, kwargs['name'])
         self.email_input.insert(0, kwargs['email'])
+        if 'eb_id' in kwargs.keys():
+            self.eb_dropdown.set(kwargs['eb_id'])
 
     def get_data(self):
         return{'vorname': self.vorname_input.get(),
                'name': self.nachname_input.get(),
                'email': self.email_input.get()}
-
-    def change_eb(self, eb):
-        if not eb or eb == "EB wählen oder neu anlegen":
-            self.set_data(vorname='', name='', email='')
-            self.eb = None
-        else:
-            self.set_data(vorname=eb.vorname,
-                          name=eb.name,
-                          email=eb.email)
-            self.eb = eb
-
-

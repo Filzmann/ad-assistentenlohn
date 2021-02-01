@@ -17,7 +17,7 @@ from View.menueleiste import Menuleiste
 class MainController:
     def __init__(self):
 
-        engine = create_engine("sqlite+pysqlite:///assistenten.db", echo=True, future=True, pool_pre_ping=True)
+        engine = create_engine("sqlite+pysqlite:///assistenten.db", echo=False, future=True, pool_pre_ping=True)
         self.Session = sessionmaker(bind=engine, expire_on_commit=False)
         Base.metadata.create_all(engine)
 
@@ -28,6 +28,7 @@ class MainController:
         with self.session_scope() as session:
             self.draw(session)
         self.view.mainloop()
+
 
     def oeffne_as(self, session, email=None):
         result = session.execute(select(Assistent).where(Assistent.email == email))
@@ -43,7 +44,8 @@ class MainController:
             # wir haben einen Assistenten geladen
             menuleiste = Menuleiste(parent_view=self.view,
                                     assistent=self.model.assistent,
-                                    parent_controller=self)
+                                    parent_controller=self,
+                                    session=session)
             self.view.config(menu=menuleiste)
             # die Hauptseite des Assistenten wird in die view eingehangen
             self.view.inhalt = HauptseiteController(

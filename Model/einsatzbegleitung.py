@@ -13,4 +13,4 @@ class EB(Base):
     assistenznehmer = relationship("ASN", back_populates="einsatzbegleitung")
 
     def __repr__(self):
-        return f"{self.name!r}, {self.vorname!r})"
+        return f"{self.id} {self.vorname} {self.name}"

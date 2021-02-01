@@ -9,12 +9,13 @@ from View.feste_schichten_view import FesteSchichtenView
 class FesteSchichtenController:
     def __init__(self,
                  parent_controller,
+                 session,
                  assistent: Assistent = None,
                  asn: ASN = None):
         self.asn = asn
         self.assistent = assistent
         self.parent = parent_controller
-        self.session = self.parent.session
+        self.session = session
         result = self.session.execute(
             select(FesteSchicht).where(
                 Assistent == self.assistent).where(

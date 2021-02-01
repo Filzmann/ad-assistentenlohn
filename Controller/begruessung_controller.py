@@ -22,4 +22,4 @@ class BegruessungController:
                 command=lambda: self.parent_controller.oeffne_as(email=self.view.get_selected(), session=session)
             )
         self.view.button_neu.config(
-            command=lambda: AssistentController(parent_controller=self.parent_controller))
+            command=lambda: AssistentController(parent_controller=self.parent_controller, session=session))

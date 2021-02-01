@@ -4,12 +4,12 @@ from View.asn_stammdaten_view import AsnStammdatenView
 
 
 class AsnStammdatenController:
-    def __init__(self, parent_controller, asn: ASN = None):
+    def __init__(self, parent_controller, session, asn: ASN = None):
         self.parent = parent_controller
         self.view = AsnStammdatenView(parent_view=self.parent.view.edit)
         self.parent.view.edit.stammdaten = self.view
         self.asn = asn
-        self.session = self.parent.session
+        self.session = session
 
     def set_asn(self, asn=None):
         if asn:

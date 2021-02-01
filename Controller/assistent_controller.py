@@ -6,12 +6,12 @@ from View.assistent_new_edit_view import AssistentNewEditView
 
 class AssistentController:
 
-    def __init__(self, parent_controller, assistent: Assistent = None):
+    def __init__(self, parent_controller, assistent: Assistent = None, session=None):
         self.parent = parent_controller
         self.assistent = assistent
         self.view = AssistentNewEditView(parent=self.parent.view)
         self.view.save_button.config(command=self.save_assistent)
-        self.session = self.parent.Session()
+        self.session = session
         if assistent:
             result = self.session.execute(select(Assistent).where(Assistent.id == assistent.id))
             assistent = result.scalars().one()
@@ -46,7 +46,7 @@ class AssistentController:
             session.add(assistent)
             session.commit()
             self.view.destroy()
-            self.parent.draw()
+            self.parent.draw(session)
         else:
             self.assistent.name = data['name']
             self.assistent.vorname = data['vorname']
@@ -58,5 +58,5 @@ class AssistentController:
 
             self.view.destroy()
             self.parent.model.assistent = self.assistent
-            self.parent.draw(self.session)
+            self.parent.draw(session)
 

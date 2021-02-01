@@ -13,7 +13,7 @@ from View.asn_edit_view import AsnEditView
 
 class AsnEditController:
 
-    def __init__(self, parent_controller, assistent: Assistent = None, asn: ASN = None):
+    def __init__(self, parent_controller, session, assistent: Assistent = None, asn: ASN = None):
         self.parent = parent_controller
         self.assistent = assistent
         self.asn = asn
@@ -24,17 +24,17 @@ class AsnEditController:
         for child in self.view.choose.winfo_children():
             child.config(command=self.change_asn)
 
-        self.session = self.parent.Session()
-        self.stammdaten = AsnStammdatenController(parent_controller=self, asn=self.asn)
+        self.session = session
+        self.stammdaten = AsnStammdatenController(parent_controller=self, asn=self.asn, session=session)
 
-        self.view.eb = EbController(parent_controller=self, eb=self.asn.eb if self.asn else None)
-        self.view.pfk = PfkController(parent_controller=self, pfk=self.asn.pfk if self.asn else None)
-        self.view.feste_schichten = FesteSchichtenController(parent_controller=self)
+        self.view.eb = EbController(parent_controller=self, session=session, eb=self.asn.eb if self.asn else None)
+        self.view.pfk = PfkController(parent_controller=self, session=session, pfk=self.asn.pfk if self.asn else None)
+        self.view.feste_schichten = FesteSchichtenController(parent_controller=self, session=session)
         # self.view.templates = SchichtTemplatesController(parent_controller=self)
         self.view.edit.draw()
         self.view.edit.save_button.config(command=self.save_asn)
         # self.view.saveandnew_button.config(command=lambda: self.save_au(undneu=1))
-        self.session = self.parent.Session()
+
 
     def change_asn(self):
         if self.view.choose.selected_asn.get() < 999999999:
@@ -44,6 +44,8 @@ class AsnEditController:
             asn = None
         self.asn = asn
         self.stammdaten.set_asn(asn=self.asn)
+        if self.asn.einsatzbegleitung:
+            self.view.eb.set_eb(self.asn.einsatzbegleitung)
 
     def save_asn(self):
         stammdaten = self.stammdaten.get_data()
@@ -88,6 +90,7 @@ class AsnEditController:
             association.asn = asn
             association.as_id = assistent.id
             asn.assistenten.append(association)
+            self.asn = asn
 
         self.asn.einsatzbegleitung = self.view.eb.save()
         # pfk=self.view.pfk.get_pfk()
