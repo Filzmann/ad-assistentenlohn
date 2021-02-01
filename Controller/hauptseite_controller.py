@@ -6,35 +6,35 @@ from View.hauptseite_view import HauptseiteView
 
 
 class HauptseiteController:
-    def __init__(self, session_maker, assistent, parent_view):
+    def __init__(self, session, assistent, parent_view):
         as_name = assistent.vorname + " " + assistent.name
         self.view = HauptseiteView(parent_view=parent_view, as_name=as_name)
         self.assistent = assistent
 
         self.view.navigation = NavigationController(
             parent_controller=self,
-            session_maker=session_maker,
+            session=session,
             parent_view=self.view
         ).view
         self.view.navigation.grid()
 
         self.view.tabelle = TabelleController(
             parent_controller=self,
-            session_maker=session_maker,
+            session=session,
             parent_view=self.view
         ).view
         self.view.tabelle.grid()
 
         self.view.summen = SummenController(
             parent_controller=self,
-            session_maker=session_maker,
+            session=session,
             parent_view=self.view
         ).view
         self.view.summen.grid()
 
         self.view.infotext = InfotextController(
             parent_controller=self,
-            session_maker=session_maker,
+            session=session,
             parent_view=self.view
         ).view
         self.view.infotext.grid()

@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from sqlalchemy.orm import sessionmaker
 from Model.main_model import MainModel
 from View.main_view import MainView
@@ -15,29 +17,34 @@ class MainController:
         engine = create_engine("sqlite+pysqlite:///assistenten.db", echo=True, future=True)
         self.Session = sessionmaker(bind=engine, expire_on_commit=False)
         Base.metadata.create_all(engine)
+
         self.model = MainModel()
         self.view = MainView()
         self.assistent = self.model.assistent
-        self.draw()
+
+        with self.session_scope() as session:
+            self.draw(session)
         self.view.mainloop()
 
-    def oeffne_as(self, email=None):
-        session = self.Session()
+    def oeffne_as(self, session, email=None):
         result = session.execute(select(Assistent).where(Assistent.email == email))
         self.model.assistent = result.scalars().one()
-        self.draw()
 
-    def draw(self):
+        self.draw(session)
+
+    def draw(self, session):
         if self.view.inhalt:
             self.view.inhalt.destroy()
 
         if self.model.assistent:
+            # wir haben einen Assistenten geladen
             menuleiste = Menuleiste(parent_view=self.view,
                                     assistent=self.model.assistent,
                                     parent_controller=self)
             self.view.config(menu=menuleiste)
+            # die Hauptseite des Assistenten wird in die view eingehangen
             self.view.inhalt = HauptseiteController(
-                session_maker=self.Session,
+                session=session,
                 assistent=self.model.assistent,
                 parent_view=self.view
             ).view
@@ -47,7 +54,20 @@ class MainController:
             # Layout von da aus steuern kann
             self.view.inhalt = BegruessungController(
                 parent_controller=self,
-                session_maker=self.Session,
+                session=session,
                 parent_view=self.view
             ).view
             self.view.inhalt.grid()
+
+    @contextmanager
+    def session_scope(self):
+        """Provide a transactional scope around a series of operations."""
+        session = self.Session()
+        try:
+            yield session
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
