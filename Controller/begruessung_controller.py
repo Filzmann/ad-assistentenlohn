@@ -8,11 +8,11 @@ from Model.assistent import Assistent
 
 
 class BegruessungController:
-    def __init__(self, session_maker, parent_view, parent_controller):
+    def __init__(self, session, parent_view, parent_controller):
         self.model = MainModel()
         self.parent_controller = parent_controller
-        session = session_maker()
         result = session.execute(select(Assistent).order_by(Assistent.name))
+        session.commit()
         assistenten = result.scalars().all()
         assistentenliste = []
         for assistent in assistenten:

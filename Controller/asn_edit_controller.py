@@ -89,6 +89,6 @@ class AsnEditController:
             association.as_id = assistent.id
             asn.assistenten.append(association)
 
-        self.asn.eb = self.view.eb.save()
+        self.asn.einsatzbegleitung = self.view.eb.save()
         # pfk=self.view.pfk.get_pfk()
         self.session.commit()

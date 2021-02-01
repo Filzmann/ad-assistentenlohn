@@ -38,13 +38,13 @@ class EbController:
             self.eb.name = data['name']
             self.eb.email = data['email']
         else:
-            eb = EB(name=data['nachname'],
+            eb = EB(name=data['name'],
                     vorname=data['vorname'],
                     email=data['email'])
             self.session.add(eb)
             self.ebliste.append(eb)
             self.eb = eb
 
-        return eb
+        return self.eb
 
 
