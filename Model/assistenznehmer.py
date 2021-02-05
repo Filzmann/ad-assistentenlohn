@@ -27,6 +27,7 @@ class ASN(Base):
     einsatzbuero = Column(String(30))
     schicht_templates = relationship("SchichtTemplates")
     schichten = relationship("Schicht")
+    feste_schichten = relationship("FesteSchicht", back_populates="asn")
     eb_id = Column(Integer, ForeignKey('einsatzbegleitungen.id'))
     einsatzbegleitung = relationship("EB", back_populates="assistenznehmer")
     pfk_id = Column(Integer, ForeignKey('pflegefachkraefte.id'))

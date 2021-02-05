@@ -7,8 +7,10 @@ class FesteSchicht(Base):
     __tablename__ = 'feste_schichten'
 
     id = Column(Integer, primary_key=True)
-    assistent = Column(Integer, ForeignKey('assistenten.id'))
-    asn = Column(Integer, ForeignKey('assistenznehmer.id'))
+    assistent_id = Column(Integer, ForeignKey('assistenten.id'))
+    assistent = relationship("Assistent", back_populates="feste_schichten")
+    asn_id = Column(Integer, ForeignKey('assistenznehmer.id'))
+    asn = relationship("ASN", back_populates="feste_schichten")
 
     # extra Data
     wochentag = Column(String(10))

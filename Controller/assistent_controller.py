@@ -59,4 +59,5 @@ class AssistentController:
             self.view.destroy()
             self.parent.model.assistent = self.assistent
             self.parent.draw(session)
+            session.commit()
 

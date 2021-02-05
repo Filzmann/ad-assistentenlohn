@@ -29,17 +29,19 @@ class Menuleiste(tk.Menu):
         eintragen_menu = tk.Menu(self, tearoff=0)
         # eintragen_menu.add_command(label="Schicht eintragen", command=lambda: FensterNeueSchicht(root, assistent))
         eintragen_menu.add_command(label="Urlaub eintragen",
-                                   command=lambda: UrlaubController(parent_controller, assistent))
+                                   command=lambda: UrlaubController(parent_controller, assistent, session=session))
         eintragen_menu.add_command(label="AU/krank eintragen",
-                                   command=lambda: AUController(parent_controller, assistent))
+                                   command=lambda: AUController(parent_controller, assistent, session=session))
 
         bearbeiten_menu = tk.Menu(self, tearoff=0)
         bearbeiten_menu.add_command(label="ASN bearbeiten",
                                     command=lambda: AsnEditController(parent_controller=parent_controller,
-                                                                      assistent=assistent, session=session))
+                                                                      assistent=assistent,
+                                                                      session=session))
         bearbeiten_menu.add_command(label="Assistent bearbeiten",
                                     command=lambda: AssistentController(parent_controller=parent_controller,
-                                                                        assistent=assistent, session=session))
+                                                                        assistent=assistent,
+                                                                        session=session))
 
         taxes_menu = tk.Menu(self, tearoff=0)
         # taxes_menu.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand",

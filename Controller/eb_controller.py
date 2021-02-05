@@ -44,7 +44,7 @@ class EbController:
             self.session.add(eb)
             self.ebliste[str(eb.id)] = eb.vorname + " " + eb.name
             self.eb = eb
-
+        self.session.commit()
         return self.eb
     
     def set_eb(self, eb=None):

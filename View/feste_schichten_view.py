@@ -47,7 +47,7 @@ class FesteSchichtenView(tk.Frame):
         eintrag.grid(row=rowcounter, column=0, columnspan=2)
         for feste_schicht in feste_schichten:
             text = feste_schicht['wochentag'] + ', '
-            text += feste_schicht['start'].strftime("%H:%M") + ' - '
+            text += feste_schicht['beginn'].strftime("%H:%M") + ' - '
             text += feste_schicht['ende'].strftime("%H:%M")
             eintrag = tk.Label(tabelle, text=text)
             eintrag.grid(row=rowcounter, column=0)
@@ -63,10 +63,10 @@ class FesteSchichtenView(tk.Frame):
             rowcounter += 1
 
     def get_data(self):
-        startzeit = datetime(year=0, month=0, day=0,
+        startzeit = datetime(year=1, month=1, day=1,
                              hour=int(self.startzeit_input.hourstr.get()),
                              minute=int(self.startzeit_input.minstr.get()))
-        endzeit = datetime(year=0, month=0, day=0,
+        endzeit = datetime(year=1, month=1, day=1,
                            hour=int(self.endzeit_input.hourstr.get()),
                            minute=int(self.endzeit_input.minstr.get()))
         return {

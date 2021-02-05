@@ -29,7 +29,10 @@ class AsnEditController:
 
         self.view.eb = EbController(parent_controller=self, session=session, eb=self.asn.eb if self.asn else None)
         self.view.pfk = PfkController(parent_controller=self, session=session, pfk=self.asn.pfk if self.asn else None)
-        self.view.feste_schichten = FesteSchichtenController(parent_controller=self, session=session)
+        self.view.feste_schichten = FesteSchichtenController(parent_controller=self,
+                                                             session=session,
+                                                             assistent=self.assistent,
+                                                             asn=self.asn)
         # self.view.templates = SchichtTemplatesController(parent_controller=self)
         self.view.edit.draw()
         self.view.edit.save_button.config(command=self.save_asn)
@@ -43,9 +46,14 @@ class AsnEditController:
         else:
             asn = None
         self.asn = asn
+
         self.stammdaten.set_asn(asn=self.asn)
-        if self.asn.einsatzbegleitung:
-            self.view.eb.set_eb(self.asn.einsatzbegleitung)
+        if self.asn:
+            self.view.feste_schichten.asn = self.asn
+            self.view.feste_schichten.view.draw(self.view.feste_schichten.get_feste_schichten())
+
+            if self.asn.einsatzbegleitung:
+                self.view.eb.set_eb(self.asn.einsatzbegleitung)
 
     def save_asn(self):
         stammdaten = self.stammdaten.get_data()
@@ -95,3 +103,4 @@ class AsnEditController:
         self.asn.einsatzbegleitung = self.view.eb.save()
         # pfk=self.view.pfk.get_pfk()
         self.session.commit()
+        self.view.destroy()

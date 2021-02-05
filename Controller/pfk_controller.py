@@ -44,7 +44,7 @@ class PfkController:
             self.session.add(pfk)
             self.pfkliste[str(pfk.id)] = pfk.vorname + " " + pfk.name
             self.pfk = pfk
-
+        self.session.commit()
         return self.pfk
 
     def set_pfk(self, pfk=None):

@@ -1,5 +1,3 @@
-from contextlib import contextmanager
-
 from sqlalchemy.orm import sessionmaker
 from Model.main_model import MainModel
 from View.main_view import MainView
@@ -13,19 +11,19 @@ from Model.schicht import Schicht
 from Model.assistent import Assistent
 from View.menueleiste import Menuleiste
 
+engine = create_engine('sqlite:///assistenten.db', echo=True)
+Base.metadata.create_all(bind=engine)
+Session = sessionmaker(engine)
+
 
 class MainController:
     def __init__(self):
-
-        engine = create_engine("sqlite+pysqlite:///assistenten.db", echo=False, future=True, pool_pre_ping=True)
-        self.Session = sessionmaker(bind=engine, expire_on_commit=False)
-        Base.metadata.create_all(engine)
 
         self.model = MainModel()
         self.view = MainView()
         self.assistent = self.model.assistent
 
-        with self.session_scope() as session:
+        with Session() as session:
             self.draw(session)
         self.view.mainloop()
 
@@ -64,15 +62,3 @@ class MainController:
             ).view
             self.view.inhalt.grid()
 
-    @contextmanager
-    def session_scope(self):
-        """Provide a transactional scope around a series of operations."""
-        session = self.Session()
-        try:
-            yield session
-            session.commit()
-        except:
-            session.rollback()
-            raise
-        finally:
-            session.close()
