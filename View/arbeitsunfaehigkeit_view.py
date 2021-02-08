@@ -19,14 +19,14 @@ class AUView(tk.Toplevel):
         self.saveandnew_button = tk.Button(self, text="Daten speichern und neu")
 
         # ins Fenster packen
-        startdatum_label.grid(row=1, column=0)
-        self.startdatum_input.grid(row=1, column=1, columnspan=2)
-        enddatum_label.grid(row=1, column=3)
-        self.enddatum_input.grid(row=1, column=4)
+        startdatum_label.grid(row=1, column=0, sticky=tk.NW)
+        self.startdatum_input.grid(row=1, column=1, columnspan=2, sticky=tk.NW)
+        enddatum_label.grid(row=1, column=3, sticky=tk.NW)
+        self.enddatum_input.grid(row=1, column=4, sticky=tk.NW)
 
-        self.save_button.grid(row=15, column=0)
-        self.exit_button.grid(row=15, column=1)
-        self.saveandnew_button.grid(row=15, column=2)
+        self.save_button.grid(row=15, column=0, sticky=tk.NW)
+        self.exit_button.grid(row=15, column=1, sticky=tk.NW)
+        self.saveandnew_button.grid(row=15, column=2, sticky=tk.NW)
 
     def set_data(self, **kwargs):
         self.startdatum_input.selection_set(kwargs['beginn'])

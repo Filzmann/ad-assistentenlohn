@@ -16,3 +16,6 @@ class FesteSchicht(Base):
     wochentag = Column(String(10))
     beginn = Column(DateTime)
     ende = Column(DateTime)
+
+    def __repr__(self):
+        return f"Feste Schicht({self.wochentag!r}, {self.beginn!r} - {self.ende!r})"

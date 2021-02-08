@@ -4,35 +4,30 @@ from datetime import datetime
 from timepicker import TimePicker
 
 
-class FesteSchichtenView(tk.Frame):
+class SchichtTemplatesView(tk.Frame):
 
-    def __init__(self, parent_view, feste_schichten: list = None):
+    def __init__(self, parent_view, schicht_templates: list = None):
         super().__init__(parent_view)
         self.tabelle = None
-        self.selected_day = tk.StringVar()
         self.form = tk.Frame(self)
         self.startzeit_input = TimePicker(self.form)
         self.endzeit_input = TimePicker(self.form)
-
-        wochentage = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag',
-                      'Auswählen']
-        self.selected_day.set(wochentage[7])
-        self.form_wochentage_dropdown = tk.OptionMenu(self.form, self.selected_day, *wochentage)
-        self.submit_button = tk.Button(self.form, text='feste Schicht hinzufügen')
+        self.bezeichner_input = tk.Entry(self.form)
+        self.submit_button = tk.Button(self.form, text='Vorlage hinzufügen')
         self.kill_buttons = []
-        self.draw(feste_schichten)
+        self.draw(schicht_templates)
 
-    def draw(self, feste_schichten=None):
-        if not feste_schichten:
-            feste_schichten = []
-        headline = tk.Label(self.form, text='Feste Schichten erstellen/bearbeiten')
-        jeden = tk.Label(self.form, text="Jeden")
-        von = tk.Label(self.form, text="Von")
-        bis = tk.Label(self.form, text="bis")
+    def draw(self, schicht_templates=None):
+        if not schicht_templates:
+            schicht_templates = []
+        headline = tk.Label(self.form, text='Schichtvorlagen erstellen/bearbeiten')
+        bezeichner = tk.Label(self.form, text='Bezeichner \n (z.B. "Früh-, Tag-, Nachtschicht")')
+        von = tk.Label(self.form, text="Beginn")
+        bis = tk.Label(self.form, text="Ende")
         self.form.grid(row=0, column=0, sticky=tk.NW)
-        headline.grid(row=0, column=0, columnspan=2, sticky=tk.NW)
-        jeden.grid(row=1, column=0, sticky=tk.NW)
-        self.form_wochentage_dropdown.grid(row=1, column=1, sticky=tk.NW)
+        headline.grid(row=0, column=0, columnspan=2)
+        bezeichner.grid(row=1, column=0, sticky=tk.NW)
+        self.bezeichner_input.grid(row=1, column=1, sticky=tk.NW)
         von.grid(row=2, column=0, sticky=tk.NW)
         self.startzeit_input.grid(row=2, column=1, sticky=tk.NW)
         bis.grid(row=3, column=0, sticky=tk.NW)
@@ -41,29 +36,29 @@ class FesteSchichtenView(tk.Frame):
 
         self.tabelle = tk.Frame(self)
         self.tabelle.grid(row=0, column=1, sticky=tk.NW)
-        if not feste_schichten:
-            feste_schichten = []
+        if not schicht_templates:
+            schicht_templates = []
         for child in self.tabelle.winfo_children():
             child.destroy()
         rowcounter = 0
-        eintrag = tk.Label(self.tabelle, text='Deine festen Schichten\nin diesem Einsatz')
+        eintrag = tk.Label(self.tabelle, text='Deine gespeicherten Vorlagen')
         eintrag.grid(row=rowcounter, column=0)
         rowcounter += 1
         self.kill_buttons = []
-        for feste_schicht in feste_schichten:
-            text = feste_schicht['wochentag'] + ', '
-            text += feste_schicht['beginn'].strftime("%H:%M") + ' - '
-            text += feste_schicht['ende'].strftime("%H:%M")
+        for schicht_template in schicht_templates:
+            text = schicht_template['bezeichner'] + ', '
+            text += schicht_template['beginn'].strftime("%H:%M") + ' - '
+            text += schicht_template['ende'].strftime("%H:%M")
             eintrag = tk.Label(self.tabelle, text=text)
-            eintrag.grid(row=rowcounter, column=0, sticky=tk.NW)
+            eintrag.grid(row=rowcounter, column=0)
 
             image = "images/del.png"
             label = "Löschen"
             button = tk.Button(self.tabelle, text=label)
             button.image = tk.PhotoImage(file=image, width=16, height=16)
             button.config(image=button.image, width=16, height=16)
-            button.grid(row=rowcounter, column=1, sticky=tk.NW)
-            self.kill_buttons.append({'id': feste_schicht['id'],
+            button.grid(row=rowcounter, column=1)
+            self.kill_buttons.append({'id': schicht_template['id'],
                                       'button': button})
             rowcounter += 1
 
@@ -77,5 +72,5 @@ class FesteSchichtenView(tk.Frame):
         return {
             "startzeit": startzeit,
             "endzeit": endzeit,
-            "selected_day": self.selected_day.get()
+            "bezeichner": self.bezeichner_input.get()
         }

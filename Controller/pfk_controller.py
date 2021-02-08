@@ -63,10 +63,12 @@ class PfkController:
             self.view.set_data(
                 vorname='',
                 name='',
-                email=''
+                email='',
+                pfk_id="0"
             )
 
-    def change_pfk(self, event):
+
+    def change_pfk(self, event=None):
         pfk = self.view.pfk_dropdown.get()
         if not pfk or pfk == "0":
             self.view.set_data(vorname='', name='', email='')

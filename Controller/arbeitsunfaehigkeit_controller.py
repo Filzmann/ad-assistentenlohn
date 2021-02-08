@@ -2,7 +2,7 @@ from datetime import datetime
 
 from Model.arbeitsunfaehigkeit import AU
 from Model.assistent import Assistent
-from View.arbeistsunfaehigkeit_view import AUView
+from View.arbeitsunfaehigkeit_view import AUView
 
 
 class AUController:

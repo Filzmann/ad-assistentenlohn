@@ -63,11 +63,12 @@ class EbController:
             self.view.set_data(
                 vorname='',
                 name='',
-                email=''
+                email='',
+                eb_id='0'
             )
 
 
-    def change_eb(self, event):
+    def change_eb(self, event=None):
         eb = self.view.eb_dropdown.get()
         if not eb or eb == "0":
             self.view.set_data(vorname='', name='', email='')

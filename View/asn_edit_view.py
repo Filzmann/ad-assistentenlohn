@@ -1,8 +1,5 @@
 import tkinter as tk
 
-from Controller.eb_controller import EbController
-from Controller.pfk_controller import PfkController
-
 
 class AsnAuswahllisteFrame(tk.Frame):
 
@@ -22,12 +19,12 @@ class AsnAuswahllisteFrame(tk.Frame):
 
 
 class AsnEditorFrame(tk.Frame):
-    eb: EbController = None
-    pfk: PfkController = None
-
-    def __init__(self, parent_view, selected_asn):
+    def __init__(self, parent_view):
         super().__init__(parent_view)
         self.stammdaten = tk.Label(self, text="Stammdaten")
+        self.eb = tk.Label(self, text="EBs")
+        self.pfk = tk.Label(self, text="PFKs")
+
         self.feste_schichten = tk.Label(self, text="feste Schichten")
         self.templates = tk.Label(self, text="Templates")
         self.save_button = tk.Button(self, text="ASN speichern")
@@ -48,12 +45,15 @@ class AsnEditorFrame(tk.Frame):
 
 
 class AsnEditView(tk.Toplevel):
-    choose: AsnAuswahllisteFrame = None
-    edit: AsnEditorFrame = None
-
     def __init__(self, parent_view,
                  asn_liste: list = None,
                  selected_asn_id=999999999):
+
+        self.choose = None
+        self.edit = None
+        self.feste_schichten = None
+        self.schicht_templates = None
+
         if not asn_liste:
             asn_liste = [{'id': 999999999, 'kuerzel': 'Neuer ASN'}]
         else:
@@ -75,6 +75,5 @@ class AsnEditView(tk.Toplevel):
                                            asn_liste=self.asn_liste,
                                            selected_asn_id=self.selected_asn_id)
         self.choose.grid(row=0, column=0)
-        self.edit = AsnEditorFrame(parent_view=self,
-                                   selected_asn=self.selected_asn_id)
+        self.edit = AsnEditorFrame(parent_view=self)
         self.edit.grid(row=0, column=1)

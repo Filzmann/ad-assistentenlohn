@@ -23,9 +23,6 @@ class FesteSchichtenController:
         self.parent.view.edit.feste_schichten = self.view
         self.view.submit_button.config(command=self.save_feste_schicht)
 
-        for kill_button in self.view.kill_buttons:
-            kill_button['button'].config(command=lambda: self.delete_feste_schicht(feste_schicht_id=kill_button['id']))
-
     def get_feste_schichten(self):
         feste_schichten = []
         if not self.asn:
@@ -39,10 +36,20 @@ class FesteSchichtenController:
                                         })
         return feste_schichten
 
+    def set_feste_schichten(self):
+        if not self.asn:
+            feste_schichten = []
+        else:
+            feste_schichten = self.get_feste_schichten()
+        self.view.tabelle.destroy()
+        self.view.draw(feste_schichten)
+        for kill_button in self.view.kill_buttons:
+            kill_button['button'].config(command=lambda: self.delete_feste_schicht(feste_schicht_id=kill_button['id']))
+
     def save_feste_schicht(self):
         data = self.view.get_data()
-        feste_schicht = FesteSchicht(#assistent=self.assistent,
-                                     #asn=self.asn,
+        feste_schicht = FesteSchicht(assistent=self.assistent,
+                                     asn=self.asn,
                                      wochentag=data['selected_day'],
                                      beginn=data['startzeit'],
                                      ende=data['endzeit']
@@ -52,9 +59,12 @@ class FesteSchichtenController:
         self.assistent.feste_schichten.append(feste_schicht)
         self.asn.feste_schichten.append(feste_schicht)
         self.session.commit()
-        self.view.draw(self.get_feste_schichten())
-
-
+        self.set_feste_schichten()
 
     def delete_feste_schicht(self, feste_schicht_id):
-        pass
+        result = self.session.execute(select(FesteSchicht).where(FesteSchicht.id == feste_schicht_id))
+        schicht = result.scalars().one()
+        self.session.delete(schicht)
+        self.session.commit()
+        self.set_feste_schichten()
+

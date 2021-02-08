@@ -20,7 +20,9 @@ class Assistent(Base):
     asn = relationship(
         "AssociationAsAsn", back_populates="assistenten")
 
-    feste_schichten = relationship("FesteSchicht", back_populates="assistent")
+    feste_schichten = relationship("FesteSchicht",
+                                   back_populates="assistent",
+                                   cascade="all, delete, delete-orphan")
     schichten = relationship("Schicht")
     urlaub = relationship("Urlaub")
 

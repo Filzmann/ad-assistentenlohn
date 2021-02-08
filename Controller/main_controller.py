@@ -5,7 +5,7 @@ from Controller.begruessung_controller import BegruessungController
 from Controller.hauptseite_controller import HauptseiteController
 from sqlalchemy import create_engine, select
 from Model.base import Base
-from Model.schicht_templates import SchichtTemplates
+from Model.schicht_templates import SchichtTemplate
 from Model.weg import Weg
 from Model.schicht import Schicht
 from Model.assistent import Assistent
@@ -26,7 +26,6 @@ class MainController:
         with Session() as session:
             self.draw(session)
         self.view.mainloop()
-
 
     def oeffne_as(self, session, email=None):
         result = session.execute(select(Assistent).where(Assistent.email == email))

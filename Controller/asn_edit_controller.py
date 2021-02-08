@@ -4,6 +4,7 @@ from Controller.asn_stammdaten_controller import AsnStammdatenController
 from Controller.eb_controller import EbController
 from Controller.feste_schichten_controller import FesteSchichtenController
 from Controller.pfk_controller import PfkController
+from Controller.schicht_templates_controller import SchichtTemplatesController
 from Model.adresse import Adresse
 from Model.assistent import Assistent
 from Model.assistenznehmer import ASN
@@ -27,19 +28,25 @@ class AsnEditController:
         self.session = session
         self.stammdaten = AsnStammdatenController(parent_controller=self, asn=self.asn, session=session)
 
-        self.view.eb = EbController(parent_controller=self, session=session, eb=self.asn.eb if self.asn else None)
-        self.view.pfk = PfkController(parent_controller=self, session=session, pfk=self.asn.pfk if self.asn else None)
+        self.view.eb = EbController(parent_controller=self,
+                                    session=session,
+                                    eb=self.asn.eb if self.asn else None)
+        self.view.pfk = PfkController(parent_controller=self,
+                                      session=session,
+                                      pfk=self.asn.pfk if self.asn else None)
         self.view.feste_schichten = FesteSchichtenController(parent_controller=self,
                                                              session=session,
                                                              assistent=self.assistent,
                                                              asn=self.asn)
-        # self.view.templates = SchichtTemplatesController(parent_controller=self)
+        self.view.templates = SchichtTemplatesController(parent_controller=self,
+                                                         session=session,
+                                                         asn=self.asn)
         self.view.edit.draw()
         self.view.edit.save_button.config(command=self.save_asn)
         # self.view.saveandnew_button.config(command=lambda: self.save_au(undneu=1))
 
-
     def change_asn(self):
+
         if self.view.choose.selected_asn.get() < 999999999:
             result = self.session.execute(select(ASN).where(ASN.id == self.view.choose.selected_asn.get()))
             asn = result.scalars().one()
@@ -47,13 +54,20 @@ class AsnEditController:
             asn = None
         self.asn = asn
 
+        # Neubefüllen oder leeren der (Unter-)Formulare
         self.stammdaten.set_asn(asn=self.asn)
+        self.view.feste_schichten.asn, self.view.templates.asn = self.asn, self.asn
+        self.view.feste_schichten.set_feste_schichten()
+        self.view.templates.set_schicht_templates()
         if self.asn:
-            self.view.feste_schichten.asn = self.asn
-            self.view.feste_schichten.view.draw(self.view.feste_schichten.get_feste_schichten())
-
-            if self.asn.einsatzbegleitung:
-                self.view.eb.set_eb(self.asn.einsatzbegleitung)
+            self.view.eb.set_eb(
+                eb=self.asn.einsatzbegleitung if self.asn.einsatzbegleitung else None)
+            self.view.pfk.set_pfk(
+                pfk=self.asn.pflegefachkraft if self.asn.pflegefachkraft else None)
+        else:
+            # reset
+            self.view.eb.set_eb()
+            self.view.pfk.set_pfk()
 
     def save_asn(self):
         stammdaten = self.stammdaten.get_data()
@@ -101,6 +115,6 @@ class AsnEditController:
             self.asn = asn
 
         self.asn.einsatzbegleitung = self.view.eb.save()
-        # pfk=self.view.pfk.get_pfk()
+        self.asn.pflegefachkraft = self.view.pfk.save()
         self.session.commit()
         self.view.destroy()
