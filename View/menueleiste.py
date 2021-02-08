@@ -4,6 +4,7 @@ from tkinter import messagebox as messagebox
 from Controller.arbeitsunfaehigkeit_controller import AUController
 from Controller.asn_edit_controller import AsnEditController
 from Controller.assistent_controller import AssistentController
+from Controller.schicht_controller import SchichtController
 from Controller.urlaub_controller import UrlaubController
 from fenster_kilometergeld import FensterKilometergeld
 from fenster_neuer_as import FensterNeuerAS
@@ -27,11 +28,18 @@ class Menuleiste(tk.Menu):
         datei_menu.add_command(label="Exit", command=parent_view.quit)
 
         eintragen_menu = tk.Menu(self, tearoff=0)
-        # eintragen_menu.add_command(label="Schicht eintragen", command=lambda: FensterNeueSchicht(root, assistent))
+        eintragen_menu.add_command(label="Schicht eintragen",
+                                   command=lambda: SchichtController(
+                                       parent_controller=parent_controller,
+                                       session=session))
         eintragen_menu.add_command(label="Urlaub eintragen",
-                                   command=lambda: UrlaubController(parent_controller, assistent, session=session))
+                                   command=lambda: UrlaubController(parent_controller,
+                                                                    session=session,
+                                                                    assistent=assistent))
         eintragen_menu.add_command(label="AU/krank eintragen",
-                                   command=lambda: AUController(parent_controller, assistent, session=session))
+                                   command=lambda: AUController(parent_controller,
+                                                                session=session,
+                                                                assistent=assistent))
 
         bearbeiten_menu = tk.Menu(self, tearoff=0)
         bearbeiten_menu.add_command(label="ASN bearbeiten",

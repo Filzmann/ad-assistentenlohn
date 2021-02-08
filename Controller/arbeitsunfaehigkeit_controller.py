@@ -7,14 +7,14 @@ from View.arbeitsunfaehigkeit_view import AUView
 
 class AUController:
 
-    def __init__(self, parent_controller, assistent: Assistent = None, au: AU = None):
+    def __init__(self, parent_controller, session, assistent: Assistent = None, au: AU = None):
         self.parent = parent_controller
         self.assistent = assistent
         self.view = AUView(parent_view=self.parent.view)
         self.au = au
         self.view.save_button.config(command=self.save_au)
         self.view.saveandnew_button.config(command=lambda: self.save_au(undneu=1))
-        self.session = self.parent.Session()
+        self.session = session
 
     def save_au(self, undneu=0):
         data = self.view.get_data()

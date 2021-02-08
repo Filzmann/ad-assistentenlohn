@@ -7,14 +7,14 @@ from View.urlaub_view import UrlaubView
 
 class UrlaubController:
 
-    def __init__(self, parent_controller, assistent: Assistent = None, urlaub: Urlaub = None):
+    def __init__(self, parent_controller, session, assistent: Assistent = None, urlaub: Urlaub = None):
         self.parent = parent_controller
         self.assistent = assistent
         self.view = UrlaubView(parent_view=self.parent.view)
         self.urlaub = urlaub
         self.view.save_button.config(command=self.save_urlaub)
         self.view.saveandnew_button.config(command=lambda: self.save_urlaub(undneu=1))
-        self.session = self.parent.Session()
+        self.session = session
 
     def save_urlaub(self, undneu=0):
         data = self.view.get_data()
