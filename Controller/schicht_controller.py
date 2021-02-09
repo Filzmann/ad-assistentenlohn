@@ -12,11 +12,14 @@ class SchichtController:
         self.session = session
 
         asn_liste = self.get_asnliste()
+        adressliste = self.get_adressliste()
         self.view = SchichtView(parent_view=self.parent.view,
-                                asn_liste=asn_liste)
-
-
+                                asn_liste=asn_liste, adressliste=adressliste)
 
     def get_asnliste(self):
         # Todo implement
-        return {'0': 'Neu'}
+        return {'-1': 'Neu'}
+
+    def get_adressliste(self):
+        # Todo implement
+        return {'-1': 'Neu'}
