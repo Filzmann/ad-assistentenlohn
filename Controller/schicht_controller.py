@@ -165,6 +165,7 @@ class SchichtController:
     def change_asn(self, event=None):
         if int(self.view.asn_dropdown.get()) < 0:
             self.view.show(self.view.asn_stammdaten_form)
+
         else:
             asn_id = int(self.view.asn_dropdown.get())
             asn = self.get_asn_by_id(asn_id)

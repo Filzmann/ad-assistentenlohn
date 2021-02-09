@@ -25,7 +25,7 @@ class SchichtView(tk.Toplevel):
                                      width=38,
                                      state="readonly")
         self.asn_dropdown.set("-1")
-        self.selected_template = tk.StringVar()
+        self.selected_template = tk.IntVar()
 
         self.asn_stammdaten_form = AsnStammdatenView(parent_view=self.asn_frame)
 
@@ -86,13 +86,15 @@ class SchichtView(tk.Toplevel):
         self.draw()
 
     def draw_templates(self, template_list):
+        for child in self.template_frame.winfo_children():
+            child.destroy()
         for template in template_list:
             text = template.bezeichner
             text += " von " + template.beginn.strftime('%H:%M') \
                     + " bis " + template.ende.strftime('%H:%M')
             button = tk.Radiobutton(self.template_frame, text=text,
                                     variable=self.selected_template,
-                                    value=template.bezeichner,
+                                    value=template.id,
                                     command=lambda: self.change_template(start=template.beginn,
                                                                          ende=template.ende))
             button.pack()
@@ -130,11 +132,7 @@ class SchichtView(tk.Toplevel):
         self.enddatum_input.grid(row=1, column=2, sticky=tk.NW, columnspan=2)
         self.endzeit_input.grid(row=0, column=3, sticky=tk.NW)
 
-        # template-frame
-        template_text = tk.Label(self.template_frame,
-                                 text='Wenn der Assistent "Schicht-Vorlagen" hat,\n '
-                                      'stehen diese hier zur Auswahl.')
-        template_text.pack()
+
 
         # add-options-frame
         abweichende_adresse_beginn_label = tk.Label(self.add_options_frame, text="Schicht nicht zu Hause begonnen?")
@@ -163,6 +161,13 @@ class SchichtView(tk.Toplevel):
     @staticmethod
     def show(frame: tk.Frame):
         frame.grid()
+
+    def add_template_text(self):
+        # template-frame
+        template_text = tk.Label(self.template_frame,
+                                 text='Wenn der Assistent "Schicht-Vorlagen" hat,\n '
+                                      'stehen diese hier zur Auswahl.')
+        template_text.pack()
 
     def set_data(self, **kwargs):
         """
