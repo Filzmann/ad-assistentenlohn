@@ -15,7 +15,7 @@ class SchichtView(tk.Toplevel):
         # unterframes zur optisch-logischen Einteilung
         self.asn_frame = tk.Frame(self)
         self.datetime_frame = tk.Frame(self)
-        self.template_frame = tk.Frame(self.datetime_frame)
+        self.template_frame = tk.Frame(self.asn_frame)
         self.add_options_frame = tk.Frame(self)
         self.add_options_checkbuttons_frame = tk.Frame(self.add_options_frame)
         self.save_buttons_frame = tk.Frame(self)
@@ -64,7 +64,7 @@ class SchichtView(tk.Toplevel):
         self.ist_pcg_button = tk.Checkbutton(self.add_options_checkbuttons_frame,
                                              text="PCG",
                                              onvalue=1, offvalue=0,
-                                            variable=self.ist_pcg)
+                                             variable=self.ist_pcg)
         self.ist_rb_button = tk.Checkbutton(self.add_options_checkbuttons_frame,
                                             text="Kurzfristig (RB/BSD)",
                                             onvalue=1, offvalue=0,
@@ -73,14 +73,14 @@ class SchichtView(tk.Toplevel):
         self.ist_afg_button = tk.Checkbutton(self.add_options_checkbuttons_frame,
                                              text="Ausfallgeld",
                                              onvalue=1, offvalue=0,
-                                            variable=self.ist_afg)
+                                             variable=self.ist_afg)
 
         # formbuttons
         self.save_button = tk.Button(self.save_buttons_frame, text="Daten speichern")
         self.exit_button = tk.Button(self.save_buttons_frame, text="Abbrechen")
-                                     #command=self.destroy)
+        # command=self.destroy)
         self.saveandnew_button = tk.Button(self.save_buttons_frame, text="Daten speichern und neu")
-                                           #command=lambda: self.action_save_neue_schicht(undneu=1))
+        # command=lambda: self.action_save_neue_schicht(undneu=1))
 
         self.draw()
 
@@ -89,12 +89,10 @@ class SchichtView(tk.Toplevel):
         # positionierung der Unterframes
         self.asn_frame.grid(row=0, column=0, sticky=tk.NW)
         self.datetime_frame.grid(row=0, column=1, sticky=tk.NW)
-        self.template_frame.grid(row=5, column=0, sticky=tk.NW, columnspan=4)
+        self.template_frame.grid(row=1, column=0, sticky=tk.NW, columnspan=4)
         self.add_options_frame.grid(row=2, column=0, columnspan=2, sticky=tk.NW)
         self.add_options_checkbuttons_frame.grid(row=2, column=0, columnspan=2, sticky=tk.NW)
         self.save_buttons_frame.grid(row=3, column=0, columnspan=2, sticky=tk.NE)
-
-
 
         # asn-frame
         asn_label = tk.Label(self.asn_frame, text='ASN auswählen')
@@ -161,28 +159,21 @@ class SchichtView(tk.Toplevel):
             self.startzeit_input.minstr.set(kwargs['beginn'].strftime('%M'))
         if kwargs['ende']:
             date_string = kwargs['ende'].strftime('%m/%d/%Y')
-            self.startdatum_input.parse_date(date_string)
-            self.startzeit_input.hourstr.set(kwargs['ende'].strftime('%H'))
-            self.startzeit_input.minstr.set(kwargs['ende'].strftime('%M'))
+            self.enddatum_input.parse_date(date_string)
+            self.endzeit_input.hourstr.set(kwargs['ende'].strftime('%H'))
+            self.endzeit_input.minstr.set(kwargs['ende'].strftime('%M'))
 
+            self.ist_at.set(1 if kwargs['ist_at'] else 0)
+            self.ist_pcg.set(1 if kwargs['ist_pcg'] else 0)
+            self.ist_rb.set(1 if kwargs['ist_rb'] else 0)
+            self.ist_afg.set(1 if kwargs['ist_afg'] else 0)
 
-        # 'startdatum': self.startdatum_input.get_date(),
-        # 'startzeit_stunde': self.startzeit_input.hourstr,
-        # 'startzeit_minute': self.startzeit_input.minstr,
-        # 'enddatum': self.startdatum_input.get_date(),
-        # 'endzeit_stunde': self.startzeit_input.hourstr,
-        # 'endzeit_minute': self.startzeit_input.minstr,
         # 'abweichende_adresse_beginn': self.abweichende_adresse_beginn_dropdown.get(),
         # 'abweichende_adresse_beginn_data': self.abweichende_adresse_beginn.get_data(),
         # 'abweichende_adresse_ende': self.abweichende_adresse_ende_dropdown.get(),
         # 'abweichende_adresse_ende_data': self.abweichende_adresse_ende.get_data(),
-        # 'ist at': self.ist_at.get(),
-        # 'ist pcg': self.ist_pcg.get(),
-        # 'ist rb': self.ist_rb.get(),
-        # 'ist afg': self.ist_afg.get()
-    
-    def get_data(self):
 
+    def get_data(self):
 
         return {'asn_id': self.asn_dropdown.get(),
                 'asn_stammdaten': self.asn_stammdaten_form.get_data(),

@@ -12,7 +12,11 @@ from View.schicht_view import SchichtView
 
 class SchichtController:
 
-    def __init__(self, parent_controller, session, assistent: Assistent = None, asn: ASN = None):
+    def __init__(self, parent_controller, session,
+                 assistent: Assistent = None,
+                 asn: ASN = None,
+                 edit_schicht: Schicht = None,
+                 datum: datetime = None):
         self.parent = parent_controller
         self.assistent = assistent
         self.asn = asn
@@ -40,8 +44,22 @@ class SchichtController:
         self.view.save_button.config(command=self.save_schicht)
         self.view.saveandnew_button.config(command=lambda: self.save_schicht(undneu=True))
 
-
-
+        if self.asn:
+            self.view.set_data(asn=self.asn.id)
+        if datum:
+            self.view.set_data(beginn=datum, ende=datum)
+        if edit_schicht:
+            # Todo falls edit_schicht als id kommt noch aus der db holen
+            self.schicht = edit_schicht
+            self.view.set_data(
+                asn=edit_schicht.asn.id,
+                beginn=edit_schicht.beginn,
+                ende=edit_schicht.ende,
+                ist_at=edit_schicht.ist_assistententreffen,
+                ist_pcg=edit_schicht.ist_pcg,
+                ist_afg=edit_schicht.ist_ausfallgeld,
+                ist_rb=edit_schicht.ist_kurzfristig
+            )
 
     def save_schicht(self, undneu=False):
         data = self.view.get_data()
@@ -94,7 +112,7 @@ class SchichtController:
                         day=int(enddatum_array[1]),
                         hour=int(data['endzeit_stunde']),
                         minute=int(data['endzeit_minute']))
-
+        # Todo Update
         schicht = Schicht(beginn=beginn,
                           ende=ende,
                           asn=schicht_asn,
