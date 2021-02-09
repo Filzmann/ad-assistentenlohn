@@ -25,6 +25,7 @@ class SchichtView(tk.Toplevel):
                                      width=38,
                                      state="readonly")
         self.asn_dropdown.set("-1")
+        self.selected_template = tk.StringVar()
 
         self.asn_stammdaten_form = AsnStammdatenView(parent_view=self.asn_frame)
 
@@ -84,6 +85,24 @@ class SchichtView(tk.Toplevel):
 
         self.draw()
 
+    def draw_templates(self, template_list):
+        for template in template_list:
+            text = template.bezeichner
+            text += " von " + template.beginn.strftime('%H:%M') \
+                    + " bis " + template.ende.strftime('%H:%M')
+            button = tk.Radiobutton(self.template_frame, text=text,
+                                    variable=self.selected_template,
+                                    value=template.bezeichner,
+                                    command=lambda: self.change_template(start=template.beginn,
+                                                                         ende=template.ende))
+            button.pack()
+
+    def change_template(self, start, ende):
+        self.startzeit_input.hourstr.set(start.strftime('%H'))
+        self.startzeit_input.minstr.set(start.strftime('%M'))
+        self.endzeit_input.hourstr.set(ende.strftime('%H'))
+        self.endzeit_input.minstr.set(ende.strftime('%M'))
+
     def draw(self):
 
         # positionierung der Unterframes
@@ -91,7 +110,7 @@ class SchichtView(tk.Toplevel):
         self.datetime_frame.grid(row=0, column=1, sticky=tk.NW)
         self.template_frame.grid(row=1, column=0, sticky=tk.NW, columnspan=4)
         self.add_options_frame.grid(row=2, column=0, columnspan=2, sticky=tk.NW)
-        self.add_options_checkbuttons_frame.grid(row=2, column=0, columnspan=2, sticky=tk.NW)
+        self.add_options_checkbuttons_frame.grid(row=3, column=0, columnspan=2, sticky=tk.NW)
         self.save_buttons_frame.grid(row=3, column=0, columnspan=2, sticky=tk.NE)
 
         # asn-frame
@@ -115,13 +134,17 @@ class SchichtView(tk.Toplevel):
         template_text = tk.Label(self.template_frame,
                                  text='Wenn der Assistent "Schicht-Vorlagen" hat,\n '
                                       'stehen diese hier zur Auswahl.')
-        template_text.grid(row=0, column=0)
+        template_text.pack()
 
         # add-options-frame
-        self.abweichende_adresse_beginn_dropdown.grid(row=0, column=0, sticky=tk.NE)
-        self.abweichende_adresse_beginn.grid(row=1, column=0, sticky=tk.NW)
-        self.abweichende_adresse_ende_dropdown.grid(row=0, column=1, sticky=tk.NE)
-        self.abweichende_adresse_ende.grid(row=1, column=1, sticky=tk.NW)
+        abweichende_adresse_beginn_label = tk.Label(self.add_options_frame, text="Schicht nicht zu Hause begonnen?")
+        abweichende_adresse_ende_label = tk.Label(self.add_options_frame, text="Schicht nicht zu Hause beendet?")
+        abweichende_adresse_beginn_label.grid(row=0, column=0, sticky=tk.NW)
+        self.abweichende_adresse_beginn_dropdown.grid(row=1, column=0, sticky=tk.NE)
+        self.abweichende_adresse_beginn.grid(row=2, column=0, sticky=tk.NW)
+        abweichende_adresse_ende_label.grid(row=0, column=1, sticky=tk.NW)
+        self.abweichende_adresse_ende_dropdown.grid(row=1, column=1, sticky=tk.NE)
+        self.abweichende_adresse_ende.grid(row=2, column=1, sticky=tk.NW)
 
         self.ist_at_button.grid(row=0, column=0, sticky=tk.NW)
         self.ist_pcg_button.grid(row=0, column=1, sticky=tk.NW)

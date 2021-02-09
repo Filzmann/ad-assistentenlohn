@@ -123,9 +123,11 @@ class SchichtController:
                           ist_pcg=int(data['ist_rb'])
                           )
         self.session.add(schicht)
+
         # TODO abweichende adressen
         # if int(data['abweichende_adresse_beginn']) > 0:
         # es wurde eine abweichende Adresse aus der Liste gewählt
+        self.session.commit()
 
         # fenster zu
         self.view.destroy()
@@ -164,7 +166,11 @@ class SchichtController:
         if int(self.view.asn_dropdown.get()) < 0:
             self.view.show(self.view.asn_stammdaten_form)
         else:
+            asn_id = int(self.view.asn_dropdown.get())
+            asn = self.get_asn_by_id(asn_id)
             self.view.hide(self.view.asn_stammdaten_form)
+            if asn.schicht_templates:
+                self.view.draw_templates(asn.schicht_templates)
 
     def change_abweichende_adresse_beginn(self, event=None):
         if int(self.view.abweichende_adresse_beginn_dropdown.get()) < -1:
