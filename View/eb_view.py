@@ -12,6 +12,7 @@ class EbView(tk.Frame):
         self.eb_dropdown = Combobox(self, values=ebliste, width=38, state="readonly")
         self.eb_dropdown.set("0")
 
+
         self.vorname_input = tk.Entry(self, bd=5, width=40)
         self.nachname_input = tk.Entry(self, bd=5, width=40)
         self.email_input = tk.Entry(self, bd=5, width=40)

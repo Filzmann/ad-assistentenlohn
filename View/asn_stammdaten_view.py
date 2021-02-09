@@ -5,7 +5,7 @@ class AsnStammdatenView(tk.Frame):
 
     def __init__(self, parent_view):
         super().__init__(parent_view)
-        self.kuerzel_label = tk.Label(self, text="Kürzel")
+        self.kuerzel_label = tk.Label(self, text="Kürzel* ")
         self.kuerzel_input = tk.Entry(self, bd=5, width=40)
         self.vorname_label = tk.Label(self, text="Vorname")
         self.vorname_input = tk.Entry(self, bd=5, width=40)
@@ -73,7 +73,6 @@ class AsnStammdatenView(tk.Frame):
         self.plz_input.insert(0, kwargs['plz'])
         self.stadt_input.insert(0, kwargs['stadt'])
         self.selected_buero.set(kwargs['buero'])
-
 
     def get_data(self):
         return{'kuerzel': self.kuerzel_input.get(),

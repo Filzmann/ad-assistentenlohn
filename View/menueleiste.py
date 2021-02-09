@@ -31,7 +31,8 @@ class Menuleiste(tk.Menu):
         eintragen_menu.add_command(label="Schicht eintragen",
                                    command=lambda: SchichtController(
                                        parent_controller=parent_controller,
-                                       session=session))
+                                       session=session,
+                                       assistent=assistent))
         eintragen_menu.add_command(label="Urlaub eintragen",
                                    command=lambda: UrlaubController(parent_controller,
                                                                     session=session,
