@@ -1,4 +1,5 @@
 import tkinter as tk
+from datetime import time, datetime, timedelta
 
 from tkcalendar import Calendar
 
@@ -34,8 +35,10 @@ class SchichtView(tk.Toplevel):
         # month=month,
         # year=year)
         self.startzeit_input = TimePicker(self.datetime_frame)
-
         self.endzeit_input = TimePicker(self.datetime_frame)
+        self.startzeit_input.bind('<FocusOut>', self.nachtschicht_durch_uhrzeit)
+        self.endzeit_input.bind('<FocusOut>', self.nachtschicht_durch_uhrzeit)
+
         self.enddatum_input = Calendar(self.datetime_frame, date_pattern='MM/dd/yyyy')
         # , day=day, month=month, year=year)
 
@@ -88,22 +91,48 @@ class SchichtView(tk.Toplevel):
     def draw_templates(self, template_list):
         for child in self.template_frame.winfo_children():
             child.destroy()
-        for template in template_list:
-            text = template.bezeichner
-            text += " von " + template.beginn.strftime('%H:%M') \
-                    + " bis " + template.ende.strftime('%H:%M')
-            button = tk.Radiobutton(self.template_frame, text=text,
-                                    variable=self.selected_template,
-                                    value=template.id,
-                                    command=lambda: self.change_template(start=template.beginn,
-                                                                         ende=template.ende))
-            button.pack()
 
-    def change_template(self, start, ende):
-        self.startzeit_input.hourstr.set(start.strftime('%H'))
-        self.startzeit_input.minstr.set(start.strftime('%M'))
-        self.endzeit_input.hourstr.set(ende.strftime('%H'))
-        self.endzeit_input.minstr.set(ende.strftime('%M'))
+        if not template_list:
+            self.add_template_text()
+        else:
+            for template in template_list:
+                text = template.bezeichner
+                text += " von " + template.beginn.strftime('%H:%M') \
+                        + " bis " + template.ende.strftime('%H:%M')
+                button = tk.Radiobutton(self.template_frame, text=text,
+                                        variable=self.selected_template,
+                                        value=template.id,
+                                        command=lambda: self.change_template(template_list))
+                button.pack()
+
+
+
+    def nachtschicht_durch_uhrzeit(self, event=None):
+        start = time(hour=int(self.startzeit_input.hourstr.get()),
+                     minute=int(self.startzeit_input.minstr.get()))
+        ende = time(hour=int(self.endzeit_input.hourstr.get()),
+                    minute=int(self.endzeit_input.minstr.get()))
+
+        beginn = self.startdatum_input.selection_get()
+
+        if ende < start:
+            enddatum = beginn + timedelta(days=1)
+        else:
+            enddatum = beginn
+
+        self.enddatum_input.selection_set(enddatum)
+
+
+    def change_template(self, template_list):
+        template_id = self.selected_template.get()
+        for template in template_list:
+            if template_id == template.id:
+                self.startzeit_input.hourstr.set(template.beginn.strftime('%H'))
+                self.startzeit_input.minstr.set(template.beginn.strftime('%M'))
+                self.endzeit_input.hourstr.set(template.ende.strftime('%H'))
+                self.endzeit_input.minstr.set(template.ende.strftime('%M'))
+                self.nachtschicht_durch_uhrzeit()
+                break
 
     def draw(self):
 
@@ -122,17 +151,15 @@ class SchichtView(tk.Toplevel):
         self.asn_stammdaten_form.grid(row=1, column=0, columnspan=2, sticky=tk.NW)
 
         # datetime-frame
-        startdatum_label = tk.Label(self.datetime_frame, text='Start')
+        startdatum_label = tk.Label(self.datetime_frame, text='Beginn')
         startdatum_label.grid(row=0, column=0, sticky=tk.NW)
         self.startdatum_input.grid(row=1, column=0, sticky=tk.NW, columnspan=2)
         self.startzeit_input.grid(row=0, column=1, sticky=tk.NW)
 
-        enddatum_label = tk.Label(self.datetime_frame, text='End')
+        enddatum_label = tk.Label(self.datetime_frame, text='Ende')
         enddatum_label.grid(row=0, column=2, sticky=tk.NW)
         self.enddatum_input.grid(row=1, column=2, sticky=tk.NW, columnspan=2)
         self.endzeit_input.grid(row=0, column=3, sticky=tk.NW)
-
-
 
         # add-options-frame
         abweichende_adresse_beginn_label = tk.Label(self.add_options_frame, text="Schicht nicht zu Hause begonnen?")
@@ -154,6 +181,7 @@ class SchichtView(tk.Toplevel):
         self.exit_button.grid(row=0, column=1)
         self.saveandnew_button.grid(row=0, column=2)
 
+
     @staticmethod
     def hide(frame: tk.Frame):
         frame.grid_remove()
@@ -164,9 +192,13 @@ class SchichtView(tk.Toplevel):
 
     def add_template_text(self):
         # template-frame
-        template_text = tk.Label(self.template_frame,
-                                 text='Wenn der Assistent "Schicht-Vorlagen" hat,\n '
-                                      'stehen diese hier zur Auswahl.')
+        template_text = tk.Label(self.template_frame, justify="left",
+                                 text='Wenn der Assistent "Schicht-Vorlagen" hat,\n'
+                                      'stehen diese hier zur Auswahl.\n\n'
+                                      'Das ist absolut anzuraten, da es das Eintragen\n'
+                                      'von Schichten deutlich beschleunigt. \n\n'
+                                      'Die Möglichkeit dazu findest Du im Hauptfenster unter: \n'
+                                      'Bearbeiten -> ASN bearbeiten')
         template_text.pack()
 
     def set_data(self, **kwargs):

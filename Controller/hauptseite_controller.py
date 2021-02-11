@@ -11,26 +11,33 @@ class HauptseiteController:
         self.view = HauptseiteView(parent_view=parent_view, as_name=as_name)
         self.assistent = assistent
 
+        self.tabelle = TabelleController(
+            parent_controller=self,
+            session=session,
+            parent_view=self.view,
+            assistent=assistent
+        )
+        self.view.tabelle = self.tabelle.view
+        self.view.tabelle.grid()
+
+        self.summen = SummenController(
+            parent_controller=self,
+            session=session,
+            parent_view=self.view
+        )
+        self.view.summen = self.summen.view
+        self.view.summen.grid()
+
         self.view.navigation = NavigationController(
             parent_controller=self,
             session=session,
-            parent_view=self.view
+            parent_view=self.view,
+            controlled_areas={'tabelle': self.tabelle, 'summen': self.summen}
         ).view
         self.view.navigation.grid()
 
-        self.view.tabelle = TabelleController(
-            parent_controller=self,
-            session=session,
-            parent_view=self.view
-        ).view
-        self.view.tabelle.grid()
 
-        self.view.summen = SummenController(
-            parent_controller=self,
-            session=session,
-            parent_view=self.view
-        ).view
-        self.view.summen.grid()
+
 
         self.view.infotext = InfotextController(
             parent_controller=self,

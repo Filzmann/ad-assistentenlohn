@@ -27,7 +27,7 @@ class ASN(Base):
     schicht_templates = relationship("SchichtTemplate",
                                      back_populates="asn",
                                      cascade="all, delete, delete-orphan")
-    schichten = relationship("Schicht")
+    schichten = relationship("Schicht", back_populates="asn")
     feste_schichten = relationship("FesteSchicht",
                                    back_populates="asn",
                                    cascade="all, delete, delete-orphan")

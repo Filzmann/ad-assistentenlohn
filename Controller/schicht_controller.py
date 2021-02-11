@@ -99,7 +99,7 @@ class SchichtController:
             # diese kommt in den Datensatz und wird in die Schicht übernommen
             data['asn_id'] = asn.id
 
-        schicht_asn = self.get_asn_by_id(int(data['asn_id']))
+        schicht_asn = self.asn if self.asn else self.get_asn_by_id(int(data['asn_id']))
         startdatum_array = data['startdatum'].split('/')
         beginn = datetime(year=int(startdatum_array[2]),
                           month=int(startdatum_array[0]),
@@ -115,14 +115,15 @@ class SchichtController:
         # Todo Update
         schicht = Schicht(beginn=beginn,
                           ende=ende,
-                          asn=schicht_asn,
-                          assistent=assistent,
-                          ist_kurzfristig=int(data['ist_rb']),
-                          ist_ausfallgeld=int(data['ist_afg']),
-                          ist_assistententreffen=int(data['ist_at']),
-                          ist_pcg=int(data['ist_rb'])
+                          ist_kurzfristig=data['ist rb'],
+                          ist_ausfallgeld=data['ist afg'],
+                          ist_assistententreffen=data['ist at'],
+                          ist_pcg=data['ist pcg']
                           )
         self.session.add(schicht)
+        self.session.commit()
+        schicht.asn = schicht_asn
+        schicht.assistent = assistent
 
         # TODO abweichende adressen
         # if int(data['abweichende_adresse_beginn']) > 0:
@@ -170,8 +171,7 @@ class SchichtController:
             asn_id = int(self.view.asn_dropdown.get())
             asn = self.get_asn_by_id(asn_id)
             self.view.hide(self.view.asn_stammdaten_form)
-            if asn.schicht_templates:
-                self.view.draw_templates(asn.schicht_templates)
+            self.view.draw_templates(asn.schicht_templates)
 
     def change_abweichende_adresse_beginn(self, event=None):
         if int(self.view.abweichende_adresse_beginn_dropdown.get()) < -1:

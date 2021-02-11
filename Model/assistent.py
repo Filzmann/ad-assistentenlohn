@@ -23,7 +23,7 @@ class Assistent(Base):
     feste_schichten = relationship("FesteSchicht",
                                    back_populates="assistent",
                                    cascade="all, delete, delete-orphan")
-    schichten = relationship("Schicht")
+    schichten = relationship("Schicht", back_populates="assistent")
     urlaub = relationship("Urlaub")
 
     def __repr__(self):

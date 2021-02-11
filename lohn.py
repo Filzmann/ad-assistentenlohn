@@ -3,7 +3,10 @@ from helpers import Helpers
 
 
 class LohnDatensatz:
-    def __init__(self, erfahrungsstufe, grundlohn, zuschlaege, gueltig_ab=datetime.datetime(1970, 1, 1)):
+    def __init__(self, erfahrungsstufe,
+                 grundlohn,
+                 zuschlaege,
+                 gueltig_ab=datetime.datetime(1970, 1, 1)):
         self.erfahrungsstufe = erfahrungsstufe
         self.eingruppierung = 5
         self.grundlohn = grundlohn

@@ -23,7 +23,7 @@ class HauptseiteView(tk.Frame):
         if self.navigation:
             self.navigation.grid(row=0, column=0)
         if self.tabelle:
-            self.tabelle.grid(row=1, column=0, rowspan=2)
+            self.tabelle.grid(row=1, column=0, rowspan=2, sticky=tk.NW)
         if self.summen:
             self.summen.grid(row=1, column=1)
         if self.infotext:
