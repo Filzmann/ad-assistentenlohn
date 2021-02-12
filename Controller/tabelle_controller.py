@@ -7,121 +7,10 @@ from Model.assistent import Assistent
 from Model.lohn import Lohn
 from Model.schicht import Schicht
 from View.tabelle_view import TabelleView
+from Helpers.help_functions import *
 
 
-def check_mehrtaegig(schicht):
-    pseudoende = schicht.ende - timedelta(minutes=2)
-    if schicht.beginn.strftime("%Y%m%d") == pseudoende.strftime("%Y%m%d"):
-        return 0
-    else:
-        return 1
 
-
-def get_duration(then, now=datetime.now(), interval="default"):
-    # Returns a duration as specified by variable interval
-    # Functions, except totalDuration, returns [quotient, remainder]
-
-    duration = now - then  # For build-in functions
-    duration_in_s = duration.total_seconds()
-
-    def years():
-        return divmod(duration_in_s, 31536000)  # Seconds in a year=31536000.
-
-    def days(secs=None):
-        return divmod(secs if secs is not None else duration_in_s, 86400)  # Seconds in a day = 86400
-
-    def hours(secs=None):
-        return divmod(secs if secs is not None else duration_in_s, 3600)  # Seconds in an hour = 3600
-
-    def minutes(secs=None):
-        return divmod(secs if secs is not None else duration_in_s, 60)  # Seconds in a minute = 60
-
-    def seconds(secs=None):
-        if secs is not None:
-            return divmod(secs, 1)
-        return duration_in_s
-
-    def total_duration():
-        y = years()
-        d = days(y[1])  # Use remainder to calculate next variable
-        h = hours(d[1])
-        m = minutes(h[1])
-        s = seconds(m[1])
-
-        return "Time between dates: {} years, {} days, {} hours, {} minutes and {} seconds".format(int(y[0]),
-                                                                                                   int(d[0]),
-                                                                                                   int(h[0]),
-                                                                                                   int(m[0]),
-                                                                                                   int(s[0]))
-
-    return {
-        'years': int(years()[0]),
-        'days': int(days()[0]),
-        'hours': int(hours()[0]),
-        'minutes': int(minutes()[0]),
-        'seconds': int(seconds()),
-        'default': total_duration()
-    }[interval]
-
-
-def split_by_null_uhr(schicht):
-    ausgabe = []
-    if check_mehrtaegig(schicht):
-        rest = dict(start=schicht.beginn, ende=schicht.ende)
-        while rest['start'] <= rest['ende']:
-            r_start = rest['start']
-            neuer_start_rest_y = int(r_start.strftime('%Y'))
-            neuer_start_rest_m = int(r_start.strftime('%m'))
-            neuer_start_rest_d = int(r_start.strftime('%d'))
-            neuer_start_rest = datetime(neuer_start_rest_y,
-                                        neuer_start_rest_m,
-                                        neuer_start_rest_d
-                                        ) + timedelta(days=1)
-
-            if neuer_start_rest <= rest['ende']:
-                ausgabe.append(Schicht(beginn=rest['start'],
-                                       ende=neuer_start_rest,
-                                       asn=schicht.asn,
-                                       assistent=schicht.assistent,
-                                       original_id=schicht.id))
-            else:
-                ausgabe.append(Schicht(beginn=rest['start'],
-                                       ende=rest['ende'],
-                                       asn=schicht.asn,
-                                       assistent=schicht.assistent,
-                                       original_id=schicht.id))
-
-            rest['start'] = neuer_start_rest
-    else:
-        ausgabe.append(schicht)
-
-    return ausgabe
-
-
-def get_erfahrungsstufe(assistent, datum=datetime.now()):
-    delta = get_duration(assistent.einstellungsdatum, datum, 'years')
-    # einstieg mit 1
-    # nach 1 Jahr insgesamt 2
-    # nach 3 jahren insgesamt 3
-    # nach 6 jahren insg. 4
-    # nach 10 Jahren insg. 5
-    # nach 15 Jahren insg. 6
-    if delta == 0:
-        return 1
-    elif 1 <= delta < 3:
-        return 2
-    elif 3 <= delta < 6:
-        return 3
-    elif 6 <= delta < 10:
-        return 4
-    elif 10 <= delta < 15:
-        return 5
-    else:
-        return 6
-
-
-def berechne_stunden(schicht):
-    return get_duration(schicht.beginn, schicht.ende, "minutes") / 60
 
 
 class TabelleController:
@@ -133,7 +22,7 @@ class TabelleController:
         self.start = datetime(year=datetime.now().year,
                               month=datetime.now().month,
                               day=1)
-        self.end = self.verschiebe_monate(offset=1, datum=self.start)
+        self.end = verschiebe_monate(offset=1, datum=self.start)
         letzter_tag = (self.end - timedelta(seconds=1)).day
 
         data = self.calculate()
@@ -146,7 +35,7 @@ class TabelleController:
         self.start = datetime(year=datum.year,
                               month=datum.month,
                               day=1)
-        self.end = self.verschiebe_monate(offset=1, datum=self.start)
+        self.end = verschiebe_monate(offset=1, datum=self.start)
         data = self.calculate()
 
         letzter_tag = (self.end - timedelta(seconds=1)).day
@@ -210,22 +99,6 @@ class TabelleController:
         return sliced_schichten
 
         # TODO Urlaub und AU auch hier splitten
-
-    @staticmethod
-    def verschiebe_monate(offset, datum=datetime.now()):
-        arbeitsmonat = datum.month + offset
-        tmp = divmod(arbeitsmonat, 12)
-        offset_arbeitsjahr = tmp[0]
-        arbeitsmonat = tmp[1]
-        if arbeitsmonat == 0:
-            arbeitsmonat = 12
-            offset_arbeitsjahr -= 1
-        if offset_arbeitsjahr < 0:
-            # modulo einer negativen Zahl ist ein Arschloch..hoffentlich stimmts
-            arbeitsmonat = 12 - arbeitsmonat
-        arbeitsjahr = datum.year + offset_arbeitsjahr
-        arbeitsdatum = datetime(arbeitsjahr, arbeitsmonat, 1, 0, 0, 0)
-        return arbeitsdatum
 
     def get_lohn(self, assistent, datum):
         erfahrungsstufe = get_erfahrungsstufe(assistent=assistent, datum=datum)
