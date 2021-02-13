@@ -16,11 +16,13 @@ class SchichtController:
                  assistent: Assistent = None,
                  asn: ASN = None,
                  edit_schicht: Schicht = None,
-                 datum: datetime = None):
+                 datum: datetime = None,
+                 nav_panel=None):
         self.parent = parent_controller
         self.assistent = assistent
         self.asn = asn
         self.session = session
+        self.nav_panel = nav_panel
 
         asn_liste = self.get_asnliste()
         adressliste = self.get_adressliste()
@@ -132,6 +134,12 @@ class SchichtController:
 
         # fenster zu
         self.view.destroy()
+
+        if self.nav_panel:
+            self.nav_panel.monat_change(datum=datetime(year=schicht.beginn.year,
+                                                       month=schicht.beginn.month,
+                                                       day=1))
+
         if undneu:
             SchichtController(parent_controller=self.parent,
                               session=self.session,

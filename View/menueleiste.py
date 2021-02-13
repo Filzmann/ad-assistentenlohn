@@ -7,16 +7,11 @@ from Controller.assistent_controller import AssistentController
 from Controller.schicht_controller import SchichtController
 from Controller.urlaub_controller import UrlaubController
 from fenster_kilometergeld import FensterKilometergeld
-from fenster_neuer_as import FensterNeuerAS
-from fenster_neue_schicht import FensterNeueSchicht
-from neuer_urlaub import NeuerUrlaub
-from fenster_neue_au import NeueAU
-from fenster_edit_asn import FensterEditAsn
 from fenster_verpflegungsmehraufwand import FensterVerpflegungsMehraufwand
 
 
 class Menuleiste(tk.Menu):
-    def __init__(self, parent_view, assistent, parent_controller, session):
+    def __init__(self, parent_view, assistent, parent_controller, session, nav_panel=None):
         tk.Menu.__init__(self, parent_view)
         # Menü Datei und Help erstellen
         datei_menu = tk.Menu(self, tearoff=0)
@@ -32,7 +27,8 @@ class Menuleiste(tk.Menu):
                                    command=lambda: SchichtController(
                                        parent_controller=parent_controller,
                                        session=session,
-                                       assistent=assistent))
+                                       assistent=assistent,
+                                       nav_panel=nav_panel))
         eintragen_menu.add_command(label="Urlaub eintragen",
                                    command=lambda: UrlaubController(parent_controller,
                                                                     session=session,

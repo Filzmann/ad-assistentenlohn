@@ -1,17 +1,12 @@
-from datetime import datetime, timedelta
-
 from sqlalchemy import or_, desc
-from sqlalchemy.future import select
 
-from Model.assistent import Assistent
-from Model.lohn import Lohn
-from Model.schicht import Schicht
-from View.tabelle_view import TabelleView
 from Helpers.help_functions import *
+from Model.lohn import Lohn
+from View.tabelle_view import TabelleView
 
 
 class TabelleController:
-    def __init__(self, parent_controller, session, parent_view, assistent):
+    def __init__(self, session, parent_view, assistent):
         self.assistent = assistent
         self.session = session
         self.parent_view = parent_view
@@ -27,6 +22,7 @@ class TabelleController:
                                 data=data,
                                 anzahl_tage=letzter_tag,
                                 start=self.start)
+        data = None
 
     def change_arbeitsdatum(self, datum):
         self.start = datetime(year=datum.year,
@@ -69,7 +65,8 @@ class TabelleController:
                 spaltenname = grund.lower().replace('.', '').replace(' ', '_') + '_zuschlag'
                 stundenzuschlag = getattr(lohn, spaltenname)
                 schichtzuschlag = zuschlaege['stunden_gesamt'] * stundenzuschlag
-                zuschlaege_text = grund + ': ' \
+                zuschlaege_text = grund \
+                                  + ': ' \
                                   + "{:,.2f}".format(zuschlaege['stunden_gesamt']) \
                                   + ' Std = ' \
                                   + "{:,.2f}€".format(schichtzuschlag)
@@ -93,7 +90,12 @@ class TabelleController:
                     'nachtstunden': nachtstunden,
                     'nachtzuschlag': "{:,.2f}€".format(lohn.nacht_zuschlag),
                     'nachtzuschlag_schicht': "{:,.2f}€".format(lohn.nacht_zuschlag * nachtstunden),
-                    'zuschlaege': zuschlaege_text
+                    'zuschlaege': zuschlaege_text,
+                    'kill_command': lambda: self.kill_schicht(
+                        schicht_id=schicht.original_id if schicht.original_id else schicht.id),
+                    'edit_command': lambda: self.edit_schicht(
+                        schicht_id=schicht.original_id if schicht.original_id else schicht.id),
+
                 }
             )
         return schichten_view_data
@@ -121,3 +123,11 @@ class TabelleController:
         ).order_by(desc(Lohn.gueltig_ab)).limit(1):
             return lohn
         return False
+
+    def kill_schicht(self, schicht_id):
+        pass
+
+    def edit_schicht(self, schicht_id):
+        pass
+
+

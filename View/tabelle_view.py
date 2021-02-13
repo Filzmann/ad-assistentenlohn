@@ -19,6 +19,14 @@ class TabelleView(tk.Frame):
         self.zelle(parent=parent, inhalt=tag, row=zeilennummer, col=10, width=4, justify='left')
         # Tag als Nummer
         tag = heute.strftime('%d')
+        self.make_button(button_type="kill",
+                         command=data['kill_command'],
+                         row=zeilennummer,
+                         col=1)
+        self.make_button(button_type="edit",
+                         command=data['edit_command'],
+                         row=zeilennummer,
+                         col=2)
         self.zelle(parent=parent, inhalt=tag, row=zeilennummer, col=11, width=3)
         self.zelle(parent=parent, inhalt=data['von'], row=zeilennummer, col=12, width=5)
         self.zelle(parent=parent, inhalt=data['bis'], row=zeilennummer, col=13, width=5)
@@ -77,11 +85,40 @@ class TabelleView(tk.Frame):
         if data:
             for tag in range(1, anzahl_tage + 1):
                 heute = datetime(day=tag, month=start.month, year=start.year)
-                if str(tag) in data.keys():
-                    for eintrag in data[str(tag)]:
+                # tag als string muss mit führender 0 starten. dafür zfill
+                if str(tag).zfill(2) in data.keys():
+                    for eintrag in data[str(tag).zfill(2)]:
                         self.zeile(data=eintrag, parent=self, zeilennummer=zeilennummer, heute=heute)
                         zeilennummer += 1
                 else:
                     self.leerzeile(parent=self, zeilennummer=zeilennummer, heute=heute)
                     zeilennummer += 1
 
+    def make_button(self, button_type, command,
+                    row=0,
+                    col=0,
+                    datum: datetime = None):
+        button = image = 0
+
+        if button_type == 'kill':
+            image = "images/del.png"
+            label = "Löschen"
+            button = tk.Button(self, text=label, command=command)
+        elif button_type == 'edit':
+            label = "Bearbeiten"
+            button = tk.Button(self,
+                               text=label,
+                               command=command)
+            image = "images/edit.png"
+        elif button_type == 'new':
+            label = "Neue Schicht"
+
+            button = tk.Button(self,
+                               text=label,
+                               command=command)
+            image = "images/add.png"
+
+        button.image = tk.PhotoImage(file=image, width=16, height=16)
+        button.config(image=button.image, width=16, height=16)
+        button.grid(row=row, column=col)
+        return button

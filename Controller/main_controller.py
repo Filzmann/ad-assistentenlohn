@@ -310,7 +310,7 @@ class MainController:
         self.model = MainModel()
         self.view = MainView()
         self.assistent = self.model.assistent
-
+        self.inhalt = None
         with Session() as session:
             self.draw(session)
         self.view.mainloop()
@@ -327,24 +327,29 @@ class MainController:
 
         if self.model.assistent:
             # wir haben einen Assistenten geladen
+
+            # die Hauptseite des Assistenten wird in die view eingehangen
+            self.inhalt = HauptseiteController(
+                session=session,
+                assistent=self.model.assistent,
+                parent_view=self.view,
+                parent_controller=self
+            )
+            self.view.inhalt = self.inhalt.view
+            self.view.inhalt.grid()
             menuleiste = Menuleiste(parent_view=self.view,
                                     assistent=self.model.assistent,
                                     parent_controller=self,
-                                    session=session)
+                                    session=session,
+                                    nav_panel=self.inhalt.navigation)
             self.view.config(menu=menuleiste)
-            # die Hauptseite des Assistenten wird in die view eingehangen
-            self.view.inhalt = HauptseiteController(
-                session=session,
-                assistent=self.model.assistent,
-                parent_view=self.view
-            ).view
-            self.view.inhalt.grid()
         else:
             # ich speichere eine Referenz auf die View des Begrüßungs-Controllers in der Seiten-View, damit ich das
             # Layout von da aus steuern kann
-            self.view.inhalt = BegruessungController(
+            self.inhalt = BegruessungController(
                 parent_controller=self,
                 session=session,
                 parent_view=self.view
-            ).view
+            )
+            self.view.inhalt = self.inhalt.view
             self.view.inhalt.grid()
