@@ -306,3 +306,43 @@ def berechne_sa_so_weisil_feiertagszuschlaege(schicht: Schicht):
                           }
 
     return feiertagsarray
+
+
+def get_nachtstunden(schicht):
+    """Gibt die Anzahl der Stunden einer Schicht zurück, die vor 6 Uhr und nach 21 Uhr stattfinden"""
+
+    nachtstunden = 0
+
+    beginn_jahr = int(schicht.beginn.strftime('%Y'))
+    beginn_monat = int(schicht.beginn.strftime('%m'))
+    beginn_tag = int(schicht.beginn.strftime('%d'))
+
+    null_uhr = datetime(beginn_jahr, beginn_monat, beginn_tag, 0, 0, 0)
+    sechs_uhr = datetime(beginn_jahr, beginn_monat, beginn_tag, 6, 0, 0)
+    einundzwanzig_uhr = datetime(beginn_jahr, beginn_monat, beginn_tag, 21, 0, 0)
+
+    # schicht beginnt zwischen 0 und 6 uhr
+    if null_uhr <= schicht.beginn <= sechs_uhr:
+        if schicht.ende <= sechs_uhr:
+            # schicht endet spätestens 6 uhr
+            nachtstunden += get_duration(schicht.beginn, schicht.ende, 'minutes') / 60
+
+        elif sechs_uhr <= schicht.ende <= einundzwanzig_uhr:
+            # schicht endet nach 6 uhr aber vor 21 uhr
+            nachtstunden += get_duration(schicht.beginn, sechs_uhr, 'minutes') / 60
+
+        else:
+            # schicht beginnt vor 6 uhr und geht über 21 Uhr hinaus
+            # das bedeutet ich ziehe von der kompletten schicht einfach die 15 Stunden Tagschicht ab.
+            # es bleibt der Nacht-An
+            nachtstunden += get_duration(schicht.beginn, schicht.ende, 'minutes') / 60 - 15
+    # schicht beginnt zwischen 6 und 21 uhr
+    elif sechs_uhr <= schicht.beginn <= einundzwanzig_uhr:
+        # fängt am tag an, geht aber bis in die nachtstunden
+        if schicht.ende > einundzwanzig_uhr:
+            nachtstunden += get_duration(einundzwanzig_uhr, schicht.ende, 'minutes') / 60
+    else:
+        # schicht beginnt nach 21 uhr - die komplette schicht ist in der nacht
+        nachtstunden += get_duration(schicht.beginn, schicht.ende, 'minutes') / 60
+
+    return nachtstunden

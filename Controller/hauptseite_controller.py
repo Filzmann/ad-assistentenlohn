@@ -23,7 +23,8 @@ class HauptseiteController:
         self.summen = SummenController(
             parent_controller=self,
             session=session,
-            parent_view=self.view
+            parent_view=self.view,
+            assistent=assistent
         )
         self.view.summen = self.summen.view
         self.view.summen.grid()

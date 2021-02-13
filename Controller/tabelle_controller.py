@@ -10,9 +10,6 @@ from View.tabelle_view import TabelleView
 from Helpers.help_functions import *
 
 
-
-
-
 class TabelleController:
     def __init__(self, parent_controller, session, parent_view, assistent):
         self.assistent = assistent
@@ -62,7 +59,22 @@ class TabelleController:
 
             lohn = self.get_lohn(assistent=self.assistent, datum=schicht.beginn)
 
-            nachtstunden = self.get_nachtstunden(schicht)
+            nachtstunden = get_nachtstunden(schicht)
+
+            # zuschläge
+            zuschlaege = berechne_sa_so_weisil_feiertagszuschlaege(schicht)
+            if zuschlaege:
+                grund = zuschlaege['zuschlagsgrund']
+                # Grund zu lower-case mit "_" statt " " und ohn punkte, damit es dem Spaltennamen der Tabelle entspricht
+                spaltenname = grund.lower().replace('.', '').replace(' ', '_') + '_zuschlag'
+                stundenzuschlag = getattr(lohn, spaltenname)
+                schichtzuschlag = zuschlaege['stunden_gesamt'] * stundenzuschlag
+                zuschlaege_text = grund + ': ' \
+                                  + "{:,.2f}".format(zuschlaege['stunden_gesamt']) \
+                                  + ' Std = ' \
+                                  + "{:,.2f}€".format(schichtzuschlag)
+            else:
+                zuschlaege_text = ''
 
             schichten_view_data[schicht.beginn.strftime('%d')].append(
                 {
@@ -81,7 +93,7 @@ class TabelleController:
                     'nachtstunden': nachtstunden,
                     'nachtzuschlag': "{:,.2f}€".format(lohn.nacht_zuschlag),
                     'nachtzuschlag_schicht': "{:,.2f}€".format(lohn.nacht_zuschlag * nachtstunden),
-                    'zuschlaege': 'nüscht'
+                    'zuschlaege': zuschlaege_text
                 }
             )
         return schichten_view_data
@@ -109,6 +121,3 @@ class TabelleController:
         ).order_by(desc(Lohn.gueltig_ab)).limit(1):
             return lohn
         return False
-
-    def get_nachtstunden(self, schicht):
-        return 0

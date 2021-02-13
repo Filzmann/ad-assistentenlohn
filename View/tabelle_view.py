@@ -29,10 +29,10 @@ class TabelleView(tk.Frame):
         self.zelle(parent=parent, inhalt=data['nachtstunden'], row=zeilennummer, col=18, width=8)
         self.zelle(parent=parent, inhalt=data['nachtzuschlag_schicht'], row=zeilennummer, col=19, width=8)
         # 20 so, sa Feiertag, hl Abend, silv
-        self.zelle(parent=parent, inhalt=data['zuschlaege'], row=zeilennummer, col=22, width=3)
+        self.zelle(parent=parent, inhalt=data['zuschlaege'], row=zeilennummer, col=20, width=23)
 
-        self.zelle(parent=parent, inhalt=data['orgazulage_schicht'], row=zeilennummer, col=22, width=3)
-        self.zelle(parent=parent, inhalt=data['wechselzulage_schicht'], row=zeilennummer, col=23, width=3)
+        self.zelle(parent=parent, inhalt=data['orgazulage_schicht'], row=zeilennummer, col=21, width=8)
+        self.zelle(parent=parent, inhalt=data['wechselzulage_schicht'], row=zeilennummer, col=22, width=8)
 
         # 'zuschlaege': []
 
@@ -65,10 +65,9 @@ class TabelleView(tk.Frame):
         tk.Label(self, text='kurzfr.', borderwidth=1, relief="solid", width=8).grid(row=0, column=17)
         tk.Label(self, text='NachtStd', borderwidth=1, relief="solid", width=8).grid(row=0, column=18)
         tk.Label(self, text='Nachtzu.', borderwidth=1, relief="solid", width=8).grid(row=0, column=19)
-        tk.Label(self, text='Zuschlaege', borderwidth=1, relief="solid", width=18).grid(row=0, column=20,
-                                                                                        columnspan=2)
-        tk.Label(self, text='Wechsel', borderwidth=1, relief="solid", width=8).grid(row=0, column=22)
-        tk.Label(self, text='Orga', borderwidth=1, relief="solid", width=8).grid(row=0, column=23)
+        tk.Label(self, text='Zuschlaege', borderwidth=1, relief="solid", width=23).grid(row=0, column=20)
+        tk.Label(self, text='Wechsel', borderwidth=1, relief="solid", width=8).grid(row=0, column=21)
+        tk.Label(self, text='Orga', borderwidth=1, relief="solid", width=8).grid(row=0, column=22)
 
     def draw(self, data, anzahl_tage, start):
         for child in self.winfo_children():
