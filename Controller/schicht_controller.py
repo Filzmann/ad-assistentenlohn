@@ -19,6 +19,7 @@ class SchichtController:
                  datum: datetime = None,
                  nav_panel=None):
         self.parent = parent_controller
+
         self.assistent = assistent
         self.asn = asn
         self.session = session
@@ -62,6 +63,7 @@ class SchichtController:
                 ist_afg=edit_schicht.ist_ausfallgeld,
                 ist_rb=edit_schicht.ist_kurzfristig
             )
+            pass
 
     def save_schicht(self, undneu=False):
         data = self.view.get_data()
@@ -153,7 +155,7 @@ class SchichtController:
         return None
 
     def get_asnliste(self):
-        asnliste = {'-1': 'Neuer ASN'}
+        asnliste = {-1: 'Neuer ASN'}
         # many to many....in der schleife wird die Assoziationstabelle durchgegangen
         # von asoc erhält man (zukünftig) extra-data wie "fester Mitarbeiter, Vertretung"
         # die sich nur auf die Beziehung zwischen AS und ASN beziehen. der asn selbst ist in
@@ -164,8 +166,8 @@ class SchichtController:
 
     def get_adressliste(self):
         # Todo implement
-        adressliste = {'-2': 'Keine abweichende Adresse',
-                       '-1': 'Neu'}
+        adressliste = {-2: 'Keine abweichende Adresse',
+                       -1: 'Neu'}
         # TODO ASN-Adressbuch
         # if self.asn:
         #    for adresse in self.asn.

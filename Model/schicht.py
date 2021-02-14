@@ -21,3 +21,6 @@ class Schicht(Base):
     ist_schulung = Column(Boolean)
     beginn_andere_adresse = Column(Integer, ForeignKey('adressen.id'))
     ende_andere_adresse = Column(Integer, ForeignKey('adressen.id'))
+
+    def __repr__(self):
+        return f"Schicht( Beginn: {self.beginn!r}, Ende: {self.ende!r}, ASN: {self.asn!r})"

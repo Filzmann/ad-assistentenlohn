@@ -25,7 +25,7 @@ class SchichtView(tk.Toplevel):
                                      values=asn_liste,
                                      width=38,
                                      state="readonly")
-        self.asn_dropdown.set("-1")
+        self.asn_dropdown.set(-1)
         self.selected_template = tk.IntVar()
 
         self.asn_stammdaten_form = AsnStammdatenView(parent_view=self.asn_frame)
@@ -49,13 +49,13 @@ class SchichtView(tk.Toplevel):
                                                             values=adressliste,
                                                             width=38,
                                                             state="readonly")
-        self.abweichende_adresse_beginn_dropdown.set("-2")
+        self.abweichende_adresse_beginn_dropdown.set(-2)
 
         self.abweichende_adresse_ende_dropdown = Combobox(self.add_options_frame,
                                                           values=adressliste,
                                                           width=38,
                                                           state="readonly")
-        self.abweichende_adresse_ende_dropdown.set("-2")
+        self.abweichende_adresse_ende_dropdown.set(-2)
 
         self.ist_at = tk.IntVar()
         self.ist_pcg = tk.IntVar()
@@ -105,8 +105,6 @@ class SchichtView(tk.Toplevel):
                                         command=lambda: self.change_template(template_list))
                 button.pack()
 
-
-
     def nachtschicht_durch_uhrzeit(self, event=None):
         start = time(hour=int(self.startzeit_input.hourstr.get()),
                      minute=int(self.startzeit_input.minstr.get()))
@@ -121,7 +119,6 @@ class SchichtView(tk.Toplevel):
             enddatum = beginn
 
         self.enddatum_input.selection_set(enddatum)
-
 
     def change_template(self, template_list):
         template_id = self.selected_template.get()
@@ -181,7 +178,6 @@ class SchichtView(tk.Toplevel):
         self.exit_button.grid(row=0, column=1)
         self.saveandnew_button.grid(row=0, column=2)
 
-
     @staticmethod
     def hide(frame: tk.Frame):
         frame.grid_remove()
@@ -208,25 +204,25 @@ class SchichtView(tk.Toplevel):
         :param kwargs:
         :return:
         """
-        if kwargs['asn']:
+        if 'asn' in kwargs.keys():
             self.asn_dropdown.set(kwargs['asn'])
-        if kwargs['asn_stammdaten']:
+        if 'asn_stammdaten' in kwargs.keys():
             self.asn_stammdaten_form.set_data(**kwargs['asn_stammdaten'])
-        if kwargs['beginn']:
+        if 'beginn' in kwargs.keys():
             date_string = kwargs['beginn'].strftime('%m/%d/%Y')
             self.startdatum_input.parse_date(date_string)
             self.startzeit_input.hourstr.set(kwargs['beginn'].strftime('%H'))
             self.startzeit_input.minstr.set(kwargs['beginn'].strftime('%M'))
-        if kwargs['ende']:
+        if 'ende' in kwargs.keys():
             date_string = kwargs['ende'].strftime('%m/%d/%Y')
             self.enddatum_input.parse_date(date_string)
             self.endzeit_input.hourstr.set(kwargs['ende'].strftime('%H'))
             self.endzeit_input.minstr.set(kwargs['ende'].strftime('%M'))
 
-            self.ist_at.set(1 if kwargs['ist_at'] else 0)
-            self.ist_pcg.set(1 if kwargs['ist_pcg'] else 0)
-            self.ist_rb.set(1 if kwargs['ist_rb'] else 0)
-            self.ist_afg.set(1 if kwargs['ist_afg'] else 0)
+            self.ist_at.set(1 if 'ist_at' in kwargs.keys() and kwargs['ist_at'] else 0)
+            self.ist_pcg.set(1 if 'ist_pcg' in kwargs.keys() and kwargs['ist_pcg'] else 0)
+            self.ist_rb.set(1 if 'ist_rb' in kwargs.keys() and kwargs['ist_rb'] else 0)
+            self.ist_afg.set(1 if 'ist_afg' in kwargs.keys() and kwargs['ist_afg'] else 0)
 
         # 'abweichende_adresse_beginn': self.abweichende_adresse_beginn_dropdown.get(),
         # 'abweichende_adresse_beginn_data': self.abweichende_adresse_beginn.get_data(),

@@ -94,13 +94,3 @@ class SummenView(tk.Frame):
         bezeichner_bruttolohn.grid(row=zeile, column=0, sticky=tk.NW)
         gesamt_bruttolohn.grid(row=zeile, column=3, sticky=tk.NE)
         zeile += 1
-
-
-        
-
-        
-
-        
-
-
-        pass

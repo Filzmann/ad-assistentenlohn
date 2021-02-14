@@ -1,15 +1,18 @@
 from sqlalchemy import or_, desc
 
+from Controller.schicht_controller import SchichtController
 from Helpers.help_functions import *
 from Model.lohn import Lohn
 from View.tabelle_view import TabelleView
 
 
 class TabelleController:
-    def __init__(self, session, parent_view, assistent):
+    def __init__(self, session, parent_view, assistent, root_window_controller):
         self.assistent = assistent
         self.session = session
         self.parent_view = parent_view
+        self.nav_panel=None
+        self.root_window_controller = root_window_controller
         # initialisierung
         self.start = datetime(year=datetime.now().year,
                               month=datetime.now().month,
@@ -125,9 +128,19 @@ class TabelleController:
         return False
 
     def kill_schicht(self, schicht_id):
-        pass
+        for schicht in self.session.query(Schicht).filter(Schicht.id == schicht_id):
+            self.session.delete(schicht)
+            self.session.commit()
+            self.change_arbeitsdatum(schicht.beginn)
 
     def edit_schicht(self, schicht_id):
-        pass
+        for schicht in self.session.query(Schicht).filter(Schicht.id == schicht_id):
+            SchichtController(parent_controller=self.root_window_controller,
+                              session=self.session,
+                              assistent=schicht.assistent,
+                              asn=schicht.asn,
+                              edit_schicht=schicht,
+                              datum=schicht.beginn,
+                              nav_panel=self.nav_panel)
 
 

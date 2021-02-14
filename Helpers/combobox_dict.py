@@ -33,7 +33,8 @@ class Combobox(ttk.Combobox):
         :param key: key / id
         :return:
         """
-        value = self.dict[str(key)]
+
+        value = self.dict[key]
         ttk.Combobox.set(self, value=value)
 
     def get_key(self):

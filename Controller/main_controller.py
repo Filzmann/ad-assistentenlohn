@@ -333,7 +333,8 @@ class MainController:
                 session=session,
                 assistent=self.model.assistent,
                 parent_view=self.view,
-                parent_controller=self
+                parent_controller=self,
+                root_window_controller=self
             )
             self.view.inhalt = self.inhalt.view
             self.view.inhalt.grid()
