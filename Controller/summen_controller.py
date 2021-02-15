@@ -20,6 +20,11 @@ class SummenController:
         self.view = SummenView(parent_view=parent_view,
                                data=data)
 
+        # aufräumen falls noch "Teilschichten" in der Session rumliegen
+        for schicht in self.session.query(Schicht).filter(Schicht.original_id):
+            self.session.delete(schicht)
+            self.session.commit()
+
     def change_arbeitsdatum(self, datum):
         self.start = datetime(year=datum.year,
                               month=datum.month,

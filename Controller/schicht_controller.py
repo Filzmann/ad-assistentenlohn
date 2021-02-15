@@ -37,11 +37,6 @@ class SchichtController:
         self.view.abweichende_adresse_ende_dropdown.bind("<<ComboboxSelected>>",
                                                          self.change_abweichende_adresse_ende)
 
-        # show/hide initialisieren
-        self.change_asn()
-        self.change_abweichende_adresse_beginn()
-        self.change_abweichende_adresse_ende()
-
         # save button commands
         self.view.exit_button.config(command=self.view.destroy)
         self.view.save_button.config(command=self.save_schicht)
@@ -64,6 +59,11 @@ class SchichtController:
                 ist_rb=edit_schicht.ist_kurzfristig
             )
             pass
+
+        # show/hide initialisieren
+        self.change_asn()
+        self.change_abweichende_adresse_beginn()
+        self.change_abweichende_adresse_ende()
 
     def save_schicht(self, undneu=False):
         data = self.view.get_data()
@@ -146,7 +146,7 @@ class SchichtController:
             SchichtController(parent_controller=self.parent,
                               session=self.session,
                               assistent=self.assistent,
-                              asn=self.asn)
+                              asn=self.asn, edit_schicht=None)
 
     def get_asn_by_id(self, asn_id):
         result = self.session.execute(select(ASN).where(ASN.id == asn_id))
@@ -165,12 +165,12 @@ class SchichtController:
         return asnliste
 
     def get_adressliste(self):
-        # Todo implement
         adressliste = {-2: 'Keine abweichende Adresse',
                        -1: 'Neu'}
-        # TODO ASN-Adressbuch
-        # if self.asn:
-        #    for adresse in self.asn.
+        for adresse in self.session.query(Adresse).filter(Adresse.asn == self.asn):
+            adressliste[adresse.id] = adresse.bezeichner + ": " \
+                                      + adresse.strasse \
+                                      + " " + adresse.hausnummer + ", " + adresse.plz + " " + adresse.stadt
         return adressliste
 
     def change_asn(self, event=None):

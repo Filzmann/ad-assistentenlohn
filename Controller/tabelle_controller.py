@@ -27,6 +27,11 @@ class TabelleController:
                                 start=self.start)
         data = None
 
+        # aufräumen falls noch "Teilschichten" in der Session rumliegen
+        for schicht in self.session.query(Schicht).filter(Schicht.original_id):
+            self.session.delete(schicht)
+            self.session.commit()
+
     def change_arbeitsdatum(self, datum):
         self.start = datetime(year=datum.year,
                               month=datum.month,
@@ -101,7 +106,10 @@ class TabelleController:
 
                 }
             )
+
         return schichten_view_data
+
+
 
     def get_sliced_schichten(self, start, end):
         sliced_schichten = []
@@ -128,7 +136,12 @@ class TabelleController:
         return False
 
     def kill_schicht(self, schicht_id):
-        for schicht in self.session.query(Schicht).filter(Schicht.id == schicht_id):
+        for schicht in self.session.query(Schicht).filter(
+                or_(
+                    Schicht.id == schicht_id,
+                    Schicht.original_id == schicht_id
+                )
+        ):
             self.session.delete(schicht)
             self.session.commit()
             self.change_arbeitsdatum(schicht.beginn)
@@ -142,5 +155,3 @@ class TabelleController:
                               edit_schicht=schicht,
                               datum=schicht.beginn,
                               nav_panel=self.nav_panel)
-
-

@@ -7,6 +7,7 @@ class Adresse(Base):
     __tablename__ = 'adressen'
 
     id = Column(Integer, primary_key=True)
+    bezeichner = Column(String(30))
     strasse = Column(String(30))
     hausnummer = Column(String(8))
     plz = Column(String(5))
