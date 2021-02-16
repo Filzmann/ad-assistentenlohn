@@ -44,6 +44,7 @@ class SchichtController:
 
         if self.asn:
             self.view.set_data(asn=self.asn.id)
+            self.view.hide(self.view.asn_stammdaten_form)
         if datum:
             self.view.set_data(beginn=datum, ende=datum)
         if edit_schicht:
@@ -167,7 +168,7 @@ class SchichtController:
     def get_adressliste(self):
         adressliste = {-2: 'Keine abweichende Adresse',
                        -1: 'Neu'}
-        for adresse in self.session.query(Adresse).filter(Adresse.asn == self.asn):
+        for adresse in self.session.query(Adresse).filter(Adresse.asn == self.asn.id):
             adressliste[adresse.id] = adresse.bezeichner + ": " \
                                       + adresse.strasse \
                                       + " " + adresse.hausnummer + ", " + adresse.plz + " " + adresse.stadt

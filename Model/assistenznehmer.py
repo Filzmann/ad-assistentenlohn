@@ -1,5 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
+
+from Model.adresse import Adresse
 from Model.base import Base
 
 
@@ -11,17 +13,11 @@ class ASN(Base):
     name = Column(String(30))
     vorname = Column(String(30))
     email = Column(String(30))
-    # one to one
-    home_id = Column(Integer, ForeignKey('adressen.id'))
-    home = relationship("Adresse",
-                        back_populates="assistenznehmer",
-                        primaryjoin="ASN.home_id==Adresse.id")
-
     assistenten = relationship(
         "AssociationAsAsn", back_populates="asn")
 
-    # one to many
-    # adressbuch = relationship("Adresse")
+    # hier stehen alle Adressen des ASN, auch die eigene. Diese erhält den bezeichner __home__
+    adressbuch = relationship("Adresse", back_populates="assistenznehmer")
 
     einsatzbuero = Column(String(30))
     schicht_templates = relationship("SchichtTemplate",

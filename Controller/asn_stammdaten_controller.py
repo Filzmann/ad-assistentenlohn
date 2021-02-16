@@ -1,4 +1,6 @@
 from sqlalchemy.future import select
+
+from Model.adresse import Adresse
 from Model.assistenznehmer import ASN
 from View.asn_stammdaten_view import AsnStammdatenView
 
@@ -15,6 +17,10 @@ class AsnStammdatenController:
         if asn:
             result = self.session.execute(select(ASN).where(ASN.id == asn.id))
             asn = result.scalars().one()
+            home = self.session.query(Adresse).filter(
+                Adresse.assistenznehmer == self.asn).filter(
+                Adresse.bezeichner == '__home__')
+
             self.asn = asn
             self.view.set_data(
                 kuerzel=asn.kuerzel,
@@ -22,10 +28,10 @@ class AsnStammdatenController:
                 name=asn.name,
                 email=asn.email,
                 buero=asn.einsatzbuero,
-                strasse=asn.home.strasse,
-                hnr=asn.home.hausnummer,
-                plz=asn.home.plz,
-                stadt=asn.home.stadt)
+                strasse=home.strasse,
+                hnr=home.hausnummer,
+                plz=home.plz,
+                stadt=home.stadt)
         else:
             self.view.set_data(
                 kuerzel="Neuer ASN",
@@ -44,10 +50,14 @@ class AsnStammdatenController:
         self.asn.name = data['nachname']
         self.asn.email = data['email']
         self.asn.kuerzel = data['kuerzel']
-        self.asn.home.strasse = data['strasse']
-        self.asn.home.hnr = data['hnr']
-        self.asn.home.plz = data['plz']
-        self.asn.home.stadt = data['stadt']
+
+        home = self.session.query(Adresse).filter(
+            Adresse.assistenznehmer == self.asn).filter(
+            Adresse.bezeichner == '__home__')
+        home.strasse = data['strasse']
+        home.hausnummer = data['hausnummer']
+        home.plz = data['plz']
+        home.stadt = data['stadt']
 
     def get_data(self):
         return self.view.get_data()

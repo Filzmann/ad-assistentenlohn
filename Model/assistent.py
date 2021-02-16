@@ -12,14 +12,8 @@ class Assistent(Base):
     vorname = Column(String(30))
     email = Column(String(30))
     einstellungsdatum = Column(DateTime)
-    home_id = Column(Integer, ForeignKey('adressen.id'))
-    home = relationship("Adresse",
-                        back_populates="assistent",
-                        primaryjoin="Assistent.home_id==Adresse.id")
-
-    asn = relationship(
-        "AssociationAsAsn", back_populates="assistenten")
-
+    adressbuch = relationship("Adresse", back_populates="assistent")
+    asn = relationship("AssociationAsAsn", back_populates="assistenten")
     feste_schichten = relationship("FesteSchicht",
                                    back_populates="assistent",
                                    cascade="all, delete, delete-orphan")

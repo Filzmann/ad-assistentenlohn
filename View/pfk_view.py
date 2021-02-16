@@ -10,7 +10,7 @@ class PfkView(tk.Frame):
         self.selected = tk.StringVar()
 
         self.pfk_dropdown = Combobox(self, values=pfkliste, width=38, state="readonly")
-        self.pfk_dropdown.set("0")
+        self.pfk_dropdown.set(0)
 
         self.vorname_input = tk.Entry(self, bd=5, width=40)
         self.nachname_input = tk.Entry(self, bd=5, width=40)

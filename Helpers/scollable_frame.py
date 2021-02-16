@@ -1,80 +1,76 @@
 from tkinter import ttk
 import tkinter as tk
 import functools
+
 fp = functools.partial
 
 
-class VerticalScrolledFrame(ttk.Frame):
+class VerticalScrolledFrame:
     """
-    A pure Tkinter scrollable frame that actually works!
-    * Use the 'interior' attribute to place widgets inside the scrollable frame
-    * Construct and pack/place/grid normally
-    * This frame only allows vertical scrolling
+    A vertically scrolled Frame that can be treated like any other Frame
+    ie it needs a master and layout and it can be a master.
+    :width:, :height:, :bg: are passed to the underlying Canvas
+    :bg: and all other keyword arguments are passed to the inner Frame
+    note that a widget layed out in this frame will have a self.master 3 layers deep,
+    (outer Frame, Canvas, inner Frame) so
+    if you subclass this there is no built in way for the children to access it.
+    You need to provide the controller separately.
     """
 
-    def __init__(self, parent, **kw):
+    def __init__(self, master, **kwargs):
+        width = kwargs.pop('width', None)
+        height = kwargs.pop('height', None)
+        bg = kwargs.pop('bg', kwargs.pop('background', None))
+        self.outer = tk.Frame(master, **kwargs)
 
-        # track changes to the canvas and frame width and sync them,
-        # also updating the scrollbar
-        def _configure_interior(event):
-            # update the scrollbars to match the size of the inner frame
-            size = (interior.winfo_reqwidth(), interior.winfo_reqheight())
-            canvas.config(scrollregion="0 0 %s %s" % size)
-            if interior.winfo_reqwidth() != canvas.winfo_width():
-                # update the canvas's width to fit the inner frame
-                canvas.config(width=interior.winfo_reqwidth())
+        self.vsb = tk.Scrollbar(self.outer, orient=tk.VERTICAL)
+        self.vsb.pack(fill=tk.Y, side=tk.RIGHT)
+        self.canvas = tk.Canvas(self.outer, highlightthickness=0, width=width, height=height, bg=bg)
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.canvas['yscrollcommand'] = self.vsb.set
+        # mouse scroll does not seem to work with just "bind"; You have
+        # to use "bind_all". Therefore to use multiple windows you have
+        # to bind_all in the current widget
+        self.canvas.bind("<Enter>", self._bind_mouse)
+        self.canvas.bind("<Leave>", self._unbind_mouse)
+        self.vsb['command'] = self.canvas.yview
 
-        def _configure_canvas(event):
-            if interior.winfo_reqwidth() != canvas.winfo_width():
-                # update the inner frame's width to fill the canvas
-                canvas.itemconfigure(interior_id, width=canvas.winfo_width())
+        self.inner = tk.Frame(self.canvas, bg=bg)
+        # pack the inner Frame into the Canvas with the topleft corner 4 pixels offset
+        self.canvas.create_window(4, 4, window=self.inner, anchor='nw')
+        self.inner.bind("<Configure>", self._on_frame_configure)
 
-        """
-        This is linux code for scrolling the window, 
-        It has different buttons for scrolling the windows
-        def _on_mousewheel(event, scroll):
-            canvas.yview_scroll(int(scroll), "units")
-        def _bind_to_mousewheel(event):
-            canvas.bind_all("<Button-4>", fp(_on_mousewheel, scroll=-1))
-            canvas.bind_all("<Button-5>", fp(_on_mousewheel, scroll=1))
-        def _unbind_from_mousewheel(event):
-            canvas.unbind_all("<Button-4>")
-            canvas.unbind_all("<Button-5>")
-        """
+        self.outer_attr = set(dir(tk.Widget))
 
-        """
-        This is windows code for scrolling the Frame
-        """
+    def __getattr__(self, item):
+        if item in self.outer_attr:
+            # geometry attributes etc (eg pack, destroy, tkraise) are passed on to self.outer
+            return getattr(self.outer, item)
+        else:
+            # all other attributes (_w, children, etc) are passed to self.inner
+            return getattr(self.inner, item)
 
-        def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+    def _on_frame_configure(self, event=None):
+        x1, y1, x2, y2 = self.canvas.bbox("all")
+        height = self.canvas.winfo_height()
+        self.canvas.config(scrollregion=(0, 0, x2, max(y2, height)))
 
-        def _bind_to_mousewheel(event):
-            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+    def _bind_mouse(self, event=None):
+        self.canvas.bind_all("<4>", self._on_mousewheel)
+        self.canvas.bind_all("<5>", self._on_mousewheel)
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
 
-        def _unbind_from_mousewheel(event):
-            canvas.unbind_all("<MouseWheel>")
+    def _unbind_mouse(self, event=None):
+        self.canvas.unbind_all("<4>")
+        self.canvas.unbind_all("<5>")
+        self.canvas.unbind_all("<MouseWheel>")
 
-        ttk.Frame.__init__(self, parent, **kw)
+    def _on_mousewheel(self, event):
+        """Linux uses event.num; Windows / Mac uses event.delta"""
+        if event.num == 4 or event.delta > 0:
+            self.canvas.yview_scroll(-1, "units")
+        elif event.num == 5 or event.delta < 0:
+            self.canvas.yview_scroll(1, "units")
 
-        # create a canvas object and a vertical scrollbar for scrolling it
-        vscrollbar = ttk.Scrollbar(self, orient=tk.VERTICAL)
-        vscrollbar.pack(fill=tk.Y, side=tk.RIGHT, expand=tk.FALSE)
-        canvas = tk.Canvas(self, bd=0, highlightthickness=0,
-                           yscrollcommand=vscrollbar.set)
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=tk.TRUE)
-        vscrollbar.config(command=canvas.yview)
-
-        # reset the view
-        canvas.xview_moveto(0)
-        canvas.yview_moveto(0)
-
-        # create a frame inside the canvas which will be scrolled with it
-        self.interior = interior = ttk.Frame(canvas)
-        interior_id = canvas.create_window(0, 0, window=interior,
-                                           anchor=tk.NW)
-
-        interior.bind('<Configure>', _configure_interior)
-        canvas.bind('<Configure>', _configure_canvas)
-        canvas.bind('<Enter>', _bind_to_mousewheel)
-        canvas.bind('<Leave>', _unbind_from_mousewheel)
+    def __str__(self):
+        return str(self.outer)

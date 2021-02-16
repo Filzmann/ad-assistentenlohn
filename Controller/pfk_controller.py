@@ -8,12 +8,12 @@ class PfkController:
         self.parent = parent_controller
         self.session = session
         self.pfk = pfk
-        self.pfkliste = {"0": "PFK wählen oder neu anlegen"}
+        self.pfkliste = {0: "PFK wählen oder neu anlegen"}
         result = self.session.execute(select(PFK).order_by(PFK.name))
         if result:
             pfks = result.scalars().all()
             for pfk_item in pfks:
-                self.pfkliste[str(pfk_item.id)] = pfk_item.vorname + " " + pfk_item.name
+                self.pfkliste[pfk_item.id] = pfk_item.vorname + " " + pfk_item.name
         self.view = PfkView(parent_view=self.parent.view.edit, pfkliste=self.pfkliste, akt_pfk=self.pfk)
         self.view.pfk_dropdown.bind("<<ComboboxSelected>>", self.change_pfk)
 
@@ -23,7 +23,7 @@ class PfkController:
             result = self.session.execute(select(PFK).where(PFK.id == pfk.id))
             pfk = result.scalars().one()
             self.pfk = pfk
-            self.view.selected.set(str(pfk))
+            self.view.selected.set(pfk)
             self.view.set_data(vorname=pfk.vorname,
                                name=pfk.name,
                                email=pfk.email)
@@ -42,7 +42,7 @@ class PfkController:
                       vorname=data['vorname'],
                       email=data['email'])
             self.session.add(pfk)
-            self.pfkliste[str(pfk.id)] = pfk.vorname + " " + pfk.name
+            self.pfkliste[pfk.id] = pfk.vorname + " " + pfk.name
             self.pfk = pfk
         self.session.commit()
         return self.pfk

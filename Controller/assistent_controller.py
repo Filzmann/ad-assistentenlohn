@@ -16,14 +16,17 @@ class AssistentController:
             result = self.session.execute(select(Assistent).where(Assistent.id == assistent.id))
             assistent = result.scalars().one()
             self.assistent = assistent
+            home = self.session.query(Adresse).filter(
+                Adresse.assistent == self.assistent).filter(
+                Adresse.bezeichner == '__home__')
             self.view.set_data(vorname=assistent.vorname,
                                name=assistent.name,
                                email=assistent.email,
                                einstellungsdatum=assistent.einstellungsdatum,
-                               strasse=assistent.home.strasse,
-                               hausnummer=assistent.home.hausnummer,
-                               plz=assistent.home.plz,
-                               stadt=assistent.home.stadt)
+                               strasse=home.strasse,
+                               hausnummer=home.hausnummer,
+                               plz=home.plz,
+                               stadt=home.stadt)
 
     def save_assistent(self):
         data = self.view.get_data()
@@ -33,7 +36,8 @@ class AssistentController:
             home = Adresse(strasse=data['strasse'],
                            hausnummer=data['hausnummer'],
                            stadt=data['stadt'],
-                           plz=data['plz'])
+                           plz=data['plz'],
+                           bezeichner='__home__')
 
             assistent = Assistent(
                 name=data['name'],
@@ -51,10 +55,14 @@ class AssistentController:
             self.assistent.name = data['name']
             self.assistent.vorname = data['vorname']
             self.assistent.email = data['email']
-            self.assistent.home.strasse = data['strasse']
-            self.assistent.home.hausnummer = data['hausnummer']
-            self.assistent.home.plz = data['plz']
-            self.assistent.home.stadt = data['stadt']
+            home = self.session.query(Adresse).filter(
+                Adresse.assistent == self.assistent).filter(
+                Adresse.bezeichner == '__home__')
+
+            home.strasse = data['strasse']
+            home.hausnummer = data['hausnummer']
+            home.plz = data['plz']
+            home.stadt = data['stadt']
 
             self.view.destroy()
             self.parent.model.assistent = self.assistent

@@ -1,6 +1,8 @@
 import tkinter as tk
 from datetime import datetime
 
+from Helpers.scollable_frame import VerticalScrolledFrame
+
 
 class TabelleView(tk.Frame):
     def __init__(self, parent_view, data, anzahl_tage=31, start=datetime.now()):
@@ -12,7 +14,6 @@ class TabelleView(tk.Frame):
             bd=0)
         self.draw(data, anzahl_tage, start)
 
-
     def zeile(self, data, parent, zeilennummer, heute):
         # self.make_button(command="new", row=zeilennummer, col=2, datum=self.heute)
         tag = heute.strftime('%a')
@@ -22,11 +23,13 @@ class TabelleView(tk.Frame):
         self.make_button(button_type="kill",
                          command=data['kill_command'],
                          row=zeilennummer,
-                         col=1)
+                         col=1,
+                         parent=parent)
         self.make_button(button_type="edit",
                          command=data['edit_command'],
                          row=zeilennummer,
-                         col=2)
+                         col=2,
+                         parent=parent)
         self.zelle(parent=parent, inhalt=tag, row=zeilennummer, col=11, width=3)
         self.zelle(parent=parent, inhalt=data['von'], row=zeilennummer, col=12, width=5)
         self.zelle(parent=parent, inhalt=data['bis'], row=zeilennummer, col=13, width=5)
@@ -60,41 +63,45 @@ class TabelleView(tk.Frame):
         tag = heute.strftime('%d')
         self.zelle(parent=parent, inhalt=tag, row=zeilennummer, col=11, width=3)
 
-    def kopfzeile(self):
+    def kopfzeile(self, parent):
         # kopfzeile erstellen
         # spalten 0-9 werden für Buttons freigehalten
-        tk.Label(self, text='Tag', borderwidth=1, relief="solid", width=6).grid(row=0, column=10,
-                                                                                columnspan=2)
-        tk.Label(self, text='von', borderwidth=1, relief="solid", width=5).grid(row=0, column=12)
-        tk.Label(self, text='bis', borderwidth=1, relief="solid", width=5).grid(row=0, column=13)
-        tk.Label(self, text='ASN', borderwidth=1, relief="solid", width=8).grid(row=0, column=14)
-        tk.Label(self, text='Std', borderwidth=1, relief="solid", width=5).grid(row=0, column=15)
-        tk.Label(self, text='Grundlohn', borderwidth=1, relief="solid", width=8).grid(row=0, column=16)
-        tk.Label(self, text='kurzfr.', borderwidth=1, relief="solid", width=8).grid(row=0, column=17)
-        tk.Label(self, text='NachtStd', borderwidth=1, relief="solid", width=8).grid(row=0, column=18)
-        tk.Label(self, text='Nachtzu.', borderwidth=1, relief="solid", width=8).grid(row=0, column=19)
-        tk.Label(self, text='Zuschlaege', borderwidth=1, relief="solid", width=23).grid(row=0, column=20)
-        tk.Label(self, text='Wechsel', borderwidth=1, relief="solid", width=8).grid(row=0, column=21)
-        tk.Label(self, text='Orga', borderwidth=1, relief="solid", width=8).grid(row=0, column=22)
+        # 1. label ist button-spacer
+        tk.Label(parent, text='', borderwidth=1, relief="solid", width=8).grid(row=0, column=0)
+        tk.Label(parent, text='Tag', borderwidth=1, relief="solid", width=6).grid(row=0, column=10,
+                                                                                  columnspan=2)
+        tk.Label(parent, text='von', borderwidth=1, relief="solid", width=5).grid(row=0, column=12)
+        tk.Label(parent, text='bis', borderwidth=1, relief="solid", width=5).grid(row=0, column=13)
+        tk.Label(parent, text='ASN', borderwidth=1, relief="solid", width=8).grid(row=0, column=14)
+        tk.Label(parent, text='Std', borderwidth=1, relief="solid", width=5).grid(row=0, column=15)
+        tk.Label(parent, text='Grundlohn', borderwidth=1, relief="solid", width=8).grid(row=0, column=16)
+        tk.Label(parent, text='kurzfr.', borderwidth=1, relief="solid", width=8).grid(row=0, column=17)
+        tk.Label(parent, text='NachtStd', borderwidth=1, relief="solid", width=8).grid(row=0, column=18)
+        tk.Label(parent, text='Nachtzu.', borderwidth=1, relief="solid", width=8).grid(row=0, column=19)
+        tk.Label(parent, text='Zuschlaege', borderwidth=1, relief="solid", width=23).grid(row=0, column=20)
+        tk.Label(parent, text='Wechsel', borderwidth=1, relief="solid", width=8).grid(row=0, column=21)
+        tk.Label(parent, text='Orga', borderwidth=1, relief="solid", width=8).grid(row=0, column=22)
 
     def draw(self, data, anzahl_tage, start):
         for child in self.winfo_children():
             child.destroy()
         zeilennummer = 1
-        self.kopfzeile()
+        self.kopfzeile(self)
+        scrollframe = VerticalScrolledFrame(self, width=800, height=500)
+        scrollframe.grid(row=1, column=0, sticky=tk.NSEW, columnspan=23)
         if data:
             for tag in range(1, anzahl_tage + 1):
                 heute = datetime(day=tag, month=start.month, year=start.year)
                 # tag als string muss mit führender 0 starten. dafür zfill
                 if str(tag).zfill(2) in data.keys():
                     for eintrag in data[str(tag).zfill(2)]:
-                        self.zeile(data=eintrag, parent=self, zeilennummer=zeilennummer, heute=heute)
+                        self.zeile(data=eintrag, parent=scrollframe.inner, zeilennummer=zeilennummer, heute=heute)
                         zeilennummer += 1
                 else:
-                    self.leerzeile(parent=self, zeilennummer=zeilennummer, heute=heute)
+                    self.leerzeile(parent=scrollframe.inner, zeilennummer=zeilennummer, heute=heute)
                     zeilennummer += 1
 
-    def make_button(self, button_type, command,
+    def make_button(self, button_type, command, parent,
                     row=0,
                     col=0,
                     datum: datetime = None):
@@ -103,17 +110,17 @@ class TabelleView(tk.Frame):
         if button_type == 'kill':
             image = "images/del.png"
             label = "Löschen"
-            button = tk.Button(self, text=label, command=command)
+            button = tk.Button(parent, text=label, command=command)
         elif button_type == 'edit':
             label = "Bearbeiten"
-            button = tk.Button(self,
+            button = tk.Button(parent,
                                text=label,
                                command=command)
             image = "images/edit.png"
         elif button_type == 'new':
             label = "Neue Schicht"
 
-            button = tk.Button(self,
+            button = tk.Button(parent,
                                text=label,
                                command=command)
             image = "images/add.png"

@@ -8,12 +8,12 @@ class EbController:
         self.parent = parent_controller
         self.session = session
         self.eb = eb
-        self.ebliste = {"0": "EB wählen oder neu anlegen"}
+        self.ebliste = {0: "EB wählen oder neu anlegen"}
         result = self.session.execute(select(EB).order_by(EB.name))
         if result:
             ebs = result.scalars().all()
             for eb_item in ebs:
-                self.ebliste[str(eb_item.id)] = eb_item.vorname + " " + eb_item.name
+                self.ebliste[eb_item.id] = eb_item.vorname + " " + eb_item.name
         self.view = EbView(parent_view=self.parent.view.edit, ebliste=self.ebliste, akt_eb=self.eb)
         self.view.eb_dropdown.bind("<<ComboboxSelected>>", self.change_eb)
 
@@ -23,7 +23,7 @@ class EbController:
             result = self.session.execute(select(EB).where(EB.id == eb.id))
             eb = result.scalars().one()
             self.eb = eb
-            self.view.selected.set(str(eb))
+            self.view.selected.set(eb)
             self.view.set_data(vorname=eb.vorname,
                                name=eb.name,
                                email=eb.email)
@@ -42,7 +42,7 @@ class EbController:
                     vorname=data['vorname'],
                     email=data['email'])
             self.session.add(eb)
-            self.ebliste[str(eb.id)] = eb.vorname + " " + eb.name
+            self.ebliste[eb.id] = eb.vorname + " " + eb.name
             self.eb = eb
         self.session.commit()
         return self.eb

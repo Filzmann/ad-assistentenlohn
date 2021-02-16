@@ -7,6 +7,7 @@ from Controller.begruessung_controller import BegruessungController
 from Controller.hauptseite_controller import HauptseiteController
 from sqlalchemy import create_engine, select, event
 from Model.base import Base
+from Model.adresse import Adresse
 from Model.schicht_templates import SchichtTemplate
 from Model.weg import Weg
 from Model.schicht import Schicht
