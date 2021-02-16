@@ -24,11 +24,7 @@
     <autoscroll-to-editor value="false" />
     <autoscroll-from-editor value="true" />
     <show-object-properties value="true" />
-    <loaded-nodes>
-      <connection connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72">
-        <schema name="main" object-types="constraint, dataset trigger, index, column, view, table" />
-      </connection>
-    </loaded-nodes>
+    <loaded-nodes />
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72">
@@ -48,6 +44,8 @@
   <component name="DBNavigator.Project.DatasetFilterManager">
     <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.schichten" active-filter-id="EMPTY_FILTER" />
     <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.adressen" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.assistenten" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.assistenznehmer" active-filter-id="EMPTY_FILTER" />
   </component>
   <component name="DBNavigator.Project.EditorStateManager">
     <last-used-providers />
@@ -75,7 +73,7 @@
   </component>
   <component name="DBNavigator.Project.Settings">
     <connections>
-      <connection id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" active="true">
+      <connection id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" active="false">
         <database>
           <name value="Connection" />
           <description value="" />

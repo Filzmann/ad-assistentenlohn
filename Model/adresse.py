@@ -21,7 +21,6 @@ class Adresse(Base):
     assistenznehmer_id = Column(Integer, ForeignKey('assistenznehmer.id'))
     assistenznehmer = relationship("ASN", back_populates='adressbuch')
 
-
     wege = relationship("Weg", primaryjoin="or_(Adresse.id==Weg.adresse1_id, Adresse.id==Weg.adresse2_id)")
 
     def __repr__(self):

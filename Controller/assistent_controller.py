@@ -18,7 +18,8 @@ class AssistentController:
             self.assistent = assistent
             home = self.session.query(Adresse).filter(
                 Adresse.assistent == self.assistent).filter(
-                Adresse.bezeichner == '__home__')
+                Adresse.bezeichner == '__home__').one()
+
             self.view.set_data(vorname=assistent.vorname,
                                name=assistent.name,
                                email=assistent.email,
@@ -38,6 +39,7 @@ class AssistentController:
                            stadt=data['stadt'],
                            plz=data['plz'],
                            bezeichner='__home__')
+            session.add(home)
 
             assistent = Assistent(
                 name=data['name'],
@@ -46,7 +48,7 @@ class AssistentController:
                 einstellungsdatum=data['einstellungsdatum'],
             )
 
-            assistent.home = home
+            assistent.adressbuch.append(home)
             session.add(assistent)
             session.commit()
             self.view.destroy()
