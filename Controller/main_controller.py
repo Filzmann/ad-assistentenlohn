@@ -15,7 +15,9 @@ from Model.assistent import Assistent
 from Model.lohn import Lohn
 from View.menueleiste import Menuleiste
 
-engine = create_engine('sqlite:///assistenten.db', echo=True)
+engine = create_engine('sqlite:///assistenten.db',
+                       echo=True,
+                       connect_args={'check_same_thread': False})
 Session = sessionmaker(engine)
 
 

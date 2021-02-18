@@ -81,6 +81,8 @@ class TabelleView(tk.Frame):
         tk.Label(parent, text='Zuschlaege', borderwidth=1, relief="solid", width=23).grid(row=0, column=20)
         tk.Label(parent, text='Wechsel', borderwidth=1, relief="solid", width=8).grid(row=0, column=21)
         tk.Label(parent, text='Orga', borderwidth=1, relief="solid", width=8).grid(row=0, column=22)
+        # spacer für scrollleiste
+        tk.Label(parent, text='', borderwidth=1, relief="solid", width=4).grid(row=0, column=23)
 
     def draw(self, data, anzahl_tage, start):
         for child in self.winfo_children():

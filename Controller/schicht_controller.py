@@ -17,9 +17,10 @@ class SchichtController:
                  asn: ASN = None,
                  edit_schicht: Schicht = None,
                  datum: datetime = None,
-                 nav_panel=None):
+                 nav_panel=None
+                 ):
         self.parent = parent_controller
-
+        self.schicht = edit_schicht
         self.assistent = assistent
         self.asn = asn
         self.session = session
@@ -44,12 +45,11 @@ class SchichtController:
 
         if self.asn:
             self.view.set_data(asn=self.asn.id)
-            self.view.hide(self.view.asn_stammdaten_form)
+
         if datum:
             self.view.set_data(beginn=datum, ende=datum)
         if edit_schicht:
             # Todo falls edit_schicht als id kommt noch aus der db holen
-            self.schicht = edit_schicht
             self.view.set_data(
                 asn=edit_schicht.asn.id,
                 beginn=edit_schicht.beginn,
@@ -61,10 +61,11 @@ class SchichtController:
             )
         self.view.draw()
         # show/hide initialisieren
+        if self.asn:
+            self.view.hide(self.view.asn_stammdaten_form)
         self.change_asn()
         self.change_abweichende_adresse_beginn()
         self.change_abweichende_adresse_ende()
-
 
     def save_schicht(self, undneu=False):
         data = self.view.get_data()
@@ -119,10 +120,13 @@ class SchichtController:
                         minute=int(data['endzeit_minute']))
         # Todo Update
         if self.schicht:
-            self.schicht.beginn=beginn
-            self.schicht.ende=ende
-            self.schicht.ist_kurzfristig=data['ist_rb']
-            self.schi
+            self.schicht.beginn = beginn
+            self.schicht.ende = ende
+            self.schicht.ist_kurzfristig = data['ist rb']
+            self.schicht.ist_ausfallgeld = data['ist afg']
+            self.schicht.ist_pcg = data['ist pcg']
+            self.schicht.ist_assistententreffen = data['ist at']
+
         else:
             schicht = Schicht(beginn=beginn,
                               ende=ende,
@@ -132,7 +136,7 @@ class SchichtController:
                               ist_pcg=data['ist pcg']
                               )
             self.session.add(schicht)
-            self.schicht=schicht
+            self.schicht = schicht
         self.session.commit()
         self.schicht.asn = schicht_asn
         self.schicht.assistent = assistent
@@ -146,22 +150,26 @@ class SchichtController:
         self.view.destroy()
 
         if self.nav_panel:
-            self.nav_panel.monat_change(datum=datetime(year=schicht.beginn.year,
-                                                       month=schicht.beginn.month,
-                                                       day=1))
+            self.nav_panel.monat_change(datum=datetime(year=self.schicht.beginn.year,
+                                                       month=self.schicht.beginn.month,
+                                                       day=1),
+                                        session=self.session)
 
         if undneu:
             parent = self.parent
             session = self.session
             assistent = self.assistent
             asn = self.asn
+            datum = schicht.beginn
 
             self.schicht = None
             SchichtController(parent_controller=parent,
                               session=session,
                               assistent=assistent,
                               asn=asn,
-                              edit_schicht=None)
+                              edit_schicht=None,
+                              datum=datum,
+                              nav_panel=self.nav_panel)
 
     def get_asn_by_id(self, asn_id):
         result = self.session.execute(select(ASN).where(ASN.id == asn_id))

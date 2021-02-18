@@ -207,16 +207,11 @@ class SchichtView(tk.Toplevel):
         if 'asn_stammdaten' in kwargs.keys():
             self.asn_stammdaten_form.set_data(**kwargs['asn_stammdaten'])
         if 'beginn' in kwargs.keys():
-            date_string = kwargs['beginn'].strftime('%m/%d/%Y')
-            # self.startdatum_input.parse_date(date_string)
             self.startdatum_input.selection_set(date=kwargs['beginn'])
             self.startzeit_input.hourstr.set(kwargs['beginn'].strftime('%H'))
             self.startzeit_input.minstr.set(kwargs['beginn'].strftime('%M'))
         if 'ende' in kwargs.keys():
-            date_string = kwargs['ende'].strftime('%m/%d/%Y')
-            # self.enddatum_input.parse_date(date_string)
             self.enddatum_input.selection_set(date=kwargs['ende'])
-
             self.endzeit_input.hourstr.set(kwargs['ende'].strftime('%H'))
             self.endzeit_input.minstr.set(kwargs['ende'].strftime('%M'))
 

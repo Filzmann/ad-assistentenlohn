@@ -31,7 +31,7 @@ class AUController:
             session.add(au)
             session.commit()
             self.view.destroy()
-            self.parent.draw()
+            self.parent.draw(session)
         else:
             self.au.beginn = data['beginn'],
             self.au.ende = ende

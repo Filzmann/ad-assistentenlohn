@@ -32,20 +32,22 @@ class TabelleController:
             self.session.delete(schicht)
             self.session.commit()
 
-    def change_arbeitsdatum(self, datum):
+    def change_arbeitsdatum(self, datum, session):
         self.start = datetime(year=datum.year,
                               month=datum.month,
                               day=1)
         self.end = verschiebe_monate(offset=1, datum=self.start)
-        data = self.calculate()
+        data = self.calculate(session)
 
         letzter_tag = (self.end - timedelta(seconds=1)).day
         self.view.draw(data=data,
                        anzahl_tage=letzter_tag,
                        start=self.start)
 
-    def calculate(self):
-        schichten = self.get_sliced_schichten(start=self.start, end=self.end)
+    def calculate(self, session=None):
+        if session:
+            self.session = session
+        schichten = self.get_sliced_schichten(start=self.start, end=self.end, session=session)
         schichten_view_data = {}
         for schicht in schichten:
             if not schicht['beginn'].strftime('%d') in schichten_view_data.keys():
@@ -109,7 +111,9 @@ class TabelleController:
 
         return schichten_view_data
 
-    def get_sliced_schichten(self, start, end):
+    def get_sliced_schichten(self, start, end, session):
+        if session:
+            self.session = session
         sliced_schichten = []
         for schicht in self.session.query(Schicht).filter(
                 or_(

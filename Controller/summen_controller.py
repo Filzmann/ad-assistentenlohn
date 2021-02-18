@@ -25,17 +25,20 @@ class SummenController:
             self.session.delete(schicht)
             self.session.commit()
 
-    def change_arbeitsdatum(self, datum):
+    def change_arbeitsdatum(self, datum, session):
         self.start = datetime(year=datum.year,
                               month=datum.month,
                               day=1)
         self.end = verschiebe_monate(offset=1, datum=self.start)
-        data = self.calculate()
+        data = self.calculate(session=session)
 
         self.view.draw(data=data)
 
-    def calculate(self):
-        schichten = self.get_sliced_schichten(start=self.start, end=self.end)
+    def calculate(self, session=None):
+        if not session:
+            session = self.session
+
+        schichten = self.get_sliced_schichten(start=self.start, end=self.end, session=session)
         schichten_view_data = {
             'arbeitsstunden': 0,
             'stundenlohn': 0,
@@ -81,7 +84,8 @@ class SummenController:
             # bsd
             schichten_view_data['bsd_stunden'] += stunden if schicht['ist_kurzfristig'] else 0
             schichten_view_data['bsd'] += (lohn.grundlohn * 0.2) if schicht['ist_kurzfristig'] else 0
-            schichten_view_data['bsd_kumuliert'] += (lohn.grundlohn * stunden * 0.2) if schicht['ist_kurzfristig'] else 0
+            schichten_view_data['bsd_kumuliert'] += (lohn.grundlohn * stunden * 0.2) if schicht[
+                'ist_kurzfristig'] else 0
             schichten_view_data['bruttolohn'] += (lohn.grundlohn * stunden * 0.2) if schicht['ist_kurzfristig'] else 0
             # todo wegegeld
 
@@ -118,8 +122,11 @@ class SummenController:
 
         return schichten_view_data
 
-    def get_sliced_schichten(self, start, end):
+    def get_sliced_schichten(self, start, end, session=None):
         sliced_schichten = []
+        if session:
+            self.session = session
+
         for schicht in self.session.query(Schicht).filter(
                 or_(
                     Schicht.beginn.between(start, end),
