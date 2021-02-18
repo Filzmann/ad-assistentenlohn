@@ -59,14 +59,14 @@ class SummenController:
 
         }
         for schicht in schichten:
-            if not schicht.beginn.strftime('%d') in schichten_view_data.keys():
-                schichten_view_data[schicht.beginn.strftime('%d')] = []
+            if not schicht['beginn'].strftime('%d') in schichten_view_data.keys():
+                schichten_view_data[schicht['beginn'].strftime('%d')] = []
 
             # stunden
             stunden = berechne_stunden(schicht)
             schichten_view_data['arbeitsstunden'] += stunden
 
-            lohn = self.get_lohn(assistent=self.assistent, datum=schicht.beginn)
+            lohn = self.get_lohn(assistent=self.assistent, datum=schicht['beginn'])
             schichten_view_data['stundenlohn'] = lohn.grundlohn
             schichten_view_data['lohn'] += stunden * lohn.grundlohn
             schichten_view_data['bruttolohn'] += stunden * lohn.grundlohn
@@ -79,10 +79,10 @@ class SummenController:
             schichten_view_data['bruttolohn'] += lohn.nacht_zuschlag * nachtstunden
 
             # bsd
-            schichten_view_data['bsd_stunden'] += stunden if schicht.ist_kurzfristig else 0
-            schichten_view_data['bsd'] += (lohn.grundlohn * 0.2) if schicht.ist_kurzfristig else 0
-            schichten_view_data['bsd_kumuliert'] += (lohn.grundlohn * stunden * 0.2) if schicht.ist_kurzfristig else 0
-            schichten_view_data['bruttolohn'] += (lohn.grundlohn * stunden * 0.2) if schicht.ist_kurzfristig else 0
+            schichten_view_data['bsd_stunden'] += stunden if schicht['ist_kurzfristig'] else 0
+            schichten_view_data['bsd'] += (lohn.grundlohn * 0.2) if schicht['ist_kurzfristig'] else 0
+            schichten_view_data['bsd_kumuliert'] += (lohn.grundlohn * stunden * 0.2) if schicht['ist_kurzfristig'] else 0
+            schichten_view_data['bruttolohn'] += (lohn.grundlohn * stunden * 0.2) if schicht['ist_kurzfristig'] else 0
             # todo wegegeld
 
             # orga

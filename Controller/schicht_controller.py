@@ -59,12 +59,12 @@ class SchichtController:
                 ist_afg=edit_schicht.ist_ausfallgeld,
                 ist_rb=edit_schicht.ist_kurzfristig
             )
-            pass
-
+        self.view.draw()
         # show/hide initialisieren
         self.change_asn()
         self.change_abweichende_adresse_beginn()
         self.change_abweichende_adresse_ende()
+
 
     def save_schicht(self, undneu=False):
         data = self.view.get_data()
@@ -118,17 +118,24 @@ class SchichtController:
                         hour=int(data['endzeit_stunde']),
                         minute=int(data['endzeit_minute']))
         # Todo Update
-        schicht = Schicht(beginn=beginn,
-                          ende=ende,
-                          ist_kurzfristig=data['ist rb'],
-                          ist_ausfallgeld=data['ist afg'],
-                          ist_assistententreffen=data['ist at'],
-                          ist_pcg=data['ist pcg']
-                          )
-        self.session.add(schicht)
+        if self.schicht:
+            self.schicht.beginn=beginn
+            self.schicht.ende=ende
+            self.schicht.ist_kurzfristig=data['ist_rb']
+            self.schi
+        else:
+            schicht = Schicht(beginn=beginn,
+                              ende=ende,
+                              ist_kurzfristig=data['ist rb'],
+                              ist_ausfallgeld=data['ist afg'],
+                              ist_assistententreffen=data['ist at'],
+                              ist_pcg=data['ist pcg']
+                              )
+            self.session.add(schicht)
+            self.schicht=schicht
         self.session.commit()
-        schicht.asn = schicht_asn
-        schicht.assistent = assistent
+        self.schicht.asn = schicht_asn
+        self.schicht.assistent = assistent
 
         # TODO abweichende adressen
         # if int(data['abweichende_adresse_beginn']) > 0:
@@ -144,10 +151,17 @@ class SchichtController:
                                                        day=1))
 
         if undneu:
-            SchichtController(parent_controller=self.parent,
-                              session=self.session,
-                              assistent=self.assistent,
-                              asn=self.asn, edit_schicht=None)
+            parent = self.parent
+            session = self.session
+            assistent = self.assistent
+            asn = self.asn
+
+            self.schicht = None
+            SchichtController(parent_controller=parent,
+                              session=session,
+                              assistent=assistent,
+                              asn=asn,
+                              edit_schicht=None)
 
     def get_asn_by_id(self, asn_id):
         result = self.session.execute(select(ASN).where(ASN.id == asn_id))
@@ -168,7 +182,8 @@ class SchichtController:
     def get_adressliste(self):
         adressliste = {-2: 'Keine abweichende Adresse',
                        -1: 'Neu'}
-        for adresse in self.session.query(Adresse).filter(Adresse.asn == self.asn.id):
+        for adresse in self.session.query(Adresse).filter(
+                Adresse.assistenznehmer == self.asn).filter(not Adresse.assistent):
             adressliste[adresse.id] = adresse.bezeichner + ": " \
                                       + adresse.strasse \
                                       + " " + adresse.hausnummer + ", " + adresse.plz + " " + adresse.stadt
@@ -183,6 +198,7 @@ class SchichtController:
             asn = self.get_asn_by_id(asn_id)
             self.view.hide(self.view.asn_stammdaten_form)
             self.view.draw_templates(asn.schicht_templates)
+            # Todo Set adressliste
 
     def change_abweichende_adresse_beginn(self, event=None):
         if int(self.view.abweichende_adresse_beginn_dropdown.get()) < -1:

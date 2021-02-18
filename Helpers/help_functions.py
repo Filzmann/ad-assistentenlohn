@@ -60,6 +60,7 @@ def get_duration(then, now=datetime.now(), interval="default"):
 
 def split_by_null_uhr(schicht):
     ausgabe = []
+    
     if check_mehrtaegig(schicht):
         rest = dict(start=schicht.beginn, ende=schicht.ende)
         while rest['start'] <= rest['ende']:
@@ -73,21 +74,51 @@ def split_by_null_uhr(schicht):
                                         ) + timedelta(days=1)
 
             if neuer_start_rest <= rest['ende']:
-                ausgabe.append(Schicht(beginn=rest['start'],
-                                       ende=neuer_start_rest,
-                                       asn=schicht.asn,
-                                       assistent=schicht.assistent,
-                                       original_id=schicht.id))
+                ausgabe.append({'beginn': rest['start'],
+                                'ende': neuer_start_rest,
+                                'asn': schicht.asn,
+                                'assistent': schicht.assistent,
+                                'original_id': schicht.id,
+                                'ist_assistententreffen': schicht.ist_assistententreffen,
+                                'ist_kurzfristig': schicht.ist_kurzfristig,
+                                'ist_ausfallgeld': schicht.ist_ausfallgeld,
+                                'ist_pcg': schicht.ist_pcg,
+                                'ist_schulung': schicht.ist_schulung,
+                                'beginn_adresse': schicht.beginn_andere_adresse,
+                                'ende_adresse': schicht.ende_andere_adresse
+                                })
             else:
-                ausgabe.append(Schicht(beginn=rest['start'],
-                                       ende=rest['ende'],
-                                       asn=schicht.asn,
-                                       assistent=schicht.assistent,
-                                       original_id=schicht.id))
+                ausgabe.append({'beginn': rest['start'],
+                                'ende': rest['ende'],
+                                'asn': schicht.asn,
+                                'assistent': schicht.assistent,
+                                'original_id': schicht.id,
+                                'ist_assistententreffen': schicht.ist_assistententreffen,
+                                'ist_kurzfristig': schicht.ist_kurzfristig,
+                                'ist_ausfallgeld': schicht.ist_ausfallgeld,
+                                'ist_pcg': schicht.ist_pcg,
+                                'ist_schulung': schicht.ist_schulung,
+                                'beginn_adresse': schicht.beginn_andere_adresse,
+                                'ende_adresse': schicht.ende_andere_adresse
+                                })
 
             rest['start'] = neuer_start_rest
     else:
-        ausgabe.append(schicht)
+        # ausgabe.append(schicht)
+        ausgabe.append({
+            'beginn': schicht.beginn,
+            'ende': schicht.ende,
+            'asn': schicht.asn,
+            'assistent': schicht.assistent,
+            'original_id': schicht.id,
+            'ist_assistententreffen': schicht.ist_assistententreffen,
+            'ist_kurzfristig': schicht.ist_kurzfristig,
+            'ist_ausfallgeld': schicht.ist_ausfallgeld,
+            'ist_pcg': schicht.ist_pcg,
+            'ist_schulung': schicht.ist_schulung,
+            'beginn_adresse': schicht.beginn_andere_adresse,
+            'ende_adresse': schicht.ende_andere_adresse
+        })
 
     return ausgabe
 
@@ -115,7 +146,7 @@ def get_erfahrungsstufe(assistent, datum=datetime.now()):
 
 
 def berechne_stunden(schicht):
-    return get_duration(schicht.beginn, schicht.ende, "minutes") / 60
+    return get_duration(schicht['beginn'], schicht['ende'], "minutes") / 60
 
 
 def verschiebe_monate(offset, datum=datetime.now()):
@@ -221,8 +252,8 @@ def berechne_sa_so_weisil_feiertagszuschlaege(schicht: Schicht):
     feiertagsarray = {}
     zuschlagsgrund = ''
 
-    anfang = schicht.beginn
-    ende = schicht.ende
+    anfang = schicht['beginn']
+    ende = schicht['ende']
 
     if check_feiertag(anfang) != '':
         feiertagsstunden = berechne_stunden(schicht=schicht)
@@ -313,36 +344,36 @@ def get_nachtstunden(schicht):
 
     nachtstunden = 0
 
-    beginn_jahr = int(schicht.beginn.strftime('%Y'))
-    beginn_monat = int(schicht.beginn.strftime('%m'))
-    beginn_tag = int(schicht.beginn.strftime('%d'))
+    beginn_jahr = int(schicht['beginn'].strftime('%Y'))
+    beginn_monat = int(schicht['beginn'].strftime('%m'))
+    beginn_tag = int(schicht['beginn'].strftime('%d'))
 
     null_uhr = datetime(beginn_jahr, beginn_monat, beginn_tag, 0, 0, 0)
     sechs_uhr = datetime(beginn_jahr, beginn_monat, beginn_tag, 6, 0, 0)
     einundzwanzig_uhr = datetime(beginn_jahr, beginn_monat, beginn_tag, 21, 0, 0)
 
     # schicht beginnt zwischen 0 und 6 uhr
-    if null_uhr <= schicht.beginn <= sechs_uhr:
-        if schicht.ende <= sechs_uhr:
+    if null_uhr <= schicht['beginn'] <= sechs_uhr:
+        if schicht['ende'] <= sechs_uhr:
             # schicht endet spätestens 6 uhr
-            nachtstunden += get_duration(schicht.beginn, schicht.ende, 'minutes') / 60
+            nachtstunden += get_duration(schicht['beginn'], schicht['ende'], 'minutes') / 60
 
-        elif sechs_uhr <= schicht.ende <= einundzwanzig_uhr:
+        elif sechs_uhr <= schicht['ende'] <= einundzwanzig_uhr:
             # schicht endet nach 6 uhr aber vor 21 uhr
-            nachtstunden += get_duration(schicht.beginn, sechs_uhr, 'minutes') / 60
+            nachtstunden += get_duration(schicht['beginn'], sechs_uhr, 'minutes') / 60
 
         else:
             # schicht beginnt vor 6 uhr und geht über 21 Uhr hinaus
             # das bedeutet ich ziehe von der kompletten schicht einfach die 15 Stunden Tagschicht ab.
             # es bleibt der Nacht-An
-            nachtstunden += get_duration(schicht.beginn, schicht.ende, 'minutes') / 60 - 15
+            nachtstunden += get_duration(schicht['beginn'], schicht['ende'], 'minutes') / 60 - 15
     # schicht beginnt zwischen 6 und 21 uhr
-    elif sechs_uhr <= schicht.beginn <= einundzwanzig_uhr:
+    elif sechs_uhr <= schicht['beginn'] <= einundzwanzig_uhr:
         # fängt am tag an, geht aber bis in die nachtstunden
-        if schicht.ende > einundzwanzig_uhr:
-            nachtstunden += get_duration(einundzwanzig_uhr, schicht.ende, 'minutes') / 60
+        if schicht['ende'] > einundzwanzig_uhr:
+            nachtstunden += get_duration(einundzwanzig_uhr, schicht['ende'], 'minutes') / 60
     else:
         # schicht beginnt nach 21 uhr - die komplette schicht ist in der nacht
-        nachtstunden += get_duration(schicht.beginn, schicht.ende, 'minutes') / 60
+        nachtstunden += get_duration(schicht['beginn'], schicht['ende'], 'minutes') / 60
 
     return nachtstunden

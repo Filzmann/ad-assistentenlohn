@@ -1,7 +1,9 @@
 from sqlalchemy.future import select
 
 from Model.adresse import Adresse
+from Model.assistent import Assistent
 from Model.assistenznehmer import ASN
+from Model.association_as_asn import AssociationAsAsn
 from View.asn_stammdaten_view import AsnStammdatenView
 
 
@@ -44,34 +46,58 @@ class AsnStammdatenController:
                 plz='',
                 stadt='')
 
-    def save(self):
-        data = self.get_data()
-        self.asn.vorname = data['vorname']
-        self.asn.name = data['nachname']
-        self.asn.email = data['email']
-        self.asn.kuerzel = data['kuerzel']
+    def save_asn(self, assistent):
+        stammdaten = self.get_data()
+        if self.asn:
+            self.asn.kuerzel = stammdaten['kuerzel']
+            self.asn.vorname = stammdaten['vorname']
+            self.asn.name = stammdaten['nachname']
+            self.asn.email = stammdaten['email']
+            self.asn.einsatzbuero = stammdaten['buero']
 
-        home_result = self.session.query(Adresse).filter(
-            Adresse.assistenznehmer == self.asn).filter(
-            Adresse.bezeichner == '__home__')
-        if home_result:
-            home = home_result.one()
-            home.strasse = data['strasse']
-            home.hausnummer = data['hausnummer']
-            home.plz = data['plz']
-            home.stadt = data['stadt']
+            home = self.session.query(Adresse).filter(
+                Adresse.assistenznehmer == self.asn).filter(
+                Adresse.bezeichner == '__home__').one()
+
+            home.strasse = stammdaten['strasse']
+            home.hausnummer = stammdaten['hnr']
+            home.plz = stammdaten['plz']
+            home.stadt = stammdaten['stadt']
+
         else:
-            # new adress
-            home = Adresse(
-                strasse=data['strasse'],
-                hausnummer=data['hausnummer'],
-                plz=data['plz'],
-                stadt=data['stadt'],
-                bezeichner="__home__"
+            # create new home
+            home = Adresse(strasse=stammdaten['strasse'],
+                           hausnummer=stammdaten['hnr'],
+                           stadt=stammdaten['stadt'],
+                           plz=stammdaten['plz'],
+                           bezeichner="__home__")
+
+            # create new asn
+            asn = ASN(
+                kuerzel=stammdaten["kuerzel"],
+                name=stammdaten["nachname"],
+                vorname=stammdaten["vorname"],
+                email=stammdaten["email"],
+
             )
-            self.session.add(home)
-            self.asn.adressbuch.append(home)
-        self.session.commit()
+            # connect
+            asn.adressbuch.append(home)
+            self.session.add(asn)
+
+            # many_2_many as - asn
+            # 1. Zusatzdaten in Asociation,
+            # 2. ASN der  Aso zuweisen,
+            # 3. Aso dem Assistenten
+            # Todo auswahl fest/vertretung/feste_vertretung
+            result = self.session.execute(select(Assistent).where(Assistent.id == assistent.id))
+            assistent = result.scalars().one()
+            association = AssociationAsAsn(fest_vertretung="fest")
+            association.asn = asn
+            association.as_id = assistent.id
+            asn.assistenten.append(association)
+            self.asn = asn
+
+        return self.asn
 
     def get_data(self):
         return self.view.get_data()

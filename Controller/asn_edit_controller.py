@@ -46,7 +46,7 @@ class AsnEditController:
         # self.view.saveandnew_button.config(command=lambda: self.save_au(undneu=1))
 
     def change_asn(self):
-
+        # todo Reset für Neuer ASN nach update ASN
         if self.view.choose.selected_asn.get() < 999999999:
             result = self.session.execute(select(ASN).where(ASN.id == self.view.choose.selected_asn.get()))
             asn = result.scalars().one()
@@ -70,49 +70,7 @@ class AsnEditController:
             self.view.pfk.set_pfk()
 
     def save_asn(self):
-        stammdaten = self.stammdaten.get_data()
-        if self.asn:
-            self.asn.kuerzel = stammdaten['kuerzel']
-            self.asn.vorname = stammdaten['vorname']
-            self.asn.name = stammdaten['nachname']
-            self.asn.email = stammdaten['email']
-            self.asn.einsatzbuero = stammdaten['buero']
-
-            self.asn.home.strasse = stammdaten['strasse']
-            self.asn.home.hausnmummer = stammdaten['hnr']
-            self.asn.home.plz = stammdaten['plz']
-            self.asn.home.stadt = stammdaten['stadt']
-
-        else:
-            # create new home
-            home = Adresse(strasse=stammdaten['strasse'],
-                           hausnummer=stammdaten['hnr'],
-                           stadt=stammdaten['stadt'],
-                           plz=stammdaten['plz'])
-            # create new asn
-            asn = ASN(
-                kuerzel=stammdaten["kuerzel"],
-                name=stammdaten["nachname"],
-                vorname=stammdaten["vorname"],
-                email=stammdaten["email"],
-
-            )
-            # connect
-            asn.home = home
-            self.session.add(asn)
-
-            # many_2_many as - asn
-            # 1. Zusatzdaten in Asociation,
-            # 2. ASN der  Aso zuweisen,
-            # 3. Aso dem Assistenten
-            # Todo auswahl fest/vertretung/feste_vertretung
-            result = self.session.execute(select(Assistent).where(Assistent.id == self.assistent.id))
-            assistent = result.scalars().one()
-            association = AssociationAsAsn(fest_vertretung="fest")
-            association.asn = asn
-            association.as_id = assistent.id
-            asn.assistenten.append(association)
-            self.asn = asn
+        self.asn = self.stammdaten.save_asn(assistent=self.assistent)
 
         self.asn.einsatzbegleitung = self.view.eb.save()
         self.asn.pflegefachkraft = self.view.pfk.save()

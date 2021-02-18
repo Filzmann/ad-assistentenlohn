@@ -11,7 +11,7 @@ class TabelleController:
         self.assistent = assistent
         self.session = session
         self.parent_view = parent_view
-        self.nav_panel=None
+        self.nav_panel = None
         self.root_window_controller = root_window_controller
         # initialisierung
         self.start = datetime(year=datetime.now().year,
@@ -48,20 +48,20 @@ class TabelleController:
         schichten = self.get_sliced_schichten(start=self.start, end=self.end)
         schichten_view_data = {}
         for schicht in schichten:
-            if not schicht.beginn.strftime('%d') in schichten_view_data.keys():
-                schichten_view_data[schicht.beginn.strftime('%d')] = []
+            if not schicht['beginn'].strftime('%d') in schichten_view_data.keys():
+                schichten_view_data[schicht['beginn'].strftime('%d')] = []
 
             # at etc
             asn_add = ''
-            asn_add += 'AT ' if schicht.ist_assistententreffen else ''
-            asn_add += 'PCG ' if schicht.ist_pcg else ''
-            asn_add += 'RB/BSD ' if schicht.ist_kurzfristig else ''
-            asn_add += 'AFG ' if schicht.ist_ausfallgeld else ''
+            asn_add += 'AT ' if schicht['ist_assistententreffen'] else ''
+            asn_add += 'PCG ' if schicht['ist_pcg'] else ''
+            asn_add += 'RB/BSD ' if schicht['ist_kurzfristig'] else ''
+            asn_add += 'AFG ' if schicht['ist_ausfallgeld'] else ''
 
             # stunden
             stunden = berechne_stunden(schicht)
 
-            lohn = self.get_lohn(assistent=self.assistent, datum=schicht.beginn)
+            lohn = self.get_lohn(assistent=self.assistent, datum=schicht['beginn'])
 
             nachtstunden = get_nachtstunden(schicht)
 
@@ -81,16 +81,16 @@ class TabelleController:
             else:
                 zuschlaege_text = ''
 
-            schichten_view_data[schicht.beginn.strftime('%d')].append(
+            schichten_view_data[schicht['beginn'].strftime('%d')].append(
                 {
-                    'schicht_id': schicht.original_id if schicht.original_id else schicht.id,
-                    'von': schicht.beginn.strftime('%H:%M'),
-                    'bis': schicht.ende.strftime('%H:%M'),
-                    'asn': asn_add + schicht.asn.kuerzel,
+                    'schicht_id': schicht['original_id'] if schicht['original_id'] else schicht['id'],
+                    'von': schicht['beginn'].strftime('%H:%M'),
+                    'bis': schicht['ende'].strftime('%H:%M'),
+                    'asn': asn_add + schicht['asn'].kuerzel,
                     'stunden': stunden,
                     'stundenlohn': "{:,.2f}€".format(lohn.grundlohn),
                     'schichtlohn': "{:,.2f}€".format(lohn.grundlohn * stunden),
-                    'bsd': "{:,.2f}€".format(lohn.grundlohn * stunden * 0.2) if schicht.ist_kurzfristig else 0,
+                    'bsd': "{:,.2f}€".format(lohn.grundlohn * stunden * 0.2) if schicht['ist_kurzfristig'] else 0,
                     'orgazulage': "{:,.2f}€".format(lohn.orga_zuschlag),
                     'orgazulage_schicht': "{:,.2f}€".format(lohn.orga_zuschlag * stunden),
                     'wechselzulage': "{:,.2f}€".format(lohn.wechselschicht_zuschlag),
@@ -100,16 +100,14 @@ class TabelleController:
                     'nachtzuschlag_schicht': "{:,.2f}€".format(lohn.nacht_zuschlag * nachtstunden),
                     'zuschlaege': zuschlaege_text,
                     'kill_command': lambda: self.kill_schicht(
-                        schicht_id=schicht.original_id if schicht.original_id else schicht.id),
+                        schicht_id=schicht['original_id'] if schicht['original_id'] else schicht['id']),
                     'edit_command': lambda: self.edit_schicht(
-                        schicht_id=schicht.original_id if schicht.original_id else schicht.id),
+                        schicht_id=schicht['original_id'] if schicht['original_id'] else schicht['id']),
 
                 }
             )
 
         return schichten_view_data
-
-
 
     def get_sliced_schichten(self, start, end):
         sliced_schichten = []

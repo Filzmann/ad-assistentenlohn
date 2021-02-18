@@ -86,8 +86,6 @@ class SchichtView(tk.Toplevel):
         self.saveandnew_button = tk.Button(self.save_buttons_frame, text="Daten speichern und neu")
         # command=lambda: self.action_save_neue_schicht(undneu=1))
 
-        self.draw()
-
     def draw_templates(self, template_list):
         for child in self.template_frame.winfo_children():
             child.destroy()
@@ -210,19 +208,22 @@ class SchichtView(tk.Toplevel):
             self.asn_stammdaten_form.set_data(**kwargs['asn_stammdaten'])
         if 'beginn' in kwargs.keys():
             date_string = kwargs['beginn'].strftime('%m/%d/%Y')
-            self.startdatum_input.parse_date(date_string)
+            # self.startdatum_input.parse_date(date_string)
+            self.startdatum_input.selection_set(date=kwargs['beginn'])
             self.startzeit_input.hourstr.set(kwargs['beginn'].strftime('%H'))
             self.startzeit_input.minstr.set(kwargs['beginn'].strftime('%M'))
         if 'ende' in kwargs.keys():
             date_string = kwargs['ende'].strftime('%m/%d/%Y')
-            self.enddatum_input.parse_date(date_string)
+            # self.enddatum_input.parse_date(date_string)
+            self.enddatum_input.selection_set(date=kwargs['ende'])
+
             self.endzeit_input.hourstr.set(kwargs['ende'].strftime('%H'))
             self.endzeit_input.minstr.set(kwargs['ende'].strftime('%M'))
 
-            self.ist_at.set(1 if 'ist_at' in kwargs.keys() and kwargs['ist_at'] else 0)
-            self.ist_pcg.set(1 if 'ist_pcg' in kwargs.keys() and kwargs['ist_pcg'] else 0)
-            self.ist_rb.set(1 if 'ist_rb' in kwargs.keys() and kwargs['ist_rb'] else 0)
-            self.ist_afg.set(1 if 'ist_afg' in kwargs.keys() and kwargs['ist_afg'] else 0)
+        self.ist_at.set(1 if 'ist_at' in kwargs.keys() and kwargs['ist_at'] else 0)
+        self.ist_pcg.set(1 if 'ist_pcg' in kwargs.keys() and kwargs['ist_pcg'] else 0)
+        self.ist_rb.set(1 if 'ist_rb' in kwargs.keys() and kwargs['ist_rb'] else 0)
+        self.ist_afg.set(1 if 'ist_afg' in kwargs.keys() and kwargs['ist_afg'] else 0)
 
         # 'abweichende_adresse_beginn': self.abweichende_adresse_beginn_dropdown.get(),
         # 'abweichende_adresse_beginn_data': self.abweichende_adresse_beginn.get_data(),
