@@ -13,7 +13,6 @@ class Schicht(Base):
     asn = relationship("ASN", back_populates="schichten")
     assistent_id = Column(Integer, ForeignKey('assistenten.id'))
     assistent = relationship("Assistent", back_populates="schichten")
-    original_id = Column(Integer)
     ist_kurzfristig = Column(Boolean)
     ist_ausfallgeld = Column(Boolean)
     ist_assistententreffen = Column(Boolean)

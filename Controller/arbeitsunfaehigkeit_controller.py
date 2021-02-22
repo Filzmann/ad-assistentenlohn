@@ -1,7 +1,10 @@
 from datetime import datetime
 
+from sqlalchemy import or_
+
 from Model.arbeitsunfaehigkeit import AU
 from Model.assistent import Assistent
+from Model.schicht import Schicht
 from View.arbeitsunfaehigkeit_view import AUView
 
 
@@ -21,6 +24,14 @@ class AUController:
         session = self.session
         ende = datetime(data['ende'].year, data['ende'].month, data['ende'].day, 23, 59)
 
+        # falls in dem Zeitraum Schichten sind, müssen diese gelöscht werden
+        for schicht in session.query(Schicht).filter(
+                or_(
+                    Schicht.beginn.between(data['beginn'], ende),
+                    Schicht.ende.between(data['beginn'], ende)
+                )):
+            self.session.delete(schicht)
+
         if not self.au:
 
             au = AU(
@@ -29,15 +40,15 @@ class AUController:
                 assistent=self.assistent.id)
 
             session.add(au)
-            session.commit()
-            self.view.destroy()
-            self.parent.draw(session)
+
         else:
             self.au.beginn = data['beginn'],
             self.au.ende = ende
 
-            session.commit()
-            self.view.destroy()
+        session.commit()
+        self.view.destroy()
+        self.parent.draw(session)
+
         if undneu == 1:
             AUController(self.parent, assistent=self.assistent)
 

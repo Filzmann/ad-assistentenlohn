@@ -2,7 +2,9 @@ from sqlalchemy import or_, desc
 
 from Controller.schicht_controller import SchichtController
 from Helpers.help_functions import *
+from Model.arbeitsunfaehigkeit import AU
 from Model.lohn import Lohn
+from Model.urlaub import Urlaub
 from View.tabelle_view import TabelleView
 
 
@@ -22,15 +24,11 @@ class TabelleController:
 
         data = self.calculate()
         self.view = TabelleView(parent_view=parent_view,
+                                parent_controller=self,
                                 data=data,
                                 anzahl_tage=letzter_tag,
                                 start=self.start)
         data = None
-
-        # aufräumen falls noch "Teilschichten" in der Session rumliegen
-        for schicht in self.session.query(Schicht).filter(Schicht.original_id):
-            self.session.delete(schicht)
-            self.session.commit()
 
     def change_arbeitsdatum(self, datum, session):
         self.start = datetime(year=datum.year,
@@ -69,45 +67,121 @@ class TabelleController:
 
             # zuschläge
             zuschlaege = berechne_sa_so_weisil_feiertagszuschlaege(schicht)
+            zuschlaege_text = ''
             if zuschlaege:
-                grund = zuschlaege['zuschlagsgrund']
-                # Grund zu lower-case mit "_" statt " " und ohn punkte, damit es dem Spaltennamen der Tabelle entspricht
-                spaltenname = grund.lower().replace('.', '').replace(' ', '_') + '_zuschlag'
-                stundenzuschlag = getattr(lohn, spaltenname)
-                schichtzuschlag = zuschlaege['stunden_gesamt'] * stundenzuschlag
-                zuschlaege_text = grund \
-                                  + ': ' \
-                                  + "{:,.2f}".format(zuschlaege['stunden_gesamt']) \
-                                  + ' Std = ' \
-                                  + "{:,.2f}€".format(schichtzuschlag)
-            else:
-                zuschlaege_text = ''
+                if zuschlaege['stunden_gesamt'] > 0:
+                    grund = zuschlaege['zuschlagsgrund']
+                    # Grund zu lower-case mit "_" statt " " und ohne punkte,
+                    # damit es dem Spaltennamen der Tabelle entspricht
+                    spaltenname = grund.lower().replace('.', '').replace(' ', '_') + '_zuschlag'
+                    stundenzuschlag = getattr(lohn, spaltenname)
+                    schichtzuschlag = zuschlaege['stunden_gesamt'] * stundenzuschlag
+                    zuschlaege_text = grund \
+                                      + ': ' \
+                                      + "{:,.2f}".format(zuschlaege['stunden_gesamt']) \
+                                      + ' Std = ' \
+                                      + "{:,.2f}€".format(schichtzuschlag)
 
+            schicht_id = schicht['schicht_id']
             schichten_view_data[schicht['beginn'].strftime('%d')].append(
                 {
-                    'schicht_id': schicht['original_id'] if schicht['original_id'] else schicht['id'],
+                    'schicht_id': schicht_id,
                     'von': schicht['beginn'].strftime('%H:%M'),
                     'bis': schicht['ende'].strftime('%H:%M'),
                     'asn': asn_add + schicht['asn'].kuerzel,
-                    'stunden': stunden,
+                    'stunden': "{:,.2f}".format(stunden),
                     'stundenlohn': "{:,.2f}€".format(lohn.grundlohn),
                     'schichtlohn': "{:,.2f}€".format(lohn.grundlohn * stunden),
-                    'bsd': "{:,.2f}€".format(lohn.grundlohn * stunden * 0.2) if schicht['ist_kurzfristig'] else 0,
+                    'bsd': "{:,.2f}€".format(lohn.grundlohn * stunden * 0.2) if schicht['ist_kurzfristig'] else ' ',
                     'orgazulage': "{:,.2f}€".format(lohn.orga_zuschlag),
                     'orgazulage_schicht': "{:,.2f}€".format(lohn.orga_zuschlag * stunden),
                     'wechselzulage': "{:,.2f}€".format(lohn.wechselschicht_zuschlag),
                     'wechselzulage_schicht': "{:,.2f}€".format(lohn.wechselschicht_zuschlag * stunden),
-                    'nachtstunden': nachtstunden,
+                    'nachtstunden': "{:,.2f}".format(nachtstunden) if nachtstunden > 0 else ' ',
                     'nachtzuschlag': "{:,.2f}€".format(lohn.nacht_zuschlag),
-                    'nachtzuschlag_schicht': "{:,.2f}€".format(lohn.nacht_zuschlag * nachtstunden),
-                    'zuschlaege': zuschlaege_text,
-                    'kill_command': lambda: self.kill_schicht(
-                        schicht_id=schicht['original_id'] if schicht['original_id'] else schicht['id']),
-                    'edit_command': lambda: self.edit_schicht(
-                        schicht_id=schicht['original_id'] if schicht['original_id'] else schicht['id']),
-
+                    'nachtzuschlag_schicht': "{:,.2f}€".format(lohn.nacht_zuschlag * nachtstunden) if nachtstunden > 0 else ' ',
+                    'zuschlaege': zuschlaege_text
                 }
             )
+
+        # mehrere Schichten an jedem Tag nach schichtbeginn sortieren
+        for key in schichten_view_data:
+            schichten_view_data[key] = sort_schicht_data_by_beginn(schichten_view_data[key])
+
+        # Urlaube ermitteln
+        # Todo urlaube, die länger als ein Monat sind und in diesem Monat weder starten noch enden
+        for urlaub in self.session.query(Urlaub).filter(
+                or_(
+                    Urlaub.beginn.between(self.start, self.end),
+                    Urlaub.ende.between(self.start, self.end)
+                )):
+            erster_tag = urlaub.beginn.day if urlaub.beginn > self.start else self.start.day
+            letzter_tag = urlaub.ende.day if urlaub.ende < self.end else self.end.day
+            # Todo berechnung urlaubs/au-Stunden
+            urlaubsstunden = 6
+            urlaubslohn = 20
+            for tag in range(erster_tag, letzter_tag + 1):
+                if tag not in schichten_view_data.keys():
+                    schichten_view_data[tag] = []
+                schichten_view_data[tag].append(
+                    {
+                        'schicht_id': urlaub.id,
+                        'von': ' ',
+                        'bis': ' ',
+                        'asn': 'Urlaub',
+                        'stunden': "{:,.2f}".format(urlaubsstunden),
+                        'stundenlohn': "{:,.2f}€".format(urlaubslohn),
+                        'schichtlohn': "{:,.2f}€".format(urlaubslohn * urlaubsstunden),
+                        'bsd': ' ',
+                        'orgazulage': ' ',
+                        'orgazulage_schicht': ' ',
+                        'wechselzulage': ' ',
+                        'wechselzulage_schicht': ' ',
+                        'nachtstunden': ' ',
+                        'nachtzuschlag': ' ',
+                        'nachtzuschlag_schicht': ' ',
+                        'zuschlaege': ' '
+                    }
+                )
+
+            # AU ermitteln
+            # Todo AU, die länger als ein Monat sind und in diesem Monat weder starten noch enden
+            for au in self.session.query(AU).filter(
+                    or_(
+                        AU.beginn.between(self.start, self.end),
+                        AU.ende.between(self.start, self.end)
+                    )):
+                if tag not in schichten_view_data.keys():
+                    schichten_view_data[tag] = []
+                erster_tag = au.beginn.day if au.beginn > self.start else self.start.day
+                letzter_tag = au.ende.day if au.ende < self.end else self.end.day
+                # Todo berechnung aus/au-Stunden
+                austunden = 6
+                aulohn = 20
+                for tag in range(erster_tag, letzter_tag + 1):
+                    schichten_view_data[tag].append(
+                        {
+                            'schicht_id': au.id,
+                            'von': ' ',
+                            'bis': ' ',
+                            'asn': 'Urlaub',
+                            'stunden': "{:,.2f}".format(austunden),
+                            'stundenlohn': "{:,.2f}€".format(aulohn),
+                            'schichtlohn': "{:,.2f}€".format(aulohn * austunden),
+                            'bsd': ' ',
+                            'orgazulage': ' ',
+                            'orgazulage_schicht': ' ',
+                            'wechselzulage': ' ',
+                            'wechselzulage_schicht': ' ',
+                            'nachtstunden': ' ',
+                            'nachtzuschlag': ' ',
+                            'nachtzuschlag_schicht': ' ',
+                            'zuschlaege': ' '
+                        }
+                    )
+
+
+
 
         return schichten_view_data
 
@@ -138,15 +212,10 @@ class TabelleController:
         return False
 
     def kill_schicht(self, schicht_id):
-        for schicht in self.session.query(Schicht).filter(
-                or_(
-                    Schicht.id == schicht_id,
-                    Schicht.original_id == schicht_id
-                )
-        ):
+        for schicht in self.session.query(Schicht).filter(Schicht.id == schicht_id):
             self.session.delete(schicht)
             self.session.commit()
-            self.change_arbeitsdatum(schicht.beginn)
+            self.change_arbeitsdatum(schicht.beginn, session=self.session)
 
     def edit_schicht(self, schicht_id):
         for schicht in self.session.query(Schicht).filter(Schicht.id == schicht_id):
@@ -157,3 +226,10 @@ class TabelleController:
                               edit_schicht=schicht,
                               datum=schicht.beginn,
                               nav_panel=self.nav_panel)
+
+    def new_schicht(self, datum):
+        SchichtController(parent_controller=self.root_window_controller,
+                          session=self.session,
+                          assistent=self.assistent,
+                          datum=datum,
+                          nav_panel=self.nav_panel)

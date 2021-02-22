@@ -20,10 +20,7 @@ class SummenController:
         self.view = SummenView(parent_view=parent_view,
                                data=data)
 
-        # aufräumen falls noch "Teilschichten" in der Session rumliegen
-        for schicht in self.session.query(Schicht).filter(Schicht.original_id):
-            self.session.delete(schicht)
-            self.session.commit()
+
 
     def change_arbeitsdatum(self, datum, session):
         self.start = datetime(year=datum.year,
@@ -49,15 +46,14 @@ class SummenController:
             'bsd': 0,
             'bsd_stunden': 0,
             'bsd_kumuliert': 0,
-            # Todo wegegeld
             'wegegeld_bsd': 0,
             'orga_zuschlag': 0,
             'orga_zuschlag_kumuliert': 0,
             'wechselschicht_zuschlag': 0,
             'wechselschicht_zuschlag_kumuliert': 0,
-            # todo freizeitausgleich
             'freizeitausgleich': 0,
-            'bruttolohn': 0
+            'bruttolohn': 0,
+            'anzahl_feiertage': 0
             # todo freie Sonntage
 
         }
@@ -119,6 +115,13 @@ class SummenController:
                         schichten_view_data[spaltenname + "_stunden"] = zuschlaege['stunden_gesamt']
                         schichten_view_data[spaltenname + "_pro_stunde"] = stundenzuschlag
                         schichten_view_data[spaltenname + "_kumuliert"] = schichtzuschlag
+
+        # anzahl aller feiertage ermitteln
+        letzter_tag = (self.end - timedelta(seconds=1)).day
+        for tag in range(1, letzter_tag + 1):
+            if check_feiertag(datetime(year=self.start.year, month=self.start.month, day=tag)):
+                schichten_view_data['anzahl_feiertage'] += 1
+
 
         return schichten_view_data
 

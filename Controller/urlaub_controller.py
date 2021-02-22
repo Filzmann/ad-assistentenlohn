@@ -1,6 +1,9 @@
 from datetime import datetime
 
+from sqlalchemy import or_
+
 from Model.assistent import Assistent
+from Model.schicht import Schicht
 from Model.urlaub import Urlaub
 from View.urlaub_view import UrlaubView
 
@@ -21,25 +24,32 @@ class UrlaubController:
         session = self.session
         ende = datetime(data['ende'].year, data['ende'].month, data['ende'].day, 23, 59)
 
-        if not self.urlaub:
+        # falls in dem Zeitraum Schichten sind, müssen diese gelöscht werden
+        for schicht in session.query(Schicht).filter(
+                or_(
+                    Schicht.beginn.between(data['beginn'], ende),
+                    Schicht.ende.between(data['beginn'], ende)
+                )):
+            self.session.delete(schicht)
 
+        if not self.urlaub:
             urlaub = Urlaub(
                 beginn=data['beginn'],
                 ende=ende,
                 status=data['status'],
                 assistent=self.assistent.id)
 
+
             session.add(urlaub)
-            session.commit()
-            self.view.destroy()
-            self.parent.draw()
+
         else:
             self.urlaub.beginn = data['beginn'],
             self.urlaub.ende = ende,
             self.urlaub.status = data['status'],
 
-            session.commit()
-            self.view.destroy()
+        session.commit()
+        self.view.destroy()
+        self.parent.draw(session)
         if undneu == 1:
             UrlaubController(self.parent, assistent=self.assistent)
 

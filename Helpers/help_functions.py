@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from time import strptime
 
 from Model.schicht import Schicht
 
@@ -60,7 +61,7 @@ def get_duration(then, now=datetime.now(), interval="default"):
 
 def split_by_null_uhr(schicht):
     ausgabe = []
-    
+
     if check_mehrtaegig(schicht):
         rest = dict(start=schicht.beginn, ende=schicht.ende)
         while rest['start'] <= rest['ende']:
@@ -78,7 +79,7 @@ def split_by_null_uhr(schicht):
                                 'ende': neuer_start_rest,
                                 'asn': schicht.asn,
                                 'assistent': schicht.assistent,
-                                'original_id': schicht.id,
+                                'schicht_id': schicht.id,
                                 'ist_assistententreffen': schicht.ist_assistententreffen,
                                 'ist_kurzfristig': schicht.ist_kurzfristig,
                                 'ist_ausfallgeld': schicht.ist_ausfallgeld,
@@ -92,7 +93,7 @@ def split_by_null_uhr(schicht):
                                 'ende': rest['ende'],
                                 'asn': schicht.asn,
                                 'assistent': schicht.assistent,
-                                'original_id': schicht.id,
+                                'schicht_id': schicht.id,
                                 'ist_assistententreffen': schicht.ist_assistententreffen,
                                 'ist_kurzfristig': schicht.ist_kurzfristig,
                                 'ist_ausfallgeld': schicht.ist_ausfallgeld,
@@ -110,7 +111,7 @@ def split_by_null_uhr(schicht):
             'ende': schicht.ende,
             'asn': schicht.asn,
             'assistent': schicht.assistent,
-            'original_id': schicht.id,
+            'schicht_id': schicht.id,
             'ist_assistententreffen': schicht.ist_assistententreffen,
             'ist_kurzfristig': schicht.ist_kurzfristig,
             'ist_ausfallgeld': schicht.ist_ausfallgeld,
@@ -377,3 +378,22 @@ def get_nachtstunden(schicht):
         nachtstunden += get_duration(schicht['beginn'], schicht['ende'], 'minutes') / 60
 
     return nachtstunden
+
+
+def sort_schicht_data_by_beginn(schichten: list):
+    """sortiert die schichten an einem tag (in Form einer Liste von dicts von strings)
+    nach ihrem beginn"""
+    ausgabe = []
+
+    for schicht in schichten:
+        insert_flag = False
+        beginn_akt_schicht = strptime(schicht['von'], "%H:%M")
+        for zaehler in range(0, len(ausgabe)):
+            if beginn_akt_schicht < strptime(ausgabe[zaehler]['von'], "%H:%M"):
+                ausgabe.insert(zaehler, schicht)
+                insert_flag = True
+                break
+        if not insert_flag:
+            ausgabe.append(schicht)
+
+    return ausgabe
