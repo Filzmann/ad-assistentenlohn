@@ -114,7 +114,8 @@ class TabelleController:
                 or_(
                     Urlaub.beginn.between(self.start, self.end),
                     Urlaub.ende.between(self.start, self.end)
-                )):
+                )).filter(self.start != Urlaub.ende).filter(self.end != Urlaub.beginn):
+
             erster_tag = urlaub.beginn.day if urlaub.beginn > self.start else self.start.day
             letzter_tag = urlaub.ende.day if urlaub.ende < self.end else self.end.day
             # Todo berechnung urlaubs/au-Stunden
@@ -122,8 +123,8 @@ class TabelleController:
             urlaubslohn = 20
             for tag in range(erster_tag, letzter_tag + 1):
                 if tag not in schichten_view_data.keys():
-                    schichten_view_data[tag] = []
-                schichten_view_data[tag].append(
+                    schichten_view_data["{:02d}".format(tag)] = []
+                schichten_view_data["{:02d}".format(tag)].append(
                     {
                         'schicht_id': urlaub.id,
                         'von': ' ',
@@ -150,21 +151,22 @@ class TabelleController:
                     or_(
                         AU.beginn.between(self.start, self.end),
                         AU.ende.between(self.start, self.end)
-                    )):
-                if tag not in schichten_view_data.keys():
-                    schichten_view_data[tag] = []
+                    )).filter(self.start != AU.ende).filter(self.end != AU.beginn):
+
                 erster_tag = au.beginn.day if au.beginn > self.start else self.start.day
                 letzter_tag = au.ende.day if au.ende < self.end else self.end.day
                 # Todo berechnung aus/au-Stunden
                 austunden = 6
                 aulohn = 20
                 for tag in range(erster_tag, letzter_tag + 1):
-                    schichten_view_data[tag].append(
+                    if tag not in schichten_view_data.keys():
+                        schichten_view_data["{:02d}".format(tag)] = []
+                    schichten_view_data["{:02d}".format(tag)].append(
                         {
                             'schicht_id': au.id,
                             'von': ' ',
                             'bis': ' ',
-                            'asn': 'Urlaub',
+                            'asn': 'AU/krank',
                             'stunden': "{:,.2f}".format(austunden),
                             'stundenlohn': "{:,.2f}€".format(aulohn),
                             'schichtlohn': "{:,.2f}€".format(aulohn * austunden),
@@ -179,9 +181,6 @@ class TabelleController:
                             'zuschlaege': ' '
                         }
                     )
-
-
-
 
         return schichten_view_data
 

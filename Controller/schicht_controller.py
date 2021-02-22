@@ -118,7 +118,7 @@ class SchichtController:
                         day=int(enddatum_array[1]),
                         hour=int(data['endzeit_stunde']),
                         minute=int(data['endzeit_minute']))
-        # Todo Update
+
         if self.schicht:
             self.schicht.beginn = beginn
             self.schicht.ende = ende

@@ -1,6 +1,7 @@
 from sqlalchemy import or_, desc
 
 from Helpers.help_functions import *
+from Model.brutto import Brutto
 from Model.lohn import Lohn
 from View.summen_view import SummenView
 
@@ -29,6 +30,7 @@ class SummenController:
         self.end = verschiebe_monate(offset=1, datum=self.start)
         data = self.calculate(session=session)
 
+        self.save_brutto(data)
         self.view.draw(data=data)
 
     def calculate(self, session=None):
@@ -151,3 +153,21 @@ class SummenController:
         ).order_by(desc(Lohn.gueltig_ab)).limit(1):
             return lohn
         return False
+
+    def save_brutto(self, data):
+        brutto = self.session.query(Brutto).filter(
+            Brutto.monat == self.start).filter(
+            Brutto.as_id == self.assistent.id).one()
+        if brutto:
+            # Update
+            brutto.bruttolohn = data['Bruttolohn']
+            brutto.stunden_gesamt = data['arbeitsstunden']
+
+        else:
+            # Create
+            brutto = Brutto(monat=self.start,
+                            as_id=self.assistent.id,
+                            bruttolohn=data['Bruttolohn'],
+                            stunden_gesamt=data['arbeitsstunden'])
+            self.session.add(brutto)
+        self.session.commit()
