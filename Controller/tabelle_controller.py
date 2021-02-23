@@ -49,6 +49,11 @@ class TabelleController:
         if session:
             self.session = session
         schichten = self.get_sliced_schichten(start=self.start, end=self.end, session=session)
+
+        if not schichten:
+            self.add_feste_schichten(self.start, self.end)
+            schichten = self.get_sliced_schichten(start=self.start, end=self.end, session=session)
+
         schichten_view_data = {}
         for schicht in schichten:
             if not schicht['beginn'].strftime('%d') in schichten_view_data.keys():
@@ -154,48 +159,47 @@ class TabelleController:
                     }
                 )
 
-            # AU ermitteln
-            # Todo AU, die länger als ein Monat sind und in diesem Monat weder starten noch enden
-            for au in self.session.query(AU).filter(
-                    or_(
-                        AU.beginn.between(self.start, self.end),
-                        AU.ende.between(self.start, self.end)
-                    )).filter(self.start != AU.ende).filter(self.end != AU.beginn):
+        # AU ermitteln
+        # Todo AU, die länger als ein Monat sind und in diesem Monat weder starten noch enden
+        for au in self.session.query(AU).filter(
+                or_(
+                    AU.beginn.between(self.start, self.end),
+                    AU.ende.between(self.start, self.end)
+                )).filter(self.start != AU.ende).filter(self.end != AU.beginn):
 
-                erster_tag = au.beginn.day if au.beginn > self.start else self.start.day
-                letzter_tag = au.ende.day if au.ende < self.end else self.end.day
-                austunden = berechne_urlaub_au_saetze(datum=self.start,
-                                                      assistent=self.assistent,
-                                                      session=self.session)['stunden_pro_tag']
-                aulohn = berechne_urlaub_au_saetze(datum=self.start,
-                                                   assistent=self.assistent,
-                                                   session=self.session)['pro_stunde']
+            erster_tag = au.beginn.day if au.beginn > self.start else self.start.day
+            letzter_tag = au.ende.day if au.ende < self.end else self.end.day
+            austunden = berechne_urlaub_au_saetze(datum=self.start,
+                                                  assistent=self.assistent,
+                                                  session=self.session)['stunden_pro_tag']
+            aulohn = berechne_urlaub_au_saetze(datum=self.start,
+                                               assistent=self.assistent,
+                                               session=self.session)['pro_stunde']
 
-                for tag in range(erster_tag, letzter_tag + 1):
-                    if tag not in schichten_view_data.keys():
-                        schichten_view_data["{:02d}".format(tag)] = []
-                    schichten_view_data["{:02d}".format(tag)].append(
-                        {
-                            'schicht_id': au.id,
-                            'von': ' ',
-                            'bis': ' ',
-                            'asn': 'AU/krank',
-                            'stunden': "{:,.2f}".format(austunden),
-                            'stundenlohn': "{:,.2f}€".format(aulohn),
-                            'schichtlohn': "{:,.2f}€".format(aulohn * austunden),
-                            'bsd': ' ',
-                            'orgazulage': ' ',
-                            'orgazulage_schicht': ' ',
-                            'wechselzulage': ' ',
-                            'wechselzulage_schicht': ' ',
-                            'nachtstunden': ' ',
-                            'nachtzuschlag': ' ',
-                            'nachtzuschlag_schicht': ' ',
-                            'zuschlaege': ' ',
-                            'type': 'au'
-
-                        }
-                    )
+            for tag in range(erster_tag, letzter_tag + 1):
+                if tag not in schichten_view_data.keys():
+                    schichten_view_data["{:02d}".format(tag)] = []
+                schichten_view_data["{:02d}".format(tag)].append(
+                    {
+                        'schicht_id': au.id,
+                        'von': ' ',
+                        'bis': ' ',
+                        'asn': 'AU/krank',
+                        'stunden': "{:,.2f}".format(austunden),
+                        'stundenlohn': "{:,.2f}€".format(aulohn),
+                        'schichtlohn': "{:,.2f}€".format(aulohn * austunden),
+                        'bsd': ' ',
+                        'orgazulage': ' ',
+                        'orgazulage_schicht': ' ',
+                        'wechselzulage': ' ',
+                        'wechselzulage_schicht': ' ',
+                        'nachtstunden': ' ',
+                        'nachtzuschlag': ' ',
+                        'nachtzuschlag_schicht': ' ',
+                        'zuschlaege': ' ',
+                        'type': 'au'
+                    }
+                )
 
         return schichten_view_data
 
@@ -225,34 +229,34 @@ class TabelleController:
             return lohn
         return False
 
-    def kill_schicht(self, schicht_id, type='schicht'):
-        if type == "schicht":
+    def kill_schicht(self, schicht_id, typ='schicht'):
+        if typ == "schicht":
             for schicht in self.session.query(Schicht).filter(Schicht.id == schicht_id):
                 self.session.delete(schicht)
                 self.session.commit()
                 self.change_arbeitsdatum(schicht.beginn, session=self.session)
-        elif type == "urlaub":
+        elif typ == "urlaub":
             for u in self.session.query(Urlaub).filter(Urlaub.id == schicht_id):
                 self.session.delete(u)
                 self.session.commit()
                 self.change_arbeitsdatum(u.beginn, session=self.session)
-        elif type == "au":
-            for au in self.session.query(Urlaub).filter(Urlaub.id == schicht_id):
+        elif typ == "au":
+            for au in self.session.query(AU).filter(AU.id == schicht_id):
                 self.session.delete(au)
                 self.session.commit()
                 self.change_arbeitsdatum(au.beginn, session=self.session)
         else:
             pass
 
-    def edit_schicht(self, schicht_id, type='schicht'):
+    def edit_schicht(self, schicht_id, typ='schicht'):
         """
 
         :param schicht_id:
-        :param type:
+        :param typ:
         :return:
         """
 
-        if type == 'schicht':
+        if typ == 'schicht':
             for schicht in self.session.query(Schicht).filter(Schicht.id == schicht_id):
                 SchichtController(parent_controller=self.root_window_controller,
                                   session=self.session,
@@ -261,21 +265,23 @@ class TabelleController:
                                   edit_schicht=schicht,
                                   datum=schicht.beginn,
                                   nav_panel=self.nav_panel)
-        elif type == 'urlaub':
+        elif typ == 'urlaub':
             for u in self.session.query(Urlaub).filter(Urlaub.id == schicht_id):
                 UrlaubController(
                     parent_controller=self.root_window_controller,
                     session=self.session,
                     assistent=u.assistent,
-                    urlaub=u
+                    urlaub=u,
+                    nav_panel=self.nav_panel
                 )
-        elif type == 'au':
+        elif typ == 'au':
             for au in self.session.query(AU).filter(AU.id == schicht_id):
                 AUController(
                     parent_controller=self.root_window_controller,
                     session=self.session,
                     assistent=au.assistent,
-                    au=au
+                    au=au,
+                    nav_panel=self.nav_panel
                 )
         else:
             pass
@@ -286,3 +292,55 @@ class TabelleController:
                           assistent=self.assistent,
                           datum=datum,
                           nav_panel=self.nav_panel)
+
+    def add_feste_schichten(self, beginn, ende):
+        wochentage = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
+        for feste_schicht in self.assistent.feste_schichten:
+            wtag_int = wochentage.index(feste_schicht["wochentag"])
+            erster_tag = beginn
+            letzter_tag = ende
+            erster_xxtag_des_monats = get_ersten_xxtag(wtag_int, erster_tag)
+            monat = erster_tag.month
+            year = erster_tag.year
+            maxday = letzter_tag - timedelta(days=1)
+            maxday = int(maxday.strftime("%d"))
+            asn = feste_schicht.asn
+            for woche in range(0, 4):
+                tag = woche * 7 + erster_xxtag_des_monats
+                if tag <= maxday:
+                    if feste_schicht.beginn < feste_schicht.ende:
+                        start = datetime(year=year,
+                                         month=monat,
+                                         day=tag,
+                                         hour=feste_schicht.beginn.hour,
+                                         minute=feste_schicht.beginn.minute)
+                        end = datetime(year=year,
+                                       month=monat,
+                                       day=tag,
+                                       hour=feste_schicht.ende.hour,
+                                       minute=feste_schicht.ende.minute)
+                    # nachtschicht. es gibt keine regelmäßigen dienstreisen!
+                    else:
+                        start = datetime(year=year,
+                                         month=monat,
+                                         day=tag,
+                                         hour=feste_schicht.beginn.hour,
+                                         minute=feste_schicht.beginn.minute)
+                        end = datetime(year=year,
+                                       month=monat,
+                                       day=tag,
+                                       hour=feste_schicht.ende.hour,
+                                       minute=feste_schicht.ende.minute) + timedelta(days=1)
+                    if not check_au(datum=start,
+                                    session=self.session) \
+                            and not check_urlaub(datum=start,
+                                                 session=self.session) \
+                            and not check_au(datum=end - timedelta(minutes=1),
+                                             session=self.session) \
+                            and not check_urlaub(datum=end - timedelta(minutes=1),
+                                                 session=self.session):
+                        schicht_neu = Schicht(beginn=start,
+                                              ende=end,
+                                              asn=asn,
+                                              assistent=self.assistent)
+                        self.session.add(schicht_neu)

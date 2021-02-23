@@ -32,11 +32,13 @@ class Menuleiste(tk.Menu):
         eintragen_menu.add_command(label="Urlaub eintragen",
                                    command=lambda: UrlaubController(parent_controller,
                                                                     session=session,
-                                                                    assistent=assistent))
+                                                                    assistent=assistent,
+                                                                    nav_panel=nav_panel))
         eintragen_menu.add_command(label="AU/krank eintragen",
                                    command=lambda: AUController(parent_controller,
                                                                 session=session,
-                                                                assistent=assistent))
+                                                                assistent=assistent,
+                                                                nav_panel=nav_panel))
 
         bearbeiten_menu = tk.Menu(self, tearoff=0)
         bearbeiten_menu.add_command(label="ASN bearbeiten",

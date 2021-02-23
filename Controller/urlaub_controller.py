@@ -10,9 +10,10 @@ from View.urlaub_view import UrlaubView
 
 class UrlaubController:
 
-    def __init__(self, parent_controller, session, assistent: Assistent = None, urlaub: Urlaub = None):
+    def __init__(self, parent_controller, session, assistent: Assistent = None, urlaub: Urlaub = None, nav_panel=None):
         self.parent = parent_controller
         self.assistent = assistent
+        self.nav_panel = nav_panel
         self.view = UrlaubView(parent_view=self.parent.view)
         self.urlaub = urlaub
         if self.urlaub:
@@ -52,6 +53,10 @@ class UrlaubController:
 
         session.commit()
         self.view.destroy()
-        self.parent.draw(session)
+        if self.nav_panel:
+            self.nav_panel.monat_change(datum=datetime(year=data['beginn'].year,
+                                                       month=data['beginn'].month,
+                                                       day=1),
+                                        session=self.session)
         if undneu == 1:
             UrlaubController(self.parent, assistent=self.assistent, session=session)

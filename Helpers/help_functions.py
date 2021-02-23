@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 from time import strptime
 
+from Model.arbeitsunfaehigkeit import AU
 from Model.brutto import Brutto
 from Model.schicht import Schicht
+from Model.urlaub import Urlaub
 
 
 def check_mehrtaegig(schicht):
@@ -419,13 +421,32 @@ def berechne_urlaub_au_saetze(datum, session, assistent):
         bruttosumme += brutto.bruttolohn
         stundensumme += brutto.stunden_gesamt
         zaehler += 1
-    if zaehler == 0:
+    if zaehler == 0 or stundensumme == 0:
         return {
             'stunden_pro_tag': 1,
             'pro_stunde': 5
         }
-    #
+
     return {
         'stunden_pro_tag': (stundensumme / zaehler) / 30,
         'pro_stunde': bruttosumme / stundensumme
     }
+
+
+def get_ersten_xxtag(int_weekday, erster=datetime.now()):
+    for counter in range(1, 8):
+        if datetime(year=erster.year, month=erster.month, day=counter, hour=0,
+                    minute=0).weekday() == int_weekday:
+            return counter
+
+
+def check_au(datum, session):
+    for au in session.query(AU.id).filter(datum.between(AU.beginn, AU.ende)):
+        return True
+    return False
+
+
+def check_urlaub(datum, session):
+    for u in session.query(Urlaub.id).filter(datum.between(Urlaub.beginn, Urlaub.ende)):
+        return True
+    return False

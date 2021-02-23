@@ -126,14 +126,14 @@ class TabelleView(tk.Frame):
                 text=label,
                 command=lambda: self.parent_controller.kill_schicht(
                     schicht_id=schicht_id,
-                    type=type))
+                    typ=type))
         elif button_type == 'edit':
             label = "Bearbeiten"
             button = tk.Button(parent,
                                text=label,
                                command=lambda: self.parent_controller.edit_schicht(
                                    schicht_id=schicht_id,
-                                   type=type))
+                                   typ=type))
             image = "images/edit.png"
         elif button_type == 'new':
             label = "Neue Schicht"
