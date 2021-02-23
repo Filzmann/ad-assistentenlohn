@@ -15,6 +15,10 @@ class AUController:
         self.assistent = assistent
         self.view = AUView(parent_view=self.parent.view)
         self.au = au
+        if self.au:
+            self.view.set_data(beginn=self.au.beginn,
+                               ende=self.au.ende
+                               )
         self.view.save_button.config(command=self.save_au)
         self.view.saveandnew_button.config(command=lambda: self.save_au(undneu=1))
         self.session = session
@@ -42,7 +46,7 @@ class AUController:
             session.add(au)
 
         else:
-            self.au.beginn = data['beginn'],
+            self.au.beginn = data['beginn']
             self.au.ende = ende
 
         session.commit()
@@ -50,5 +54,5 @@ class AUController:
         self.parent.draw(session)
 
         if undneu == 1:
-            AUController(self.parent, assistent=self.assistent)
+            AUController(self.parent, assistent=self.assistent, session=session)
 

@@ -39,6 +39,30 @@ class SummenView(tk.Frame):
         gesamt_grund.grid(row=zeile, column=3, sticky=tk.NE)
         zeile += 1
 
+        if data['urlaubsstunden']:
+            bezeichner_grund = tk.Label(master=self, text="Entgelt Urlaub")
+            anzahl_grund = tk.Label(master=self, text="{:,.2f}".format(data['urlaubsstunden']))
+            wert_grund = tk.Label(master=self, text="{:,.2f}€".format(data['stundenlohn_urlaub']))
+            gesamt_grund = tk.Label(master=self, text="{:,.2f}€".format(data['urlaubslohn']))
+
+            bezeichner_grund.grid(row=zeile, column=0, sticky=tk.NW)
+            anzahl_grund.grid(row=zeile, column=1, sticky=tk.NE)
+            wert_grund.grid(row=zeile, column=2, sticky=tk.NE)
+            gesamt_grund.grid(row=zeile, column=3, sticky=tk.NE)
+            zeile += 1
+
+        if data['austunden']:
+            bezeichner_grund = tk.Label(master=self, text="Entgelt Arbeitsunfähigkeit")
+            anzahl_grund = tk.Label(master=self, text="{:,.2f}".format(data['austunden']))
+            wert_grund = tk.Label(master=self, text="{:,.2f}€".format(data['stundenlohn_au']))
+            gesamt_grund = tk.Label(master=self, text="{:,.2f}€".format(data['aulohn']))
+
+            bezeichner_grund.grid(row=zeile, column=0, sticky=tk.NW)
+            anzahl_grund.grid(row=zeile, column=1, sticky=tk.NE)
+            wert_grund.grid(row=zeile, column=2, sticky=tk.NE)
+            gesamt_grund.grid(row=zeile, column=3, sticky=tk.NE)
+            zeile += 1
+
         if data['bsd_stunden']:
             bezeichner_bsd = tk.Label(master=self, text="Zuschlag kurzfr. Vermittlung")
             anzahl_bsd = tk.Label(master=self, text="{:,.2f}".format(data['bsd_stunden']))
@@ -84,6 +108,18 @@ class SummenView(tk.Frame):
         wert_wechselschicht.grid(row=zeile, column=2, sticky=tk.NE)
         gesamt_wechselschicht.grid(row=zeile, column=3, sticky=tk.NE)
         zeile += 1
+
+        if data['anzahl_feiertage']:
+            bezeichner_freizeitausgleich = tk.Label(master=self, text="Freizeitausgleich")
+            anzahl_freizeitausgleich = tk.Label(master=self, text="{:,.2f}".format(data['anzahl_feiertage']))
+            wert_freizeitausgleich = tk.Label(master=self, text="Feiertage =")
+            gesamt_freizeitausgleich = tk.Label(master=self, text="{:,.2f}€".format(data['freizeitausgleich']))
+
+            bezeichner_freizeitausgleich.grid(row=zeile, column=0, sticky=tk.NW)
+            anzahl_freizeitausgleich.grid(row=zeile, column=1, sticky=tk.NE)
+            wert_freizeitausgleich.grid(row=zeile, column=2, sticky=tk.NE)
+            gesamt_freizeitausgleich.grid(row=zeile, column=3, sticky=tk.NE)
+            zeile += 1
 
 
 

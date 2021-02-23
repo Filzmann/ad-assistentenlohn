@@ -15,6 +15,10 @@ class UrlaubController:
         self.assistent = assistent
         self.view = UrlaubView(parent_view=self.parent.view)
         self.urlaub = urlaub
+        if self.urlaub:
+            self.view.set_data(beginn=self.urlaub.beginn,
+                               ende=self.urlaub.ende,
+                               status=self.urlaub.status)
         self.view.save_button.config(command=self.save_urlaub)
         self.view.saveandnew_button.config(command=lambda: self.save_urlaub(undneu=1))
         self.session = session
@@ -39,17 +43,15 @@ class UrlaubController:
                 status=data['status'],
                 assistent=self.assistent.id)
 
-
             session.add(urlaub)
 
         else:
-            self.urlaub.beginn = data['beginn'],
-            self.urlaub.ende = ende,
-            self.urlaub.status = data['status'],
+            self.urlaub.beginn = data['beginn']
+            self.urlaub.ende = ende
+            self.urlaub.status = data['status']
 
         session.commit()
         self.view.destroy()
         self.parent.draw(session)
         if undneu == 1:
-            UrlaubController(self.parent, assistent=self.assistent)
-
+            UrlaubController(self.parent, assistent=self.assistent, session=session)

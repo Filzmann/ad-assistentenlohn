@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from time import strptime
 
+from Model.brutto import Brutto
 from Model.schicht import Schicht
 
 
@@ -397,3 +398,34 @@ def sort_schicht_data_by_beginn(schichten: list):
             ausgabe.append(schicht)
 
     return ausgabe
+
+
+def berechne_urlaub_au_saetze(datum, session, assistent):
+    akt_monat = datetime(year=datum.year, month=datum.month, day=1)
+    for zaehler in range(1, 7):
+        vormonat_letzter = akt_monat - timedelta(days=1)
+        akt_monat = datetime(year=vormonat_letzter.year, month=vormonat_letzter.month, day=1)
+    startmonat = akt_monat
+
+    bruttosumme = 0
+    stundensumme = 0
+    zaehler = 0
+    for brutto in session.query(Brutto).filter(
+            Brutto.monat.between(
+                startmonat,
+                datetime(year=datum.year, month=datum.month, day=1)
+            )
+    ).filter(Brutto.as_id == assistent.id):
+        bruttosumme += brutto.bruttolohn
+        stundensumme += brutto.stunden_gesamt
+        zaehler += 1
+    if zaehler == 0:
+        return {
+            'stunden_pro_tag': 1,
+            'pro_stunde': 5
+        }
+    #
+    return {
+        'stunden_pro_tag': (stundensumme / zaehler) / 30,
+        'pro_stunde': bruttosumme / stundensumme
+    }

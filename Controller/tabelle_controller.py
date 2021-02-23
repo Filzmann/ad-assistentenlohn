@@ -1,8 +1,11 @@
 from sqlalchemy import or_, desc
 
+from Controller.arbeitsunfaehigkeit_controller import AUController
 from Controller.schicht_controller import SchichtController
+from Controller.urlaub_controller import UrlaubController
 from Helpers.help_functions import *
 from Model.arbeitsunfaehigkeit import AU
+from Model.brutto import Brutto
 from Model.lohn import Lohn
 from Model.urlaub import Urlaub
 from View.tabelle_view import TabelleView
@@ -99,8 +102,10 @@ class TabelleController:
                     'wechselzulage_schicht': "{:,.2f}€".format(lohn.wechselschicht_zuschlag * stunden),
                     'nachtstunden': "{:,.2f}".format(nachtstunden) if nachtstunden > 0 else ' ',
                     'nachtzuschlag': "{:,.2f}€".format(lohn.nacht_zuschlag),
-                    'nachtzuschlag_schicht': "{:,.2f}€".format(lohn.nacht_zuschlag * nachtstunden) if nachtstunden > 0 else ' ',
-                    'zuschlaege': zuschlaege_text
+                    'nachtzuschlag_schicht': "{:,.2f}€".format(
+                        lohn.nacht_zuschlag * nachtstunden) if nachtstunden > 0 else ' ',
+                    'zuschlaege': zuschlaege_text,
+                    'type': 'schicht'
                 }
             )
 
@@ -118,9 +123,12 @@ class TabelleController:
 
             erster_tag = urlaub.beginn.day if urlaub.beginn > self.start else self.start.day
             letzter_tag = urlaub.ende.day if urlaub.ende < self.end else self.end.day
-            # Todo berechnung urlaubs/au-Stunden
-            urlaubsstunden = 6
-            urlaubslohn = 20
+            urlaubsstunden = berechne_urlaub_au_saetze(datum=self.start,
+                                                       assistent=self.assistent,
+                                                       session=self.session)['stunden_pro_tag']
+            urlaubslohn = berechne_urlaub_au_saetze(datum=self.start,
+                                                    assistent=self.assistent,
+                                                    session=self.session)['pro_stunde']
             for tag in range(erster_tag, letzter_tag + 1):
                 if tag not in schichten_view_data.keys():
                     schichten_view_data["{:02d}".format(tag)] = []
@@ -141,7 +149,8 @@ class TabelleController:
                         'nachtstunden': ' ',
                         'nachtzuschlag': ' ',
                         'nachtzuschlag_schicht': ' ',
-                        'zuschlaege': ' '
+                        'zuschlaege': ' ',
+                        'type': 'urlaub'
                     }
                 )
 
@@ -155,9 +164,13 @@ class TabelleController:
 
                 erster_tag = au.beginn.day if au.beginn > self.start else self.start.day
                 letzter_tag = au.ende.day if au.ende < self.end else self.end.day
-                # Todo berechnung aus/au-Stunden
-                austunden = 6
-                aulohn = 20
+                austunden = berechne_urlaub_au_saetze(datum=self.start,
+                                                      assistent=self.assistent,
+                                                      session=self.session)['stunden_pro_tag']
+                aulohn = berechne_urlaub_au_saetze(datum=self.start,
+                                                   assistent=self.assistent,
+                                                   session=self.session)['pro_stunde']
+
                 for tag in range(erster_tag, letzter_tag + 1):
                     if tag not in schichten_view_data.keys():
                         schichten_view_data["{:02d}".format(tag)] = []
@@ -178,7 +191,9 @@ class TabelleController:
                             'nachtstunden': ' ',
                             'nachtzuschlag': ' ',
                             'nachtzuschlag_schicht': ' ',
-                            'zuschlaege': ' '
+                            'zuschlaege': ' ',
+                            'type': 'au'
+
                         }
                     )
 
@@ -210,21 +225,60 @@ class TabelleController:
             return lohn
         return False
 
-    def kill_schicht(self, schicht_id):
-        for schicht in self.session.query(Schicht).filter(Schicht.id == schicht_id):
-            self.session.delete(schicht)
-            self.session.commit()
-            self.change_arbeitsdatum(schicht.beginn, session=self.session)
+    def kill_schicht(self, schicht_id, type='schicht'):
+        if type == "schicht":
+            for schicht in self.session.query(Schicht).filter(Schicht.id == schicht_id):
+                self.session.delete(schicht)
+                self.session.commit()
+                self.change_arbeitsdatum(schicht.beginn, session=self.session)
+        elif type == "urlaub":
+            for u in self.session.query(Urlaub).filter(Urlaub.id == schicht_id):
+                self.session.delete(u)
+                self.session.commit()
+                self.change_arbeitsdatum(u.beginn, session=self.session)
+        elif type == "au":
+            for au in self.session.query(Urlaub).filter(Urlaub.id == schicht_id):
+                self.session.delete(au)
+                self.session.commit()
+                self.change_arbeitsdatum(au.beginn, session=self.session)
+        else:
+            pass
 
-    def edit_schicht(self, schicht_id):
-        for schicht in self.session.query(Schicht).filter(Schicht.id == schicht_id):
-            SchichtController(parent_controller=self.root_window_controller,
-                              session=self.session,
-                              assistent=schicht.assistent,
-                              asn=schicht.asn,
-                              edit_schicht=schicht,
-                              datum=schicht.beginn,
-                              nav_panel=self.nav_panel)
+    def edit_schicht(self, schicht_id, type='schicht'):
+        """
+
+        :param schicht_id:
+        :param type:
+        :return:
+        """
+
+        if type == 'schicht':
+            for schicht in self.session.query(Schicht).filter(Schicht.id == schicht_id):
+                SchichtController(parent_controller=self.root_window_controller,
+                                  session=self.session,
+                                  assistent=schicht.assistent,
+                                  asn=schicht.asn,
+                                  edit_schicht=schicht,
+                                  datum=schicht.beginn,
+                                  nav_panel=self.nav_panel)
+        elif type == 'urlaub':
+            for u in self.session.query(Urlaub).filter(Urlaub.id == schicht_id):
+                UrlaubController(
+                    parent_controller=self.root_window_controller,
+                    session=self.session,
+                    assistent=u.assistent,
+                    urlaub=u
+                )
+        elif type == 'au':
+            for au in self.session.query(AU).filter(AU.id == schicht_id):
+                AUController(
+                    parent_controller=self.root_window_controller,
+                    session=self.session,
+                    assistent=au.assistent,
+                    au=au
+                )
+        else:
+            pass
 
     def new_schicht(self, datum):
         SchichtController(parent_controller=self.root_window_controller,

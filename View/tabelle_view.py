@@ -17,21 +17,18 @@ class TabelleView(tk.Frame):
 
     def zeile(self, data, parent, zeilennummer, heute):
         # self.make_button(command="new", row=zeilennummer, col=2, datum=self.heute)
+        # was wird gelöscht/bearbeitet? schicht, urlaub, au
+
         self.make_button(button_type="kill",
                          row=zeilennummer,
                          col=1,
                          parent=parent,
-                         schicht_id=data['schicht_id'])
-        self.make_button(button_type="edit",
-                         row=zeilennummer,
-                         col=2,
-                         parent=parent,
-                         schicht_id=data['schicht_id'])
-        self.make_button(button_type="new",
-                         row=zeilennummer,
-                         col=3,
-                         parent=parent,
-                         datum=heute)
+                         schicht_id=data['schicht_id'],
+                         type=data['type'])
+        self.make_button(button_type="edit", parent=parent, row=zeilennummer, col=2, schicht_id=data['schicht_id'],
+                         type=data['type'])
+        self.make_button(button_type="new", parent=parent, row=zeilennummer, col=3, datum=heute,
+                         type=data['type'])
 
         tag = heute.strftime('%a')
         self.zelle(parent=parent, inhalt=tag, row=zeilennummer, col=10, width=3, justify=tk.LEFT, anchor=tk.W)
@@ -70,12 +67,7 @@ class TabelleView(tk.Frame):
 
     def leerzeile(self, parent, zeilennummer, heute):
         # neue schicht button
-        self.make_button(button_type="new",
-                         row=zeilennummer,
-                         col=3,
-                         parent=parent,
-                         datum=heute)
-        # self.make_button(command="new", row=zeilennummer, col=2, datum=self.heute)
+        self.make_button(button_type="new", parent=parent, row=zeilennummer, col=3, datum=heute)
         tag = heute.strftime('%a')
         self.zelle(parent=parent, inhalt=tag, row=zeilennummer, col=10, width=3, justify=tk.LEFT, anchor=tk.W)
         # Tag als Nummer
@@ -122,22 +114,26 @@ class TabelleView(tk.Frame):
                     self.leerzeile(parent=scrollframe.inner, zeilennummer=zeilennummer, heute=heute)
                     zeilennummer += 1
 
-    def make_button(self, button_type, parent,
-                    row=0,
-                    col=0,
-                    datum: datetime = None,
-                    schicht_id: int = -1):
+    def make_button(self, button_type, parent, row=0, col=0, datum: datetime = None, schicht_id: int = -1,
+                    type='schicht'):
         button = image = 0
 
         if button_type == 'kill':
             image = "images/del.png"
             label = "Löschen"
-            button = tk.Button(parent, text=label, command=lambda: self.parent_controller.kill_schicht(schicht_id))
+            button = tk.Button(
+                parent,
+                text=label,
+                command=lambda: self.parent_controller.kill_schicht(
+                    schicht_id=schicht_id,
+                    type=type))
         elif button_type == 'edit':
             label = "Bearbeiten"
             button = tk.Button(parent,
                                text=label,
-                               command=lambda: self.parent_controller.edit_schicht(schicht_id))
+                               command=lambda: self.parent_controller.edit_schicht(
+                                   schicht_id=schicht_id,
+                                   type=type))
             image = "images/edit.png"
         elif button_type == 'new':
             label = "Neue Schicht"
