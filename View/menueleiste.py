@@ -6,6 +6,7 @@ from Controller.asn_edit_controller import AsnEditController
 from Controller.assistent_controller import AssistentController
 from Controller.schicht_controller import SchichtController
 from Controller.urlaub_controller import UrlaubController
+from Controller.verpflegungsmehraufwand_controller import VerpflegungsmehraufwandController
 from fenster_kilometergeld import FensterKilometergeld
 from fenster_verpflegungsmehraufwand import FensterVerpflegungsMehraufwand
 
@@ -51,8 +52,11 @@ class Menuleiste(tk.Menu):
                                                                         session=session))
 
         taxes_menu = tk.Menu(self, tearoff=0)
-        # taxes_menu.add_command(label="Berechne Abwesenheit für Verpflegungsmehraufwand",
-        #                       command=lambda: FensterVerpflegungsMehraufwand(root, assistent))
+        taxes_menu.add_command(label="Verpflegungsmehraufwand",
+                               command=lambda: VerpflegungsmehraufwandController(
+                                   parent_controller=parent_controller,
+                                   assistent=assistent,
+                                   session=session))
         # taxes_menu.add_command(label="Berechne Fahrtzeiten für Reisekosten",
         #                       command=lambda: FensterKilometergeld(root, assistent))
 

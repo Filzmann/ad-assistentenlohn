@@ -28,3 +28,6 @@ class Adresse(Base):
                f"strasse={self.strasse!r}, " \
                f"hausnummer={self.hausnummer!r}, " \
                f"plz={self.plz!r})"
+
+    def __str__(self):
+        return f"{self.strasse} {self.hausnummer}, {self.plz} {self.stadt}"

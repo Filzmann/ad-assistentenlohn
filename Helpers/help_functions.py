@@ -1,13 +1,38 @@
 from datetime import datetime, timedelta
 from time import strptime
 
-from sqlalchemy import func, desc, or_
+from sqlalchemy import func, desc, or_, and_
 
+from Model.adresse import Adresse
 from Model.arbeitsunfaehigkeit import AU
 from Model.brutto import Brutto
 from Model.lohn import Lohn
 from Model.schicht import Schicht
 from Model.urlaub import Urlaub
+from Model.weg import Weg
+
+
+def get_home(session, assistent=None, asn=None):
+    if assistent:
+        for adresse in session.query(Adresse).filter(
+                Adresse.assistent == assistent).filter(Adresse.bezeichner == '__home__'):
+            return adresse
+    elif asn:
+        for adresse in session.query(Adresse).filter(
+                Adresse.assistenznehmer == asn).filter(Adresse.bezeichner == '__home__'):
+            return adresse
+
+
+def get_fahrzeit(adresse1, adresse2, session):
+    for weg in session.query(Weg.dauer_in_minuten).filter(
+            or_(
+                and_(
+                    Weg.adresse1_id == adresse1.id, Weg.adresse2_id == adresse2.id),
+                and_(
+                    Weg.adresse1_id == adresse2.id, Weg.adresse2_id == adresse1.id)
+            )):
+        return Weg.dauer_in_minuten
+    return None
 
 
 def check_mehrtaegig(schicht):
