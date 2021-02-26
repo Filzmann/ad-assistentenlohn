@@ -1,11 +1,12 @@
-from sqlalchemy import or_, desc
-
+from sqlalchemy import or_
 from Helpers.help_functions import *
 from Model.arbeitsunfaehigkeit import AU
 from Model.brutto import Brutto
-from Model.lohn import Lohn
 from Model.urlaub import Urlaub
 from View.summen_view import SummenView
+
+
+
 
 
 class SummenController:
@@ -35,7 +36,7 @@ class SummenController:
         if not session:
             session = self.session
 
-        schichten = self.get_sliced_schichten(start=self.start, end=self.end, session=session)
+        schichten = get_sliced_schichten(start=self.start, end=self.end, session=session)
         schichten_view_data = {
             'arbeitsstunden': 0,
             'stundenlohn': 0,
@@ -71,7 +72,7 @@ class SummenController:
             stunden = berechne_stunden(schicht)
             schichten_view_data['arbeitsstunden'] += stunden
 
-            lohn = self.get_lohn(assistent=self.assistent, datum=schicht['beginn'])
+            lohn = get_lohn(session=self.session, assistent=self.assistent, datum=schicht['beginn'])
             schichten_view_data['stundenlohn'] = lohn.grundlohn
             schichten_view_data['lohn'] += stunden * lohn.grundlohn
             schichten_view_data['bruttolohn'] += stunden * lohn.grundlohn
@@ -131,7 +132,7 @@ class SummenController:
                 )).filter(self.start != Urlaub.ende).filter(self.end != Urlaub.beginn):
 
             erster_tag = urlaub.beginn.day if urlaub.beginn > self.start else self.start.day
-            letzter_tag = urlaub.ende.day if urlaub.ende < self.end else self.end.day
+            letzter_tag = urlaub.ende.day if urlaub.ende < self.end else (self.end - timedelta(days=1)).day
 
             urlaubsstunden = berechne_urlaub_au_saetze(datum=self.start,
                                                        assistent=self.assistent,
@@ -155,7 +156,7 @@ class SummenController:
                 )).filter(self.start != AU.ende).filter(self.end != AU.beginn):
 
             erster_tag = au.beginn.day if au.beginn > self.start else self.start.day
-            letzter_tag = au.ende.day if au.ende < self.end else self.end.day
+            letzter_tag = au.ende.day if au.ende < self.end else (self.end - timedelta(days=1)).day
 
             austunden = berechne_urlaub_au_saetze(datum=self.start,
                                                   assistent=self.assistent,
@@ -187,33 +188,6 @@ class SummenController:
         self.save_brutto(data=schichten_view_data)
 
         return schichten_view_data
-
-    def get_sliced_schichten(self, start, end, session=None):
-        sliced_schichten = []
-        if session:
-            self.session = session
-
-        for schicht in self.session.query(Schicht).filter(
-                or_(
-                    Schicht.beginn.between(start, end),
-                    Schicht.ende.between(start, end)
-                )
-        ):
-            sliced_schichten += split_by_null_uhr(schicht)
-
-        return sliced_schichten
-
-        # TODO Urlaub und AU auch hier splitten
-
-    def get_lohn(self, assistent, datum):
-        erfahrungsstufe = get_erfahrungsstufe(assistent=assistent, datum=datum)
-        for lohn in self.session.query(Lohn).filter(
-                Lohn.erfahrungsstufe == erfahrungsstufe).filter(
-            Lohn.gueltig_ab < datum).filter(
-            Lohn.eingruppierung == 5
-        ).order_by(desc(Lohn.gueltig_ab)).limit(1):
-            return lohn
-        return False
 
     def save_brutto(self, data):
         check_result = self.session.query(Brutto.id).filter(

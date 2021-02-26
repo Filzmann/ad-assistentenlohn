@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.future import select
 
+from Helpers.combobox_dict import Combobox
 from Model.assistent import Assistent
 from Model.assistenznehmer import ASN
 from Model.adresse import Adresse
@@ -33,6 +34,11 @@ class SchichtController:
 
         # bindings für dropdown-listen
         self.view.asn_dropdown.bind("<<ComboboxSelected>>", self.change_asn)
+        self.view.abweichende_adresse_beginn_dropdown.config(
+            postcommand=lambda: self.update_address_dropdown(self.view.abweichende_adresse_beginn_dropdown))
+        self.view.abweichende_adresse_ende_dropdown.config(
+            postcommand=lambda: self.update_address_dropdown(self.view.abweichende_adresse_ende_dropdown))
+
         self.view.abweichende_adresse_beginn_dropdown.bind("<<ComboboxSelected>>",
                                                            self.change_abweichende_adresse_beginn)
         self.view.abweichende_adresse_ende_dropdown.bind("<<ComboboxSelected>>",
@@ -49,7 +55,10 @@ class SchichtController:
         if datum:
             self.view.set_data(beginn=datum, ende=datum)
         if edit_schicht:
-            # Todo falls edit_schicht als id kommt noch aus der db holen
+            if not edit_schicht.beginn_andere_adresse:
+                edit_schicht.beginn_andere_adresse = self.get_home_id()
+            if not edit_schicht.ende_andere_adresse:
+                edit_schicht.ende_andere_adresse = self.get_home_id()
             self.view.set_data(
                 asn=edit_schicht.asn.id,
                 beginn=edit_schicht.beginn,
@@ -57,7 +66,10 @@ class SchichtController:
                 ist_at=edit_schicht.ist_assistententreffen,
                 ist_pcg=edit_schicht.ist_pcg,
                 ist_afg=edit_schicht.ist_ausfallgeld,
-                ist_rb=edit_schicht.ist_kurzfristig
+                ist_rb=edit_schicht.ist_kurzfristig,
+                abweichende_adresse_beginn=edit_schicht.beginn_andere_adresse,
+                abweichende_adresse_ende=edit_schicht.ende_andere_adresse
+
             )
         self.view.draw()
         # show/hide initialisieren
@@ -78,7 +90,8 @@ class SchichtController:
             home = Adresse(strasse=data['asn_stammdaten']['strasse'],
                            hausnummer=data['asn_stammdaten']['hnr'],
                            stadt=data['asn_stammdaten']['stadt'],
-                           plz=data['asn_stammdaten']['plz'])
+                           plz=data['asn_stammdaten']['plz'],
+                           bezeichner="__home__")
             # create new asn
             asn = ASN(
                 kuerzel=data['asn_stammdaten']["kuerzel"],
@@ -86,8 +99,8 @@ class SchichtController:
                 vorname=data['asn_stammdaten']["vorname"],
                 email=data['asn_stammdaten']["email"],
             )
+            asn.adressbuch.append(home)
             self.session.add(asn)
-            asn.home = home
 
             # many_2_many as - asn
             # 1. Zusatzdaten in Asociation,
@@ -140,10 +153,37 @@ class SchichtController:
         self.session.commit()
         self.schicht.asn = schicht_asn
         self.schicht.assistent = assistent
+        self.session.commit()
 
         # TODO abweichende adressen
-        # if int(data['abweichende_adresse_beginn']) > 0:
-        # es wurde eine abweichende Adresse aus der Liste gewählt
+        if int(data['abweichende_adresse_beginn']) > 0:
+            self.schicht.beginn_andere_adresse = data['abweichende_adresse_beginn']
+        elif int(data['abweichende_adresse_beginn']) == -1:
+            new_address_data = data['abweichende_adresse_beginn_data']
+            new_address = Adresse(bezeichner=new_address_data['kuerzel'],
+                                  strasse=new_address_data['strasse'],
+                                  hausnummer=new_address_data['hnr'],
+                                  plz=new_address_data['plz'],
+                                  stadt=new_address_data['stadt'],
+                                  assistenznehmer=self.schicht.asn)
+            self.session.add(new_address)
+            self.session.commit()
+            self.schicht.beginn_andere_adresse = new_address.id
+            
+        if int(data['abweichende_adresse_ende']) > 0:
+            self.schicht.ende_andere_adresse = data['abweichende_adresse_ende']
+        elif int(data['abweichende_adresse_ende']) == -1:
+            new_address_data = data['abweichende_adresse_ende_data']
+            new_address = Adresse(bezeichner=new_address_data['kuerzel'],
+                                  strasse=new_address_data['strasse'],
+                                  hausnummer=new_address_data['hnr'],
+                                  plz=new_address_data['plz'],
+                                  stadt=new_address_data['stadt'],
+                                  assistenznehmer=self.schicht.asn)
+            self.session.add(new_address)
+            self.session.commit()
+            self.schicht.ende_andere_adresse = new_address.id
+
         self.session.commit()
 
         # fenster zu
@@ -191,11 +231,23 @@ class SchichtController:
         adressliste = {-2: 'Keine abweichende Adresse',
                        -1: 'Neu'}
         for adresse in self.session.query(Adresse).filter(
-                Adresse.assistenznehmer == self.asn).filter(not Adresse.assistent):
+                Adresse.assistenznehmer == self.asn):
             adressliste[adresse.id] = adresse.bezeichner + ": " \
                                       + adresse.strasse \
                                       + " " + adresse.hausnummer + ", " + adresse.plz + " " + adresse.stadt
         return adressliste
+
+    def get_home_id(self):
+        for adresse in self.session.query(Adresse.id).filter(
+                Adresse.assistenznehmer == self.asn).filter(Adresse.bezeichner == '__home__'):
+            return adresse.id
+        return -1
+
+    def get_adresse_by_id(self, address_id):
+        for adresse in self.session.query(Adresse).filter(
+                Adresse.id == address_id):
+            return adresse
+        return False
 
     def change_asn(self, event=None):
         if int(self.view.asn_dropdown.get()) < 0:
@@ -204,8 +256,14 @@ class SchichtController:
         else:
             asn_id = int(self.view.asn_dropdown.get())
             asn = self.get_asn_by_id(asn_id)
+            self.asn = asn
+
+            self.view.draw()
+            self.view.hide(self.view.abweichende_adresse_beginn)
+            self.view.hide(self.view.abweichende_adresse_ende)
             self.view.hide(self.view.asn_stammdaten_form)
             self.view.draw_templates(asn.schicht_templates)
+
             # Todo Set adressliste
 
     def change_abweichende_adresse_beginn(self, event=None):
@@ -219,3 +277,9 @@ class SchichtController:
             self.view.hide(self.view.abweichende_adresse_ende)
         else:
             self.view.show(self.view.abweichende_adresse_ende)
+
+    def update_address_dropdown(self, combobox):
+        adressliste = self.get_adressliste()
+        combobox.dict = adressliste
+        combobox['values'] = sorted(adressliste.values())
+

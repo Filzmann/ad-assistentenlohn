@@ -64,7 +64,7 @@ class EbController:
                 vorname='',
                 name='',
                 email='',
-                eb_id='0'
+                eb_id=0
             )
 
 

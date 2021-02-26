@@ -157,8 +157,8 @@ class SchichtView(tk.Toplevel):
         self.endzeit_input.grid(row=0, column=3, sticky=tk.NW)
 
         # add-options-frame
-        abweichende_adresse_beginn_label = tk.Label(self.add_options_frame, text="Schicht nicht zu Hause begonnen?")
-        abweichende_adresse_ende_label = tk.Label(self.add_options_frame, text="Schicht nicht zu Hause beendet?")
+        abweichende_adresse_beginn_label = tk.Label(self.add_options_frame, text="Adresse zu beginn der Schicht?")
+        abweichende_adresse_ende_label = tk.Label(self.add_options_frame, text="Adresse zum Ende der Schicht?")
         abweichende_adresse_beginn_label.grid(row=0, column=0, sticky=tk.NW)
         self.abweichende_adresse_beginn_dropdown.grid(row=1, column=0, sticky=tk.NE)
         self.abweichende_adresse_beginn.grid(row=2, column=0, sticky=tk.NW)
@@ -219,11 +219,13 @@ class SchichtView(tk.Toplevel):
         self.ist_pcg.set(1 if 'ist_pcg' in kwargs.keys() and kwargs['ist_pcg'] else 0)
         self.ist_rb.set(1 if 'ist_rb' in kwargs.keys() and kwargs['ist_rb'] else 0)
         self.ist_afg.set(1 if 'ist_afg' in kwargs.keys() and kwargs['ist_afg'] else 0)
+        if 'abweichende_adresse_beginn' in kwargs.keys():
+            if kwargs['abweichende_adresse_beginn']:
+                self.abweichende_adresse_beginn_dropdown.set(kwargs['abweichende_adresse_beginn'])
 
-        # 'abweichende_adresse_beginn': self.abweichende_adresse_beginn_dropdown.get(),
-        # 'abweichende_adresse_beginn_data': self.abweichende_adresse_beginn.get_data(),
-        # 'abweichende_adresse_ende': self.abweichende_adresse_ende_dropdown.get(),
-        # 'abweichende_adresse_ende_data': self.abweichende_adresse_ende.get_data(),
+        if 'abweichende_adresse_ende' in kwargs.keys():
+            if kwargs['abweichende_adresse_ende']:
+                self.abweichende_adresse_ende_dropdown.set(kwargs['abweichende_adresse_ende'])
 
     def get_data(self):
 

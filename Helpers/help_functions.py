@@ -1,8 +1,11 @@
 from datetime import datetime, timedelta
 from time import strptime
 
+from sqlalchemy import func, desc, or_
+
 from Model.arbeitsunfaehigkeit import AU
 from Model.brutto import Brutto
+from Model.lohn import Lohn
 from Model.schicht import Schicht
 from Model.urlaub import Urlaub
 
@@ -167,6 +170,30 @@ def verschiebe_monate(offset, datum=datetime.now()):
     arbeitsjahr = datum.year + offset_arbeitsjahr
     arbeitsdatum = datetime(arbeitsjahr, arbeitsmonat, 1, 0, 0, 0)
     return arbeitsdatum
+
+
+def get_lohn(assistent, datum, session):
+    erfahrungsstufe = get_erfahrungsstufe(assistent=assistent, datum=datum)
+    for lohn in session.query(Lohn).filter(
+            Lohn.erfahrungsstufe == erfahrungsstufe).filter(
+        Lohn.gueltig_ab < datum).filter(
+        Lohn.eingruppierung == 5
+    ).order_by(desc(Lohn.gueltig_ab)).limit(1):
+        return lohn
+    return False
+
+
+def get_sliced_schichten(start, end, session):
+    sliced_schichten = []
+    for schicht in session.query(Schicht).filter(
+            or_(
+                Schicht.beginn.between(start, end),
+                Schicht.ende.between(start, end)
+            )
+    ):
+        sliced_schichten += split_by_null_uhr(schicht)
+
+    return sliced_schichten
 
 
 def berechne_ostern(jahr):
@@ -441,12 +468,16 @@ def get_ersten_xxtag(int_weekday, erster=datetime.now()):
 
 
 def check_au(datum, session):
-    for au in session.query(AU.id).filter(datum.between(AU.beginn, AU.ende)):
+    if session.query(AU.id).filter(
+            AU.beginn <= datum).filter(AU.ende >= datum).with_entities(func.count()).scalar():
         return True
-    return False
+    else:
+        return False
 
 
 def check_urlaub(datum, session):
-    for u in session.query(Urlaub.id).filter(datum.between(Urlaub.beginn, Urlaub.ende)):
+    if session.query(Urlaub.id).filter(
+            Urlaub.beginn <= datum).filter(Urlaub.ende >= datum).with_entities(func.count()).scalar():
         return True
-    return False
+    else:
+        return False

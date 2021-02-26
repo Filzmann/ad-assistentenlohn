@@ -1,4 +1,3 @@
-import tkinter as tk
 from tkinter import ttk
 
 
@@ -8,8 +7,10 @@ class Combobox(ttk.Combobox):
     Achtung: die Values müssen unique sein.
     """
 
-    def __init__(self, master=None, cnf={}, **options):
+    def __init__(self, master=None, cnf=None, **options):
 
+        if not cnf:
+            cnf = {}
         self.dict = None
 
         # get dictionary from options and put list of keys
@@ -40,12 +41,9 @@ class Combobox(ttk.Combobox):
     def get_key(self):
         val = ttk.Combobox.get(self)
         for key, value in self.dict.items():
-            if val == value:
+            if val == str(value):
                 return key
         return False
 
     def get_value(self):
         return ttk.Combobox.get(self)
-
-
-

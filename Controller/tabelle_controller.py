@@ -1,12 +1,8 @@
-from sqlalchemy import or_, desc
-
 from Controller.arbeitsunfaehigkeit_controller import AUController
 from Controller.schicht_controller import SchichtController
 from Controller.urlaub_controller import UrlaubController
 from Helpers.help_functions import *
 from Model.arbeitsunfaehigkeit import AU
-from Model.brutto import Brutto
-from Model.lohn import Lohn
 from Model.urlaub import Urlaub
 from View.tabelle_view import TabelleView
 
@@ -31,7 +27,6 @@ class TabelleController:
                                 data=data,
                                 anzahl_tage=letzter_tag,
                                 start=self.start)
-        data = None
 
     def change_arbeitsdatum(self, datum, session):
         self.start = datetime(year=datum.year,
@@ -48,11 +43,11 @@ class TabelleController:
     def calculate(self, session=None):
         if session:
             self.session = session
-        schichten = self.get_sliced_schichten(start=self.start, end=self.end, session=session)
+        schichten = get_sliced_schichten(start=self.start, end=self.end, session=self.session)
 
         if not schichten:
             self.add_feste_schichten(self.start, self.end)
-            schichten = self.get_sliced_schichten(start=self.start, end=self.end, session=session)
+            schichten = get_sliced_schichten(start=self.start, end=self.end, session=session)
 
         schichten_view_data = {}
         for schicht in schichten:
@@ -69,7 +64,7 @@ class TabelleController:
             # stunden
             stunden = berechne_stunden(schicht)
 
-            lohn = self.get_lohn(assistent=self.assistent, datum=schicht['beginn'])
+            lohn = get_lohn(session=self.session, assistent=self.assistent, datum=schicht['beginn'])
 
             nachtstunden = get_nachtstunden(schicht)
 
@@ -127,7 +122,7 @@ class TabelleController:
                 )).filter(self.start != Urlaub.ende).filter(self.end != Urlaub.beginn):
 
             erster_tag = urlaub.beginn.day if urlaub.beginn > self.start else self.start.day
-            letzter_tag = urlaub.ende.day if urlaub.ende < self.end else self.end.day
+            letzter_tag = urlaub.ende.day if urlaub.ende < self.end else (self.end - timedelta(days=1)).day
             urlaubsstunden = berechne_urlaub_au_saetze(datum=self.start,
                                                        assistent=self.assistent,
                                                        session=self.session)['stunden_pro_tag']
@@ -168,7 +163,7 @@ class TabelleController:
                 )).filter(self.start != AU.ende).filter(self.end != AU.beginn):
 
             erster_tag = au.beginn.day if au.beginn > self.start else self.start.day
-            letzter_tag = au.ende.day if au.ende < self.end else self.end.day
+            letzter_tag = au.ende.day if au.ende < self.end else (self.end - timedelta(days=1)).day
             austunden = berechne_urlaub_au_saetze(datum=self.start,
                                                   assistent=self.assistent,
                                                   session=self.session)['stunden_pro_tag']
@@ -202,32 +197,6 @@ class TabelleController:
                 )
 
         return schichten_view_data
-
-    def get_sliced_schichten(self, start, end, session):
-        if session:
-            self.session = session
-        sliced_schichten = []
-        for schicht in self.session.query(Schicht).filter(
-                or_(
-                    Schicht.beginn.between(start, end),
-                    Schicht.ende.between(start, end)
-                )
-        ):
-            sliced_schichten += split_by_null_uhr(schicht)
-
-        return sliced_schichten
-
-        # TODO Urlaub und AU auch hier splitten
-
-    def get_lohn(self, assistent, datum):
-        erfahrungsstufe = get_erfahrungsstufe(assistent=assistent, datum=datum)
-        for lohn in self.session.query(Lohn).filter(
-                Lohn.erfahrungsstufe == erfahrungsstufe).filter(
-            Lohn.gueltig_ab < datum).filter(
-            Lohn.eingruppierung == 5
-        ).order_by(desc(Lohn.gueltig_ab)).limit(1):
-            return lohn
-        return False
 
     def kill_schicht(self, schicht_id, typ='schicht'):
         if typ == "schicht":
@@ -293,19 +262,16 @@ class TabelleController:
                           datum=datum,
                           nav_panel=self.nav_panel)
 
-    def add_feste_schichten(self, beginn, ende):
+    def add_feste_schichten(self, erster_tag, letzter_tag):
         wochentage = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
         for feste_schicht in self.assistent.feste_schichten:
-            wtag_int = wochentage.index(feste_schicht["wochentag"])
-            erster_tag = beginn
-            letzter_tag = ende
+            wtag_int = wochentage.index(feste_schicht.wochentag)
             erster_xxtag_des_monats = get_ersten_xxtag(wtag_int, erster_tag)
             monat = erster_tag.month
             year = erster_tag.year
-            maxday = letzter_tag - timedelta(days=1)
-            maxday = int(maxday.strftime("%d"))
+            maxday = (letzter_tag - timedelta(days=1)).day
             asn = feste_schicht.asn
-            for woche in range(0, 4):
+            for woche in range(0, 5):
                 tag = woche * 7 + erster_xxtag_des_monats
                 if tag <= maxday:
                     if feste_schicht.beginn < feste_schicht.ende:

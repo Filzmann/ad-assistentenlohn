@@ -64,7 +64,7 @@ class PfkController:
                 vorname='',
                 name='',
                 email='',
-                pfk_id="0"
+                pfk_id=0
             )
 
 

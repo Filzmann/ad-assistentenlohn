@@ -6,12 +6,26 @@ from View.navigation_view import NavigationView
 class NavigationController:
     def __init__(self, parent_controller, session, parent_view, controlled_areas: {}):
         self.session = session
-        self.view = NavigationView(parent_view=parent_view)
+
+        monatsarray = dict((monat, datetime(year=1, month=monat, day=1).strftime('%b')) for monat in range(1, 13))
+        jahrarray = dict((jahr, jahr) for jahr in range(datetime.now().year, 1980, -1))
+
+        # auf list umstellen und dropdown ensprechend modifizieren
+        # jahrarray = [x for x in range(datetime.now().year, 1980, -1)]
+
+        self.view = NavigationView(parent_view=parent_view,
+                                   monatsarray=monatsarray,
+                                   jahrarray=jahrarray)
+
+        self.view.monats_dropdown.set(datetime.now().month)
+        self.view.jahr_dropdown.set(datetime.now().year)
         self.controlled_areas = controlled_areas
         # self.offset = 0
         self.arbeitsdate = datetime.now()
+
         self.view.vormonat.config(command=lambda: self.monat_change(step=-1, session=self.session))
         self.view.naechster_monat.config(command=lambda: self.monat_change(step=1, session=self.session))
+        self.view.changebutton.config(command=lambda: self.changebutton())
 
     def monat_change(self, session, step=None, datum: datetime = None):
         if datum:
@@ -39,3 +53,9 @@ class NavigationController:
             monat = 12
             jahroffset -= 1
         return datetime(year=aktuelles_datum.year + jahroffset, month=monat, day=1)
+
+    def changebutton(self):
+        jahr = self.view.jahr_dropdown.get()
+        monat = self.view.monats_dropdown.get()
+        datum = datetime(year=jahr, month=monat, day=1)
+        self.monat_change(session=self.session, step=None, datum=datum)
