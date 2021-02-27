@@ -14,6 +14,7 @@ class AskholeView(tk.Toplevel):
         self.button = tk.Button(self, text="Speichern")
         self.kwargs = kwargs
 
+
         self.draw()
 
     def draw(self):
@@ -21,14 +22,15 @@ class AskholeView(tk.Toplevel):
         headline = tk.Label(self, text="Verpflegungsmehraufwand")
         headline.grid(row=0, column=0, columnspan=2)
 
-        text= "Leider kann ich selber (noch) nicht googeln. \n" \
-              "Daher bitte ich um die Beantwortung folgender wichtigen Frage:\n" \
-              "(ich frage dich auch für jeden Weg nur 1 mal, versprochen) \n \n" \
-              "Wieviele Minuten brauchst du von \n"
+        text = "Leider kann ich selber (noch) nicht googeln. \n" \
+               "Daher bitte ich um die Beantwortung folgender wichtigen Frage:\n" \
+               "(ich frage dich auch für jeden Weg nur 1 mal, versprochen) \n \n" \
+               "Wieviele Minuten brauchst du von \n"
         text += str(self.kwargs['adresse1']) + " \n nach \n"
         text += str(self.kwargs['adresse2']) + "?"
         textfeld = tk.Label(self, text=text)
         textfeld.grid(row=1, column=0, columnspan=2)
+
 
         label_km = tk.Label(self, text="Kilometer:")
         label_km.grid(row=2, column=0)
@@ -38,8 +40,15 @@ class AskholeView(tk.Toplevel):
         label_min.grid(row=3, column=0)
         self.min.grid(row=3, column=1)
 
+        self.button.grid(row=4, column=0, columnspan=2)
+
     def set_data(self, **kwargs):
         pass
 
     def get_data(self):
-        pass
+        return {
+            'km': self.km.get(),
+            'minuten': self.min.get(),
+            'adresse1': self.kwargs['adresse1'],
+            'adresse2': self.kwargs['adresse2']
+        }

@@ -23,6 +23,11 @@ def get_home(session, assistent=None, asn=None):
             return adresse
 
 
+def get_adresse_by_id(session, adr_id):
+    for adresse in session.query(Adresse).filter(Adresse.id == adr_id):
+        return adresse
+
+
 def get_fahrzeit(adresse1, adresse2, session):
     for weg in session.query(Weg.dauer_in_minuten).filter(
             or_(
@@ -31,7 +36,7 @@ def get_fahrzeit(adresse1, adresse2, session):
                 and_(
                     Weg.adresse1_id == adresse2.id, Weg.adresse2_id == adresse1.id)
             )):
-        return Weg.dauer_in_minuten
+        return weg.dauer_in_minuten
     return None
 
 
