@@ -132,6 +132,12 @@ class SchichtController:
                         hour=int(data['endzeit_stunde']),
                         minute=int(data['endzeit_minute']))
 
+        if ende < beginn:
+            # falls jemand start und ende verwechselt -> Dreieckstausch
+            tmp = beginn
+            beginn = ende
+            ende = tmp
+
         if self.schicht:
             self.schicht.beginn = beginn
             self.schicht.ende = ende

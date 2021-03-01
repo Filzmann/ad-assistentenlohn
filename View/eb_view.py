@@ -4,14 +4,10 @@ from Helpers.combobox_dict import Combobox
 
 class EbView(tk.Frame):
 
-    def __init__(self, parent_view, ebliste, akt_eb):
+    def __init__(self, parent_view, ebliste):
         super().__init__(parent_view)
-        self.eb = akt_eb
-        self.selected = tk.StringVar()
-
         self.eb_dropdown = Combobox(self, values=ebliste, width=38, state="readonly")
         self.eb_dropdown.set(0)
-
 
         self.vorname_input = tk.Entry(self, bd=5, width=40)
         self.nachname_input = tk.Entry(self, bd=5, width=40)

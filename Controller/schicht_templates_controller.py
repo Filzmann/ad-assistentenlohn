@@ -7,6 +7,7 @@ from View.schicht_templates_view import SchichtTemplatesView
 class SchichtTemplatesController:
     def __init__(self,
                  parent_controller,
+                 parent_view,
                  session,
                  asn: ASN = None):
         self.asn = asn
@@ -14,7 +15,7 @@ class SchichtTemplatesController:
         self.session = session
         schicht_templates = self.get_schicht_templates()
 
-        self.view = SchichtTemplatesView(parent_view=self.parent.view.edit,
+        self.view = SchichtTemplatesView(parent_view=parent_view,
                                          schicht_templates=schicht_templates)
         self.parent.view.edit.templates = self.view
         self.view.submit_button.config(command=self.save_schicht_template)

@@ -4,7 +4,7 @@ from View.eb_view import EbView
 
 
 class EbController:
-    def __init__(self, parent_controller, session, eb: EB = None):
+    def __init__(self, parent_controller, parent_view, session, eb: EB = None):
         self.parent = parent_controller
         self.session = session
         self.eb = eb
@@ -14,7 +14,7 @@ class EbController:
             ebs = result.scalars().all()
             for eb_item in ebs:
                 self.ebliste[eb_item.id] = eb_item.vorname + " " + eb_item.name
-        self.view = EbView(parent_view=self.parent.view.edit, ebliste=self.ebliste, akt_eb=self.eb)
+        self.view = EbView(parent_view=parent_view, ebliste=self.ebliste, akt_eb=self.eb)
         self.view.eb_dropdown.bind("<<ComboboxSelected>>", self.change_eb)
 
         self.parent.view.edit.eb = self.view
@@ -68,13 +68,5 @@ class EbController:
             )
 
 
-    def change_eb(self, event=None):
-        eb = self.view.eb_dropdown.get()
-        if not eb or eb == "0":
-            self.view.set_data(vorname='', name='', email='')
-            self.eb = None
-        else:
-            result = self.session.execute(select(EB).where(EB.id == eb))
-            eb = result.scalars().one()
-            self.set_eb(eb)
+
 

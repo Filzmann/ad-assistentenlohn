@@ -4,7 +4,7 @@ from View.pfk_view import PfkView
 
 
 class PfkController:
-    def __init__(self, parent_controller, session, pfk: PFK = None):
+    def __init__(self, parent_controller, parent_view, session, pfk: PFK = None):
         self.parent = parent_controller
         self.session = session
         self.pfk = pfk
@@ -14,7 +14,7 @@ class PfkController:
             pfks = result.scalars().all()
             for pfk_item in pfks:
                 self.pfkliste[pfk_item.id] = pfk_item.vorname + " " + pfk_item.name
-        self.view = PfkView(parent_view=self.parent.view.edit, pfkliste=self.pfkliste, akt_pfk=self.pfk)
+        self.view = PfkView(parent_view=parent_view, pfkliste=self.pfkliste, akt_pfk=self.pfk)
         self.view.pfk_dropdown.bind("<<ComboboxSelected>>", self.change_pfk)
 
         self.parent.view.edit.pfk = self.view

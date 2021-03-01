@@ -21,7 +21,7 @@ class TabelleController:
         self.end = verschiebe_monate(offset=1, datum=self.start)
         letzter_tag = (self.end - timedelta(seconds=1)).day
 
-        data = self.calculate()
+        data = self.calculate(session)
         self.view = TabelleView(parent_view=parent_view,
                                 parent_controller=self,
                                 data=data,
@@ -41,9 +41,8 @@ class TabelleController:
                        start=self.start)
 
     def calculate(self, session=None):
-        if session:
-            self.session = session
-        schichten = get_sliced_schichten(start=self.start, end=self.end, session=self.session)
+        
+        schichten = get_sliced_schichten(start=self.start, end=self.end, session=session)
 
         if not schichten:
             self.add_feste_schichten(self.start, self.end)
@@ -64,7 +63,7 @@ class TabelleController:
             # stunden
             stunden = berechne_stunden(schicht)
 
-            lohn = get_lohn(session=self.session, assistent=self.assistent, datum=schicht['beginn'])
+            lohn = get_lohn(session=session, assistent=self.assistent, datum=schicht['beginn'])
 
             nachtstunden = get_nachtstunden(schicht)
 
@@ -115,7 +114,7 @@ class TabelleController:
 
         # Urlaube ermitteln
         # Todo urlaube, die länger als ein Monat sind und in diesem Monat weder starten noch enden
-        for urlaub in self.session.query(Urlaub).filter(
+        for urlaub in session.query(Urlaub).filter(
                 or_(
                     Urlaub.beginn.between(self.start, self.end),
                     Urlaub.ende.between(self.start, self.end)
@@ -125,10 +124,10 @@ class TabelleController:
             letzter_tag = urlaub.ende.day if urlaub.ende < self.end else (self.end - timedelta(days=1)).day
             urlaubsstunden = berechne_urlaub_au_saetze(datum=self.start,
                                                        assistent=self.assistent,
-                                                       session=self.session)['stunden_pro_tag']
+                                                       session=session)['stunden_pro_tag']
             urlaubslohn = berechne_urlaub_au_saetze(datum=self.start,
                                                     assistent=self.assistent,
-                                                    session=self.session)['pro_stunde']
+                                                    session=session)['pro_stunde']
             for tag in range(erster_tag, letzter_tag + 1):
                 if tag not in schichten_view_data.keys():
                     schichten_view_data["{:02d}".format(tag)] = []
@@ -156,7 +155,7 @@ class TabelleController:
 
         # AU ermitteln
         # Todo AU, die länger als ein Monat sind und in diesem Monat weder starten noch enden
-        for au in self.session.query(AU).filter(
+        for au in session.query(AU).filter(
                 or_(
                     AU.beginn.between(self.start, self.end),
                     AU.ende.between(self.start, self.end)
@@ -166,10 +165,10 @@ class TabelleController:
             letzter_tag = au.ende.day if au.ende < self.end else (self.end - timedelta(days=1)).day
             austunden = berechne_urlaub_au_saetze(datum=self.start,
                                                   assistent=self.assistent,
-                                                  session=self.session)['stunden_pro_tag']
+                                                  session=session)['stunden_pro_tag']
             aulohn = berechne_urlaub_au_saetze(datum=self.start,
                                                assistent=self.assistent,
-                                               session=self.session)['pro_stunde']
+                                               session=session)['pro_stunde']
 
             for tag in range(erster_tag, letzter_tag + 1):
                 if tag not in schichten_view_data.keys():

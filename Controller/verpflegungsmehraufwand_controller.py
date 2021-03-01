@@ -84,8 +84,10 @@ class VerpflegungsmehraufwandController:
                 self.data['<=8'] += 1
             elif (8*60) < abwesenheit <= (24*60):
                 self.data['>8'] += 1
-            else:
+            elif abwesenheit > (24*60):
                 self.data['>24'] += 1
+            else:
+                pass
 
     def save_askhole(self):
         data = self.view.get_data()
