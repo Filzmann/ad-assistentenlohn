@@ -12,7 +12,7 @@ class AsnStammdatenView(tk.Frame):
             bd=0)
         self.kuerzel_input = tk.Entry(self, bd=5, width=40)
         self.vorname_input = tk.Entry(self, bd=5, width=40)
-        self.nachname_input = tk.Entry(self, bd=5, width=40)
+        self.name_input = tk.Entry(self, bd=5, width=40)
         self.email_input = tk.Entry(self, bd=5, width=40)
         self.strasse_input = tk.Entry(self, bd=5, width=29)
         self.hausnummer_input = tk.Entry(self, bd=5, width=9)
@@ -33,9 +33,9 @@ class AsnStammdatenView(tk.Frame):
         vorname_label = tk.Label(self, text="Vorname")
         vorname_label.grid(row=1, column=0, sticky=tk.NW)
         self.vorname_input.grid(row=1, column=1, columnspan=2, sticky=tk.NW)
-        nachname_label = tk.Label(self, text="Nachname")
-        nachname_label.grid(row=2, column=0, sticky=tk.NW)
-        self.nachname_input.grid(row=2, column=1, columnspan=2, sticky=tk.NW)
+        name_label = tk.Label(self, text="Nachname")
+        name_label.grid(row=2, column=0, sticky=tk.NW)
+        self.name_input.grid(row=2, column=1, columnspan=2, sticky=tk.NW)
         email_label = tk.Label(self, text="Email")
         email_label.grid(row=3, column=0, sticky=tk.NW)
         self.email_input.grid(row=3, column=1, columnspan=2, sticky=tk.NW)
@@ -58,7 +58,7 @@ class AsnStammdatenView(tk.Frame):
 
         self.kuerzel_input.delete(0, "end")
         self.vorname_input.delete(0, "end")
-        self.nachname_input.delete(0, "end")
+        self.name_input.delete(0, "end")
         self.email_input.delete(0, "end")
         self.strasse_input.delete(0, "end")
         self.hausnummer_input.delete(0, "end")
@@ -68,7 +68,7 @@ class AsnStammdatenView(tk.Frame):
         # und neu befüllen
         self.kuerzel_input.insert(0, kwargs['kuerzel'])
         self.vorname_input.insert(0, kwargs['vorname'])
-        self.nachname_input.insert(0, kwargs['name'])
+        self.name_input.insert(0, kwargs['name'])
         self.email_input.insert(0, kwargs['email'])
         self.strasse_input.insert(0, kwargs['strasse'])
         self.hausnummer_input.insert(0, kwargs['hnr'])
@@ -79,7 +79,7 @@ class AsnStammdatenView(tk.Frame):
     def get_data(self):
         return {'kuerzel': self.kuerzel_input.get(),
                 'vorname': self.vorname_input.get(),
-                'nachname': self.nachname_input.get(),
+                'name': self.name_input.get(),
                 'email': self.email_input.get(),
                 'strasse': self.strasse_input.get(),
                 'hnr': self.hausnummer_input.get(),

@@ -95,7 +95,7 @@ class SchichtController:
             # create new asn
             asn = ASN(
                 kuerzel=data['asn_stammdaten']["kuerzel"],
-                name=data['asn_stammdaten']["nachname"],
+                name=data['asn_stammdaten']["name"],
                 vorname=data['asn_stammdaten']["vorname"],
                 email=data['asn_stammdaten']["email"],
             )
@@ -238,9 +238,10 @@ class SchichtController:
                        -1: 'Neu'}
         for adresse in self.session.query(Adresse).filter(
                 Adresse.assistenznehmer == self.asn):
-            adressliste[adresse.id] = adresse.bezeichner + ": " \
-                                      + adresse.strasse \
-                                      + " " + adresse.hausnummer + ", " + adresse.plz + " " + adresse.stadt
+            adressliste[adresse.id] = str(adresse.bezeichner) + ": " \
+                                      + str(adresse.strasse) \
+                                      + " " + str(adresse.hausnummer) + ", " + str(adresse.plz) + " " \
+                                      + str(adresse.stadt)
         return adressliste
 
     def get_home_id(self):

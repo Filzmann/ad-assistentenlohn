@@ -11,6 +11,7 @@ from Model.adresse import Adresse
 from Model.schicht_templates import SchichtTemplate
 from Model.weg import Weg
 from Model.schicht import Schicht
+from Model.feste_schichten import FesteSchicht
 from Model.brutto import Brutto
 from Model.assistent import Assistent
 from Model.lohn import Lohn

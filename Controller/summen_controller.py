@@ -65,8 +65,9 @@ class SummenController:
 
         }
         for schicht in schichten:
-            if not schicht['beginn'].strftime('%d') in schichten_view_data.keys():
-                schichten_view_data[schicht['beginn'].strftime('%d')] = []
+
+        #     if not schicht['beginn'].strftime('%d') in schichten_view_data.keys():
+        #         schichten_view_data[schicht['beginn'].strftime('%d')] = []
 
             # stunden
             stunden = berechne_stunden(schicht)
@@ -112,16 +113,16 @@ class SummenController:
                 stundenzuschlag = getattr(lohn, spaltenname)
                 schichtzuschlag = zuschlaege['stunden_gesamt'] * stundenzuschlag
 
-                if spaltenname in schichten_view_data.keys():
+                if spaltenname + "_bezeichner" in schichten_view_data.keys():
+                    schichten_view_data[spaltenname + "_stunden"] += zuschlaege['stunden_gesamt']
+                    schichten_view_data[spaltenname + "_kumuliert"] += schichtzuschlag
+                else:
+                    schichten_view_data[spaltenname + "_bezeichner"] = grund
+                    schichten_view_data[spaltenname + "_stunden"] = zuschlaege['stunden_gesamt']
+                    schichten_view_data[spaltenname + "_pro_stunde"] = stundenzuschlag
+                    schichten_view_data[spaltenname + "_kumuliert"] = schichtzuschlag
 
-                    if spaltenname + "_bezeichner" in schichten_view_data.keys():
-                        schichten_view_data[spaltenname + "_stunden"] += zuschlaege['stunden_gesamt']
-                        schichten_view_data[spaltenname + "_kumuliert"] += schichtzuschlag
-                    else:
-                        schichten_view_data[spaltenname + "_bezeichner"] = grund
-                        schichten_view_data[spaltenname + "_stunden"] = zuschlaege['stunden_gesamt']
-                        schichten_view_data[spaltenname + "_pro_stunde"] = stundenzuschlag
-                        schichten_view_data[spaltenname + "_kumuliert"] = schichtzuschlag
+                schichten_view_data['bruttolohn'] += schichtzuschlag
 
         # Urlaube ermitteln
         # Todo urlaube, die länger als ein Monat sind und in diesem Monat weder starten noch enden
@@ -184,6 +185,16 @@ class SummenController:
             if check_feiertag(datetime(year=self.start.year, month=self.start.month, day=tag)):
                 schichten_view_data['anzahl_feiertage'] += 1
                 schichten_view_data['freizeitausgleich'] += ausgleichslohn * ausgleichsstunden
+
+        ueberstunden = schichten_view_data['arbeitsstunden'] \
+                       + schichten_view_data['urlaubsstunden'] \
+                       + schichten_view_data['austunden'] \
+                       - 168.5
+        if ueberstunden > 0:
+            schichten_view_data['ueberstunden'] = ueberstunden
+            schichten_view_data['ueberstunden_pro_stunde'] = lohn.ueberstunden_zuschlag
+            schichten_view_data['ueberstunden_kumuliert'] = lohn.ueberstunden_zuschlag * ueberstunden
+            schichten_view_data['bruttolohn'] += lohn.ueberstunden_zuschlag * ueberstunden
 
         self.save_brutto(data=schichten_view_data)
 

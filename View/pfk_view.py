@@ -13,7 +13,7 @@ class PfkView(tk.Frame):
         self.pfk_dropdown.set(0)
 
         self.vorname_input = tk.Entry(self, bd=5, width=40)
-        self.nachname_input = tk.Entry(self, bd=5, width=40)
+        self.name_input = tk.Entry(self, bd=5, width=40)
         self.email_input = tk.Entry(self, bd=5, width=40)
 
         headline = tk.Label(self, text="PFK auswählen")
@@ -22,25 +22,28 @@ class PfkView(tk.Frame):
         vorname_label = tk.Label(self, text="Vorname")
         vorname_label.grid(row=1, column=0, sticky=tk.NW)
         self.vorname_input.grid(row=1, column=1, columnspan=2, sticky=tk.NW)
-        nachname_label = tk.Label(self, text="Nachname")
-        nachname_label.grid(row=2, column=0, sticky=tk.NW)
-        self.nachname_input.grid(row=2, column=1, columnspan=2, sticky=tk.NW)
+        name_label = tk.Label(self, text="Nachname")
+        name_label.grid(row=2, column=0, sticky=tk.NW)
+        self.name_input.grid(row=2, column=1, columnspan=2, sticky=tk.NW)
         email_label = tk.Label(self, text="Email")
         email_label.grid(row=3, column=0, sticky=tk.NW)
         self.email_input.grid(row=3, column=1, columnspan=2, sticky=tk.NW)
 
     def set_data(self, **kwargs):
         self.vorname_input.delete(0, 'end')
-        self.nachname_input.delete(0, 'end')
+        self.name_input.delete(0, 'end')
         self.email_input.delete(0, 'end')
 
         self.vorname_input.insert(0, kwargs['vorname'])
-        self.nachname_input.insert(0, kwargs['name'])
+        self.name_input.insert(0, kwargs['name'])
         self.email_input.insert(0, kwargs['email'])
         if 'pfk_id' in kwargs.keys():
             self.pfk_dropdown.set(kwargs['pfk_id'])
+        else:
+            self.pfk_dropdown.set(0)
 
     def get_data(self):
-        return{'vorname': self.vorname_input.get(),
-               'name': self.nachname_input.get(),
+        return{'id': self.pfk_dropdown.get(),
+               'vorname': self.vorname_input.get(),
+               'name': self.name_input.get(),
                'email': self.email_input.get()}

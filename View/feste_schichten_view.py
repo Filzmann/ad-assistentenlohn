@@ -1,7 +1,7 @@
 import tkinter as tk
 from datetime import datetime
 
-from timepicker import TimePicker
+from Helpers.timepicker import TimePicker
 
 
 class FesteSchichtenView(tk.Frame):

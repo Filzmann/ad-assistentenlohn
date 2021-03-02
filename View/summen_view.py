@@ -15,7 +15,7 @@ class SummenView(tk.Frame):
         for child in self.winfo_children():
             child.destroy()
 
-        zeile=0
+        zeile = 0
         # Kopfzeile
         bezeichner_kopf = tk.Label(master=self, text="Bezeichnung")
         anzahl_kopf = tk.Label(master=self, text="Anzahl")
@@ -109,6 +109,66 @@ class SummenView(tk.Frame):
         gesamt_wechselschicht.grid(row=zeile, column=3, sticky=tk.NE)
         zeile += 1
 
+        if 'samstag_zuschlag_bezeichner' in data:
+            bezeichner_samstag_zuschlag = tk.Label(master=self, text="Zuschlag Samstag")
+            anzahl_samstag_zuschlag = tk.Label(master=self, text="{:,.2f}".format(data['samstag_zuschlag_stunden']))
+            wert_samstag_zuschlag = tk.Label(master=self, text="{:,.2f}€".format(data['samstag_zuschlag_pro_stunde']))
+            gesamt_samstag_zuschlag = tk.Label(master=self, text="{:,.2f}€".format(data['samstag_zuschlag_kumuliert']))
+
+            bezeichner_samstag_zuschlag.grid(row=zeile, column=0, sticky=tk.NW)
+            anzahl_samstag_zuschlag.grid(row=zeile, column=1, sticky=tk.NE)
+            wert_samstag_zuschlag.grid(row=zeile, column=2, sticky=tk.NE)
+            gesamt_samstag_zuschlag.grid(row=zeile, column=3, sticky=tk.NE)
+            zeile += 1
+        
+        if 'sonntag_zuschlag_bezeichner' in data:
+            bezeichner_sonntag_zuschlag = tk.Label(master=self, text="Zuschlag Sonntag")
+            anzahl_sonntag_zuschlag = tk.Label(master=self, text="{:,.2f}".format(data['sonntag_zuschlag_stunden']))
+            wert_sonntag_zuschlag = tk.Label(master=self, text="{:,.2f}€".format(data['sonntag_zuschlag_pro_stunde']))
+            gesamt_sonntag_zuschlag = tk.Label(master=self, text="{:,.2f}€".format(data['sonntag_zuschlag_kumuliert']))
+
+            bezeichner_sonntag_zuschlag.grid(row=zeile, column=0, sticky=tk.NW)
+            anzahl_sonntag_zuschlag.grid(row=zeile, column=1, sticky=tk.NE)
+            wert_sonntag_zuschlag.grid(row=zeile, column=2, sticky=tk.NE)
+            gesamt_sonntag_zuschlag.grid(row=zeile, column=3, sticky=tk.NE)
+            zeile += 1
+            
+        if 'feiertag_zuschlag_bezeichner' in data:
+            bezeichner_feiertag_zuschlag = tk.Label(master=self, text="Zuschlag Feiertag")
+            anzahl_feiertag_zuschlag = tk.Label(master=self, text="{:,.2f}".format(data['feiertag_zuschlag_stunden']))
+            wert_feiertag_zuschlag = tk.Label(master=self, text="{:,.2f}€".format(data['feiertag_zuschlag_pro_stunde']))
+            gesamt_feiertag_zuschlag = tk.Label(master=self, text="{:,.2f}€".format(data['feiertag_zuschlag_kumuliert']))
+
+            bezeichner_feiertag_zuschlag.grid(row=zeile, column=0, sticky=tk.NW)
+            anzahl_feiertag_zuschlag.grid(row=zeile, column=1, sticky=tk.NE)
+            wert_feiertag_zuschlag.grid(row=zeile, column=2, sticky=tk.NE)
+            gesamt_feiertag_zuschlag.grid(row=zeile, column=3, sticky=tk.NE)
+            zeile += 1
+
+        if 'hl_abend_zuschlag_bezeichner' in data:
+            bezeichner_hl_abend_zuschlag = tk.Label(master=self, text="Zuschlag Hl.Abend")
+            anzahl_hl_abend_zuschlag = tk.Label(master=self, text="{:,.2f}".format(data['hl_abend_zuschlag_stunden']))
+            wert_hl_abend_zuschlag = tk.Label(master=self, text="{:,.2f}€".format(data['hl_abend_zuschlag_pro_stunde']))
+            gesamt_hl_abend_zuschlag = tk.Label(master=self, text="{:,.2f}€".format(data['hl_abend_zuschlag_kumuliert']))
+
+            bezeichner_hl_abend_zuschlag.grid(row=zeile, column=0, sticky=tk.NW)
+            anzahl_hl_abend_zuschlag.grid(row=zeile, column=1, sticky=tk.NE)
+            wert_hl_abend_zuschlag.grid(row=zeile, column=2, sticky=tk.NE)
+            gesamt_hl_abend_zuschlag.grid(row=zeile, column=3, sticky=tk.NE)
+            zeile += 1
+            
+        if 'silvester_zuschlag_bezeichner' in data:
+            bezeichner_silvester_zuschlag = tk.Label(master=self, text="Zuschlag Silvester")
+            anzahl_silvester_zuschlag = tk.Label(master=self, text="{:,.2f}".format(data['silvester_zuschlag_stunden']))
+            wert_silvester_zuschlag = tk.Label(master=self, text="{:,.2f}€".format(data['silvester_zuschlag_pro_stunde']))
+            gesamt_silvester_zuschlag = tk.Label(master=self, text="{:,.2f}€".format(data['silvester_zuschlag_kumuliert']))
+
+            bezeichner_silvester_zuschlag.grid(row=zeile, column=0, sticky=tk.NW)
+            anzahl_silvester_zuschlag.grid(row=zeile, column=1, sticky=tk.NE)
+            wert_silvester_zuschlag.grid(row=zeile, column=2, sticky=tk.NE)
+            gesamt_silvester_zuschlag.grid(row=zeile, column=3, sticky=tk.NE)
+            zeile += 1
+
         if data['anzahl_feiertage']:
             bezeichner_freizeitausgleich = tk.Label(master=self, text="Freizeitausgleich")
             anzahl_freizeitausgleich = tk.Label(master=self, text="{:,.2f}".format(data['anzahl_feiertage']))
@@ -119,6 +179,18 @@ class SummenView(tk.Frame):
             anzahl_freizeitausgleich.grid(row=zeile, column=1, sticky=tk.NE)
             wert_freizeitausgleich.grid(row=zeile, column=2, sticky=tk.NE)
             gesamt_freizeitausgleich.grid(row=zeile, column=3, sticky=tk.NE)
+            zeile += 1
+            
+        if 'ueberstunden' in data:
+            bezeichner_ueberstunden = tk.Label(master=self, text="Überstundenzuschlag")
+            anzahl_ueberstunden = tk.Label(master=self, text="{:,.2f}".format(data['ueberstunden']))
+            wert_ueberstunden = tk.Label(master=self, text="{:,.2f}€".format(data['ueberstunden_pro_stunde']))
+            gesamt_ueberstunden = tk.Label(master=self, text="{:,.2f}€".format(data['ueberstunden_kumuliert']))
+
+            bezeichner_ueberstunden.grid(row=zeile, column=0, sticky=tk.NW)
+            anzahl_ueberstunden.grid(row=zeile, column=1, sticky=tk.NE)
+            wert_ueberstunden.grid(row=zeile, column=2, sticky=tk.NE)
+            gesamt_ueberstunden.grid(row=zeile, column=3, sticky=tk.NE)
             zeile += 1
 
 

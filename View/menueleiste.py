@@ -4,11 +4,10 @@ from tkinter import messagebox as messagebox
 from Controller.arbeitsunfaehigkeit_controller import AUController
 from Controller.asn_edit_controller import AsnEditController
 from Controller.assistent_controller import AssistentController
+from Controller.kilometergeld_controller import KilometergeldController
 from Controller.schicht_controller import SchichtController
 from Controller.urlaub_controller import UrlaubController
 from Controller.verpflegungsmehraufwand_controller import VerpflegungsmehraufwandController
-from fenster_kilometergeld import FensterKilometergeld
-from fenster_verpflegungsmehraufwand import FensterVerpflegungsMehraufwand
 
 
 class Menuleiste(tk.Menu):
@@ -16,10 +15,6 @@ class Menuleiste(tk.Menu):
         tk.Menu.__init__(self, parent_view)
         # Menü Datei und Help erstellen
         datei_menu = tk.Menu(self, tearoff=0)
-        # datei_menu.add_command(label="Neue Assistenten-Datei", command=lambda: FensterNeuerAS(root, assistent))
-        # datei_menu.add_command(label="Assistenten-Datei laden", command=parent.fenster.load_and_redraw)
-        # datei_menu.add_command(label="Assistenten-Datei speichern", command=assistent.save_to_file)
-        # dateimenu.add_command(label="Assistenten-Datei speichern unter")
         datei_menu.add_separator()  # Fügt eine Trennlinie hinzu
         datei_menu.add_command(label="Exit", command=parent_view.quit)
 
@@ -57,8 +52,11 @@ class Menuleiste(tk.Menu):
                                    parent_controller=parent_controller,
                                    assistent=assistent,
                                    session=session))
-        # taxes_menu.add_command(label="Berechne Fahrtzeiten für Reisekosten",
-        #                       command=lambda: FensterKilometergeld(root, assistent))
+        taxes_menu.add_command(label="Reisekosten/KM-Geld",
+                               command=lambda: KilometergeldController(
+                                   parent_controller=parent_controller,
+                                   assistent=assistent,
+                                   session=session))
 
         help_menu = tk.Menu(self, tearoff=0)
         help_menu.add_command(label="Info!", command=self.action_get_info_dialog)
