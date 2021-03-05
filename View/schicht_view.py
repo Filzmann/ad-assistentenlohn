@@ -219,6 +219,8 @@ class SchichtView(tk.Toplevel):
         self.ist_pcg.set(1 if 'ist_pcg' in kwargs.keys() and kwargs['ist_pcg'] else 0)
         self.ist_rb.set(1 if 'ist_rb' in kwargs.keys() and kwargs['ist_rb'] else 0)
         self.ist_afg.set(1 if 'ist_afg' in kwargs.keys() and kwargs['ist_afg'] else 0)
+
+        # TODO Zurücksetzen bei Change ASN
         if 'abweichende_adresse_beginn' in kwargs.keys():
             if kwargs['abweichende_adresse_beginn']:
                 self.abweichende_adresse_beginn_dropdown.set(kwargs['abweichende_adresse_beginn'])

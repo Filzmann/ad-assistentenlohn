@@ -483,7 +483,7 @@ def berechne_urlaub_au_saetze(datum, session, assistent):
             'stunden_pro_tag': 1,
             'pro_stunde': 5
         }
-
+    # TODO Urlaub und AU mit reinrechnen?
     return {
         'stunden_pro_tag': (stundensumme / zaehler) / 30,
         'pro_stunde': bruttosumme / stundensumme
