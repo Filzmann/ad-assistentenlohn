@@ -70,7 +70,7 @@ class VerpflegungsmehraufwandController:
 
             zeit_rueckfahrt = get_fahrzeit(adresse1=ende_adresse_einsatz, adresse2=as_home, session=self.session)
 
-            if not zeit_hinfahrt:
+            if not zeit_rueckfahrt:
                 self.alle_unklarheiten_beseitigt = False
                 self.view = AskholeView(self.parent.view, adresse1=as_home, adresse2=ende_adresse_einsatz)
                 self.view.button.config(command=lambda: self.save_askhole())

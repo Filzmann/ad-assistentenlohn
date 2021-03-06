@@ -40,6 +40,18 @@ def get_fahrzeit(adresse1, adresse2, session):
     return None
 
 
+def get_entfernung(adresse1, adresse2, session):
+    for weg in session.query(Weg.entfernung).filter(
+            or_(
+                and_(
+                    Weg.adresse1_id == adresse1.id, Weg.adresse2_id == adresse2.id),
+                and_(
+                    Weg.adresse1_id == adresse2.id, Weg.adresse2_id == adresse1.id)
+            )):
+        return weg.entfernung
+    return None
+
+
 def check_mehrtaegig(schicht):
     pseudoende = schicht.ende - timedelta(minutes=2)
     if schicht.beginn.strftime("%Y%m%d") == pseudoende.strftime("%Y%m%d"):

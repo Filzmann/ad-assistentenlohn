@@ -41,7 +41,7 @@ class TabelleController:
                        start=self.start)
 
     def calculate(self, session=None):
-        
+
         schichten = get_sliced_schichten(start=self.start, end=self.end, session=session)
 
         if not schichten:
@@ -78,8 +78,7 @@ class TabelleController:
                     spaltenname = grund.lower().replace('.', '').replace(' ', '_') + '_zuschlag'
                     stundenzuschlag = getattr(lohn, spaltenname)
                     schichtzuschlag = zuschlaege['stunden_gesamt'] * stundenzuschlag
-                    zuschlaege_text = grund \
-                                      + ': ' \
+                    zuschlaege_text = grund + ': '\
                                       + "{:,.2f}".format(zuschlaege['stunden_gesamt']) \
                                       + ' Std = ' \
                                       + "{:,.2f}€".format(schichtzuschlag)
