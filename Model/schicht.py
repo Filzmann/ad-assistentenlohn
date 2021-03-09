@@ -23,3 +23,5 @@ class Schicht(Base):
 
     def __repr__(self):
         return f"Schicht( Beginn: {self.beginn!r}, Ende: {self.ende!r}, ASN: {self.asn!r})"
+
+

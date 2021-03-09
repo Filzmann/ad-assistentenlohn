@@ -471,6 +471,8 @@ def sort_schicht_data_by_beginn(schichten: list):
     return ausgabe
 
 
+
+
 def berechne_urlaub_au_saetze(datum, session, assistent):
     akt_monat = datetime(year=datum.year, month=datum.month, day=1)
     for zaehler in range(1, 7):

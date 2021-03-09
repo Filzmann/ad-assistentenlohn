@@ -6,7 +6,42 @@ from Model.urlaub import Urlaub
 from View.summen_view import SummenView
 
 
+def check_schicht(datum: datetime, session):
+    """prüft, ob an einem gegeben Datum eine Schicht ist."""
+    tagbeginn = datetime(year=datum.year, month=datum.month, day=datum.day, hour=0, minute=0, second=0)
+    tagende = datetime(year=datum.year, month=datum.month, day=datum.day, hour=23, minute=59, second=59)
 
+    for schicht in session.query(Schicht.id).filter(
+        or_(
+            or_(
+                Schicht.beginn.between(tagbeginn, tagende),
+                Schicht.ende.between(tagbeginn, tagende)
+            ),
+            and_(
+                tagbeginn < Schicht.beginn,
+                tagende > Schicht.ende
+            )
+        )
+    ):
+        return True
+    return False
+
+
+def get_freie_sonntage(year, session):
+    # erster sonntag
+    janfirst = datetime(year, 1, 1)
+    sunday = (7 - janfirst.weekday()) % 7
+    sunday = datetime(year=year, month=1, day=sunday)
+
+    wochencounter = 0
+    sontagsschichtcounter = 0
+    for kw in range(1, 54):
+        if sunday.year == year:
+            wochencounter += 1
+            if check_schicht(sunday, session):
+                sontagsschichtcounter += 1
+        sunday = sunday + timedelta(days=7)
+    return wochencounter - sontagsschichtcounter
 
 
 class SummenController:
@@ -37,6 +72,8 @@ class SummenController:
             session = self.session
 
         schichten = get_sliced_schichten(start=self.start, end=self.end, session=session)
+        freie_sonntage = get_freie_sonntage(self.start.year, session=self.session)
+
         schichten_view_data = {
             'arbeitsstunden': 0,
             'stundenlohn': 0,
@@ -55,7 +92,8 @@ class SummenController:
             'freizeitausgleich': 0,
             'bruttolohn': 0,
             'anzahl_feiertage': 0,
-            # todo freie Sonntage
+            'freie_sonntage': str(freie_sonntage),
+            'moegliche_arbeitssonntage': str(freie_sonntage - 15),
             'urlaubsstunden': 0,
             'stundenlohn_urlaub': 0,
             'urlaubslohn': 0,
@@ -66,8 +104,8 @@ class SummenController:
         }
         for schicht in schichten:
 
-        #     if not schicht['beginn'].strftime('%d') in schichten_view_data.keys():
-        #         schichten_view_data[schicht['beginn'].strftime('%d')] = []
+            #     if not schicht['beginn'].strftime('%d') in schichten_view_data.keys():
+            #         schichten_view_data[schicht['beginn'].strftime('%d')] = []
 
             # stunden
             stunden = berechne_stunden(schicht)

@@ -14,12 +14,11 @@ class AskholeView(tk.Toplevel):
         self.button = tk.Button(self, text="Speichern")
         self.kwargs = kwargs
 
-
         self.draw()
 
     def draw(self):
         # ins Fenster packen
-        headline = tk.Label(self, text="Verpflegungsmehraufwand")
+        headline = tk.Label(self, text="Frage!")
         headline.grid(row=0, column=0, columnspan=2)
 
         text = "Leider kann ich selber (noch) nicht googeln. \n" \
@@ -30,7 +29,6 @@ class AskholeView(tk.Toplevel):
         text += str(self.kwargs['adresse2']) + "?"
         textfeld = tk.Label(self, text=text)
         textfeld.grid(row=1, column=0, columnspan=2)
-
 
         label_km = tk.Label(self, text="Kilometer:")
         label_km.grid(row=2, column=0)

@@ -42,41 +42,54 @@ class KilometergeldController:
             )
         ):
 
-            as_home = get_home(session=self.session, assistent=self.assistent)
+            # Überprüfen, ob die Schicht auch zum größten teil im aktuellen Jahr liegt
+            skip = False
+            if schicht.beginn < start:
+                dauer_letzes_jahr = get_duration(schicht.beginn, start, 'minutes')
+                dauer_dieses_jahr = get_duration(start, schicht.ende, 'minutes')
+                if dauer_letzes_jahr > dauer_dieses_jahr:
+                    skip = True
+            if schicht.ende > end:
+                dauer_naechstes_jahr = get_duration(end, schicht.ende, 'minutes')
+                dauer_dieses_jahr = get_duration(schicht.beginn, end, 'minutes')
+                if dauer_naechstes_jahr > dauer_dieses_jahr:
+                    skip = True
 
-            if schicht.beginn_andere_adresse:
-                beginn_adresse_einsatz = get_adresse_by_id(session=self.session, adr_id=schicht.beginn_andere_adresse)
-            else:
-                beginn_adresse_einsatz = get_home(asn=schicht.asn, session=self.session)
+            if not skip:
+                as_home = get_home(session=self.session, assistent=self.assistent)
 
-            weg_hinfahrt = get_entfernung(adresse1=as_home, adresse2=beginn_adresse_einsatz, session=self.session)
+                if schicht.beginn_andere_adresse:
+                    beginn_adresse_einsatz = get_adresse_by_id(session=self.session, adr_id=schicht.beginn_andere_adresse)
+                else:
+                    beginn_adresse_einsatz = get_home(asn=schicht.asn, session=self.session)
 
-            if not weg_hinfahrt:
-                self.alle_unklarheiten_beseitigt = False
-                self.view = AskholeView(self.parent.view, adresse1=as_home, adresse2=beginn_adresse_einsatz)
-                self.view.button.config(command=lambda: self.save_askhole())
-                break
-            else:
-                self.alle_unklarheiten_beseitigt = True
-                self.insert_weg_in_data(adresse_1=as_home, adresse_2=beginn_adresse_einsatz)
+                weg_hinfahrt = get_entfernung(adresse1=as_home, adresse2=beginn_adresse_einsatz, session=self.session)
 
-            if schicht.ende_andere_adresse:
-                ende_adresse_einsatz = get_adresse_by_id(session=self.session, adr_id=schicht.ende_andere_adresse)
-            else:
-                ende_adresse_einsatz = get_home(asn=schicht.asn, session=self.session)
+                if not weg_hinfahrt:
+                    self.alle_unklarheiten_beseitigt = False
+                    self.view = AskholeView(self.parent.view, adresse1=as_home, adresse2=beginn_adresse_einsatz)
+                    self.view.button.config(command=lambda: self.save_askhole())
+                    break
+                else:
+                    self.alle_unklarheiten_beseitigt = True
+                    self.insert_weg_in_data(adresse_1=as_home, adresse_2=beginn_adresse_einsatz)
 
-            weg_rueckfahrt = get_fahrzeit(adresse1=ende_adresse_einsatz, adresse2=as_home, session=self.session)
+                if schicht.ende_andere_adresse:
+                    ende_adresse_einsatz = get_adresse_by_id(session=self.session, adr_id=schicht.ende_andere_adresse)
+                else:
+                    ende_adresse_einsatz = get_home(asn=schicht.asn, session=self.session)
 
-            if not weg_rueckfahrt:
-                self.alle_unklarheiten_beseitigt = False
-                self.view = AskholeView(self.parent.view, adresse1=as_home, adresse2=ende_adresse_einsatz)
-                self.view.button.config(command=lambda: self.save_askhole())
-                break
-            else:
-                self.alle_unklarheiten_beseitigt = True
-                self.insert_weg_in_data(adresse_1=as_home, adresse_2=ende_adresse_einsatz)
-            # TODO Randschichten prüfen, ob sie in anderes Jahr gehören (größter Anteil Stunden)
-            # TODO kombinierte Schichten
+                weg_rueckfahrt = get_fahrzeit(adresse1=ende_adresse_einsatz, adresse2=as_home, session=self.session)
+
+                if not weg_rueckfahrt:
+                    self.alle_unklarheiten_beseitigt = False
+                    self.view = AskholeView(self.parent.view, adresse1=as_home, adresse2=ende_adresse_einsatz)
+                    self.view.button.config(command=lambda: self.save_askhole())
+                    break
+                else:
+                    self.alle_unklarheiten_beseitigt = True
+                    self.insert_weg_in_data(adresse_1=as_home, adresse_2=ende_adresse_einsatz)
+                # TODO kombinierte Schichten
 
     def insert_weg_in_data(self, adresse_1, adresse_2):
         if str(adresse_1.id) + '-' + str(adresse_2.id) in self.data:

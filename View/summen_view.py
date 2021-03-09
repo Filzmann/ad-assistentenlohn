@@ -202,3 +202,13 @@ class SummenView(tk.Frame):
         bezeichner_bruttolohn.grid(row=zeile, column=0, sticky=tk.NW)
         gesamt_bruttolohn.grid(row=zeile, column=3, sticky=tk.NE)
         zeile += 1
+
+        # freie Sontage
+        text = 'Es gibt laut aktueller Planung noch ' + data['freie_sonntage'] + ' Sonntage, \n' \
+               'an denen du arbeiten könntest.\n'
+        text += 'Davon "darfst" du noch ' + data['moegliche_arbeitssonntage'] + ' Sonntage arbeiten.\n'
+        text += '(Du musst jedes Jahr 15 freie Sonntage haben.)'
+        bezeichner = tk.Label(master=self, text=text, justify=tk.LEFT)
+        bezeichner.grid(row=zeile, column=0, columnspan=4, sticky=tk.NW)
+
+        zeile += 1

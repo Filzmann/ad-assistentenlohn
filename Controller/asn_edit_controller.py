@@ -24,6 +24,8 @@ class AsnEditController:
         self.assistent = assistent
         self.asn = asn
         self.session = session
+        self.eb = None
+        self.pfk = None
 
         # Daten Für Auswahl ASN
         asnliste = [{'id': -1, 'kuerzel': 'Neuer ASN'}]
@@ -62,7 +64,6 @@ class AsnEditController:
         # self.view.saveandnew_button.config(command=lambda: self.save_au(undneu=1))
 
     def change_asn(self):
-        # todo Reset für Neuer ASN nach update ASN
         if self.view.selected_asn.get() > 0:
             new_asn_id = self.view.selected_asn.get()
             for asn in self.session.query(ASN).filter(ASN.id == new_asn_id):
@@ -85,7 +86,7 @@ class AsnEditController:
                     eb_id=self.asn.einsatzbegleitung.id
                 )
             else:
-                # reset TODO 2 x Reset, schöner lösen
+                # reset TODO fix later 2 x Reset, schöner lösen
                 self.view.eb.set_data(
                     vorname='',
                     name='',
@@ -108,7 +109,7 @@ class AsnEditController:
                     pfk_id=self.asn.pflegefachkraft.id
                 )
             else:
-                # reset TODO 2 x Reset, schöner lösen
+                # reset TODO fix later 2 x Reset, schöner lösen
 
                 self.view.pfk.set_data(
                     vorname='',
@@ -127,23 +128,21 @@ class AsnEditController:
         eb = self.view.eb.eb_dropdown.get()
         if not eb or eb == "0":
             self.view.eb.set_data(vorname='', name='', email='')
-            self.asn.eb = None
+            # self.eb = None
         else:
-            # Todo Wenn noch kein ASN kann EB da auch nicht gespeichert werden. Zwischenspeichern?
             for eb in self.session.query(EB).filter(EB.id == eb):
                 self.view.eb.set_data(vorname=eb.vorname, name=eb.name, email=eb.email)
-                self.asn.eb = eb
+                # self.eb = eb
                 
     def change_pfk(self, event=None):
         pfk = self.view.pfk.pfk_dropdown.get()
         if not pfk or pfk == "0":
             self.view.pfk.set_data(vorname='', name='', email='')
-            self.asn.pfk = None
+            # self.pfk = None
         else:
-            # Todo Wenn noch kein ASN kann pfk da auch nicht gespeichert werden. Zwischenspeichern?
             for pfk in self.session.query(PFK).filter(PFK.id == pfk):
                 self.view.pfk.set_data(vorname=pfk.vorname, name=pfk.name, email=pfk.email)
-                self.asn.pfk = pfk
+                # self.pfk = pfk
 
     def get_feste_schichten(self):
         feste_schichten = []
@@ -286,7 +285,7 @@ class AsnEditController:
                 self.session.refresh(pfk)
                 self.asn.pflegefachkraft = pfk
         self.session.commit()
-        self.view.destroy()
+        # self.view.destroy()
 
     def save_asn_stammdaten(self, assistent):
         stammdaten = self.view.stammdaten.get_data()
@@ -330,7 +329,7 @@ class AsnEditController:
             # 1. Zusatzdaten in Asociation,
             # 2. ASN der  Aso zuweisen,
             # 3. Aso dem Assistenten
-            # Todo auswahl fest/vertretung/feste_vertretung
+            # Todo later:  auswahl fest/vertretung/feste_vertretung
             result = self.session.execute(select(Assistent).where(Assistent.id == assistent.id))
             assistent = result.scalars().one()
             association = AssociationAsAsn(fest_vertretung="fest")

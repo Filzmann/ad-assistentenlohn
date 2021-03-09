@@ -106,7 +106,7 @@ class SchichtController:
             # 1. Zusatzdaten in Asociation,
             # 2. ASN der  Aso zuweisen,
             # 3. Aso dem Assistenten
-            # Todo auswahl fest/vertretung/feste_vertretung
+            # Todo later auswahl fest/vertretung/feste_vertretung
             result = self.session.execute(select(Assistent).where(Assistent.id == self.assistent.id))
             assistent = result.scalars().one()
             association = AssociationAsAsn(fest_vertretung="fest")
@@ -161,7 +161,7 @@ class SchichtController:
         self.schicht.assistent = assistent
         self.session.commit()
 
-        # TODO abweichende adressen
+        # abweichende adressen
         if int(data['abweichende_adresse_beginn']) > 0:
             self.schicht.beginn_andere_adresse = data['abweichende_adresse_beginn']
         elif int(data['abweichende_adresse_beginn']) == -1:
@@ -175,7 +175,7 @@ class SchichtController:
             self.session.add(new_address)
             self.session.commit()
             self.schicht.beginn_andere_adresse = new_address.id
-            
+
         if int(data['abweichende_adresse_ende']) > 0:
             self.schicht.ende_andere_adresse = data['abweichende_adresse_ende']
         elif int(data['abweichende_adresse_ende']) == -1:
@@ -265,13 +265,18 @@ class SchichtController:
             asn = self.get_asn_by_id(asn_id)
             self.asn = asn
 
-            self.view.draw()
-            self.view.hide(self.view.abweichende_adresse_beginn)
-            self.view.hide(self.view.abweichende_adresse_ende)
-            self.view.hide(self.view.asn_stammdaten_form)
-            self.view.draw_templates(asn.schicht_templates)
+        # Set adressliste für neuen ASN
+        adressliste = self.get_adressliste()
+        self.view.abweichende_adresse_beginn_dropdown.config(values=adressliste)
+        self.view.abweichende_adresse_ende_dropdown.config(values=adressliste)
+        self.view.abweichende_adresse_beginn_dropdown.set(-2)
+        self.view.abweichende_adresse_ende_dropdown.set(-2)
 
-            # Todo Set adressliste
+        self.view.draw()
+        self.view.hide(self.view.abweichende_adresse_beginn)
+        self.view.hide(self.view.abweichende_adresse_ende)
+        self.view.hide(self.view.asn_stammdaten_form)
+        self.view.draw_templates(asn.schicht_templates)
 
     def change_abweichende_adresse_beginn(self, event=None):
         if int(self.view.abweichende_adresse_beginn_dropdown.get()) < -1:
@@ -289,4 +294,3 @@ class SchichtController:
         adressliste = self.get_adressliste()
         combobox.dict = adressliste
         combobox['values'] = sorted(adressliste.values())
-
