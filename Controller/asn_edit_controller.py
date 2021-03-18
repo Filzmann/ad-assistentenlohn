@@ -285,7 +285,8 @@ class AsnEditController:
                 self.session.refresh(pfk)
                 self.asn.pflegefachkraft = pfk
         self.session.commit()
-        # self.view.destroy()
+        self.view.destroy()
+        self.__init__(self.parent, self.session, self.assistent)
 
     def save_asn_stammdaten(self, assistent):
         stammdaten = self.view.stammdaten.get_data()
