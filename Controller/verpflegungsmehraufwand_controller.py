@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import or_, and_
 
-from Helpers.help_functions import get_home, get_fahrzeit, get_adresse_by_id, get_duration
+from Helpers.help_functions import get_home, get_fahrzeit, get_adresse_by_id, get_duration, check_randschicht_haupteil
 from Model.assistent import Assistent
 from Model.schicht import Schicht
 from Model.urlaub import Urlaub
@@ -44,50 +44,50 @@ class VerpflegungsmehraufwandController:
                 Schicht.ende.between(start, end)
             )
         ):
-            dauer = get_duration(schicht.beginn, schicht.ende, 'minutes')
+            if check_randschicht_haupteil(schicht=schicht, jahr=self.akt_jahr):
+                dauer = get_duration(schicht.beginn, schicht.ende, 'minutes')
+                as_home = get_home(session=self.session, assistent=self.assistent)
 
-            as_home = get_home(session=self.session, assistent=self.assistent)
+                if schicht.beginn_andere_adresse:
+                    beginn_adresse_einsatz = get_adresse_by_id(session=self.session,
+                                                               adr_id=schicht.beginn_andere_adresse)
+                else:
+                    beginn_adresse_einsatz = get_home(asn=schicht.asn, session=self.session)
 
-            if schicht.beginn_andere_adresse:
-                beginn_adresse_einsatz = get_adresse_by_id(session=self.session, adr_id=schicht.beginn_andere_adresse)
-            else:
-                beginn_adresse_einsatz = get_home(asn=schicht.asn, session=self.session)
+                zeit_hinfahrt = get_fahrzeit(adresse1=as_home, adresse2=beginn_adresse_einsatz, session=self.session)
 
-            zeit_hinfahrt = get_fahrzeit(adresse1=as_home, adresse2=beginn_adresse_einsatz, session=self.session)
+                if not zeit_hinfahrt:
+                    self.alle_unklarheiten_beseitigt = False
+                    self.view = AskholeView(self.parent.view, adresse1=as_home, adresse2=beginn_adresse_einsatz)
+                    self.view.button.config(command=lambda: self.save_askhole())
+                    break
+                else:
+                    self.alle_unklarheiten_beseitigt = True
 
-            if not zeit_hinfahrt:
-                self.alle_unklarheiten_beseitigt = False
-                self.view = AskholeView(self.parent.view, adresse1=as_home, adresse2=beginn_adresse_einsatz)
-                self.view.button.config(command=lambda: self.save_askhole())
-                break
-            else:
-                self.alle_unklarheiten_beseitigt = True
+                if schicht.ende_andere_adresse:
+                    ende_adresse_einsatz = get_adresse_by_id(session=self.session, adr_id=schicht.ende_andere_adresse)
+                else:
+                    ende_adresse_einsatz = get_home(asn=schicht.asn, session=self.session)
 
-            if schicht.ende_andere_adresse:
-                ende_adresse_einsatz = get_adresse_by_id(session=self.session, adr_id=schicht.ende_andere_adresse)
-            else:
-                ende_adresse_einsatz = get_home(asn=schicht.asn, session=self.session)
+                zeit_rueckfahrt = get_fahrzeit(adresse1=ende_adresse_einsatz, adresse2=as_home, session=self.session)
 
-            zeit_rueckfahrt = get_fahrzeit(adresse1=ende_adresse_einsatz, adresse2=as_home, session=self.session)
-
-            if not zeit_rueckfahrt:
-                self.alle_unklarheiten_beseitigt = False
-                self.view = AskholeView(self.parent.view, adresse1=as_home, adresse2=ende_adresse_einsatz)
-                self.view.button.config(command=lambda: self.save_askhole())
-                break
-            else:
-                self.alle_unklarheiten_beseitigt = True
-            # TODO Randschichten prüfen, ob sie in anderes Jahr gehören (größter Anteil Stunden)
-            # TODO kombinierte Schichten
-            abwesenheit = abs(dauer) + int(zeit_hinfahrt) + int(zeit_rueckfahrt)
-            if abwesenheit <= (8*60):
-                self.data['<=8'] += 1
-            elif (8*60) < abwesenheit <= (24*60):
-                self.data['>8'] += 1
-            elif abwesenheit > (24*60):
-                self.data['>24'] += 1
-            else:
-                pass
+                if not zeit_rueckfahrt:
+                    self.alle_unklarheiten_beseitigt = False
+                    self.view = AskholeView(self.parent.view, adresse1=as_home, adresse2=ende_adresse_einsatz)
+                    self.view.button.config(command=lambda: self.save_askhole())
+                    break
+                else:
+                    self.alle_unklarheiten_beseitigt = True
+                # TODO kombinierte Schichten
+                abwesenheit = abs(dauer) + int(zeit_hinfahrt) + int(zeit_rueckfahrt)
+                if abwesenheit <= (8 * 60):
+                    self.data['<=8'] += 1
+                elif (8 * 60) < abwesenheit <= (24 * 60):
+                    self.data['>8'] += 1
+                elif abwesenheit > (24 * 60):
+                    self.data['>24'] += 1
+                else:
+                    pass
 
     def save_askhole(self):
         data = self.view.get_data()

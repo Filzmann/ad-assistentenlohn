@@ -107,6 +107,7 @@ def get_duration(then, now=datetime.now(), interval="default"):
     }[interval]
 
 
+
 def split_by_null_uhr(schicht):
     ausgabe = []
 
@@ -170,6 +171,32 @@ def split_by_null_uhr(schicht):
         })
 
     return ausgabe
+
+
+def check_randschicht_haupteil(schicht, jahr):
+    teilschichten_nach_jahren = dict()
+    if schicht.beginn.year != schicht.ende.year:
+        schichten = split_by_null_uhr(schicht)
+
+        for teilschicht in schichten:
+            key = 'dieses_jahr' if teilschicht['beginn'].year == jahr else 'anderes_jahr'
+            if teilschicht['beginn'].year not in teilschichten_nach_jahren:
+                teilschichten_nach_jahren[key] = get_duration(schicht.beginn,
+                                                              schicht.ende,
+                                                              'minutes')
+            else:
+                teilschichten_nach_jahren[key] += get_duration(schicht.beginn,
+                                                               schicht.ende,
+                                                               'minutes')
+
+        if teilschichten_nach_jahren['dieses_jahr'] > teilschichten_nach_jahren['anderes_jahr']:
+            # Hauptteil der Schicht ist im aktuellen Jahr
+            return True
+        else:
+            # Hauptteil der Schicht ist im aktuellen oder nächsten Jahr
+            return False
+    # Schicht liegt komplett im zu prüfenden Jahr und muss nicht gecheckt werden
+    return True
 
 
 def get_erfahrungsstufe(assistent, datum=datetime.now()):

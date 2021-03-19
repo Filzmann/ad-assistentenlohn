@@ -330,7 +330,6 @@ class AsnEditController:
             # 1. Zusatzdaten in Asociation,
             # 2. ASN der  Aso zuweisen,
             # 3. Aso dem Assistenten
-            # Todo later:  auswahl fest/vertretung/feste_vertretung
             result = self.session.execute(select(Assistent).where(Assistent.id == assistent.id))
             assistent = result.scalars().one()
             association = AssociationAsAsn(fest_vertretung="fest")
