@@ -6,7 +6,7 @@ class AsnStammdatenView(tk.Frame):
     def __init__(self, parent_view):
         super().__init__(parent_view)
         self.config(
-            highlightbackground="green",
+            highlightbackground="black",
             highlightcolor="black",
             highlightthickness=1,
             bd=0)

@@ -1,5 +1,5 @@
 import tkinter as tk
-
+from tkinter import ttk
 
 from Helpers.combobox_dict import Combobox
 
@@ -22,10 +22,10 @@ class KilometergeldView(tk.Toplevel):
                     + 'km ' + ' * 0,30€ = ' + "{:,.2f}€".format(zeile['kmgeld'])
             text += '\n'
 
-        self.textfeld = tk.Text(self, width=130, height=50)
-        # self.ys = ttk.Scrollbar(self, orient='vertical', command=self.textfeld.yview)
+        self.textfeld = tk.Text(self, width=130, height=10)
+        self.ys = ttk.Scrollbar(self, orient='vertical', command=self.textfeld.yview)
         # self.xs = ttk.Scrollbar(self, orient='horizontal', command=self.textfeld.xview)
-        # self.textfeld['yscrollcommand'] = self.ys.set
+        self.textfeld['yscrollcommand'] = self.ys.set
         # self.textfeld['xscrollcommand'] = self.xs.set
         self.textfeld.insert('1.0', text)
 
@@ -40,11 +40,11 @@ class KilometergeldView(tk.Toplevel):
             self.jahr_dropdown.grid(row=0, column=5)
             self.changebutton.grid(row=0, column=6)
 
-        self.textfeld.grid(row=1, column=0, columnspan=3)
-        # self.xs.grid(column=0, row=1, sticky='we')
-        # self.ys.grid(column=1, row=0, sticky='ns')
-        # self.grid_columnconfigure(0, weight=1)
-        # self.grid_rowconfigure(0, weight=1)
+        self.textfeld.grid(row=1, column=0, columnspan=6)
+        # self.xs.grid(column=0, row=2, sticky='we')
+        self.ys.grid(column=6, row=1, sticky='ns')
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
     def set_data(self, **kwargs):
         pass

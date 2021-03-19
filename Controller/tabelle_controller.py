@@ -112,12 +112,20 @@ class TabelleController:
             schichten_view_data[key] = sort_schicht_data_by_beginn(schichten_view_data[key])
 
         # Urlaube ermitteln
-        # Todo urlaube, die länger als ein Monat sind und in diesem Monat weder starten noch enden
         for urlaub in session.query(Urlaub).filter(
+            or_(
+                # Urlaub beginnt oder endet im aktuellen Monat
                 or_(
                     Urlaub.beginn.between(self.start, self.end),
                     Urlaub.ende.between(self.start, self.end)
-                )).filter(self.start != Urlaub.ende).filter(self.end != Urlaub.beginn):
+                ),
+                # Urlaub beginnt vor Beginn des aktuellen Monats und endet nach Ende des aktuellen Monats
+                and_(
+                    Urlaub.beginn < self.start,
+                    Urlaub.ende > self.start
+                )
+            )
+        ).filter(self.start != Urlaub.ende).filter(self.end != Urlaub.beginn):
 
             erster_tag = urlaub.beginn.day if urlaub.beginn > self.start else self.start.day
             letzter_tag = urlaub.ende.day if urlaub.ende < self.end else (self.end - timedelta(days=1)).day
@@ -153,12 +161,19 @@ class TabelleController:
                 )
 
         # AU ermitteln
-        # Todo AU, die länger als ein Monat sind und in diesem Monat weder starten noch enden
-        for au in session.query(AU).filter(
+        for au in self.session.query(AU).filter(
                 or_(
-                    AU.beginn.between(self.start, self.end),
-                    AU.ende.between(self.start, self.end)
-                )).filter(self.start != AU.ende).filter(self.end != AU.beginn):
+                    or_(
+                        AU.beginn.between(self.start, self.end),
+                        AU.ende.between(self.start, self.end)
+                    ),
+                    # AU beginnt vor Beginn des aktuellen Monats und endet nach Ende des aktuellen Monats
+                    and_(
+                        AU.beginn < self.start,
+                        AU.ende > self.start
+                    )
+                )
+        ).filter(self.start != AU.ende).filter(self.end != AU.beginn):
 
             erster_tag = au.beginn.day if au.beginn > self.start else self.start.day
             letzter_tag = au.ende.day if au.ende < self.end else (self.end - timedelta(days=1)).day

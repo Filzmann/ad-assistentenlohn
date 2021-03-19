@@ -38,14 +38,14 @@
     <connection id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" />
   </component>
   <component name="DBNavigator.Project.DatasetFilterManager">
-    <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.schichten" active-filter-id="EMPTY_FILTER" />
     <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.urlaub" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.schichten" active-filter-id="EMPTY_FILTER" />
     <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.adressen" active-filter-id="EMPTY_FILTER" />
     <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.pflegefachkraefte" active-filter-id="EMPTY_FILTER" />
     <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.arbeitsunfaehigkeit" active-filter-id="EMPTY_FILTER" />
     <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.assistenten" active-filter-id="EMPTY_FILTER" />
-    <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.bruttolohn" active-filter-id="EMPTY_FILTER" />
     <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.assistenznehmer" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.bruttolohn" active-filter-id="EMPTY_FILTER" />
     <filter-actions connection-id="649aa8b2-6c4a-43ac-af81-cf5f6fcb0d72" dataset="main.einsatzbegleitungen" active-filter-id="">
       <filter id="a67df8ff-44c4-4a3e-911e-eb66da212cc3" name="Filter 1" temporary="false" custom-name="false" type="basic" join-type="AND">
         <condition column="id" operator="=" value="" active="true" />

@@ -1,4 +1,3 @@
-from sqlalchemy import or_
 from Helpers.help_functions import *
 from Model.arbeitsunfaehigkeit import AU
 from Model.brutto import Brutto
@@ -12,16 +11,16 @@ def check_schicht(datum: datetime, session):
     tagende = datetime(year=datum.year, month=datum.month, day=datum.day, hour=23, minute=59, second=59)
 
     for schicht in session.query(Schicht.id).filter(
-        or_(
             or_(
-                Schicht.beginn.between(tagbeginn, tagende),
-                Schicht.ende.between(tagbeginn, tagende)
-            ),
-            and_(
-                tagbeginn < Schicht.beginn,
-                tagende > Schicht.ende
+                or_(
+                    Schicht.beginn.between(tagbeginn, tagende),
+                    Schicht.ende.between(tagbeginn, tagende)
+                ),
+                and_(
+                    tagbeginn < Schicht.beginn,
+                    tagende > Schicht.ende
+                )
             )
-        )
     ):
         return True
     return False
@@ -139,6 +138,8 @@ class SummenController:
             # wechsel
             schichten_view_data['wechselschicht_zuschlag'] = lohn.wechselschicht_zuschlag
             schichten_view_data['wechselschicht_zuschlag_kumuliert'] += lohn.wechselschicht_zuschlag * stunden
+            if schichten_view_data['wechselschicht_zuschlag_kumuliert'] > 105:
+                schichten_view_data['wechselschicht_zuschlag_kumuliert'] = 105
             schichten_view_data['bruttolohn'] += lohn.wechselschicht_zuschlag * stunden
 
             # zuschläge
@@ -163,12 +164,20 @@ class SummenController:
                 schichten_view_data['bruttolohn'] += schichtzuschlag
 
         # Urlaube ermitteln
-        # Todo urlaube, die länger als ein Monat sind und in diesem Monat weder starten noch enden
         for urlaub in self.session.query(Urlaub).filter(
+            or_(
+                # Urlaub beginnt oder endet im aktuellen Monat
                 or_(
                     Urlaub.beginn.between(self.start, self.end),
                     Urlaub.ende.between(self.start, self.end)
-                )).filter(self.start != Urlaub.ende).filter(self.end != Urlaub.beginn):
+                ),
+                # Urlaub beginnt vor Beginn des aktuellen Monats und endet nach Ende des aktuellen Monats
+                and_(
+                    Urlaub.beginn < self.start,
+                    Urlaub.ende > self.start
+                )
+            )
+        ).filter(self.start != Urlaub.ende).filter(self.end != Urlaub.beginn):
 
             erster_tag = urlaub.beginn.day if urlaub.beginn > self.start else self.start.day
             letzter_tag = urlaub.ende.day if urlaub.ende < self.end else (self.end - timedelta(days=1)).day
@@ -187,12 +196,19 @@ class SummenController:
                 schichten_view_data['bruttolohn'] += urlaubsstunden * urlaubslohn
 
         # AU ermitteln
-        # Todo AU, die länger als ein Monat sind und in diesem Monat weder starten noch enden
         for au in self.session.query(AU).filter(
+            or_(
                 or_(
                     AU.beginn.between(self.start, self.end),
                     AU.ende.between(self.start, self.end)
-                )).filter(self.start != AU.ende).filter(self.end != AU.beginn):
+                ),
+                # AU beginnt vor Beginn des aktuellen Monats und endet nach Ende des aktuellen Monats
+                and_(
+                    AU.beginn < self.start,
+                    AU.ende > self.start
+                )
+            )
+        ).filter(self.start != AU.ende).filter(self.end != AU.beginn):
 
             erster_tag = au.beginn.day if au.beginn > self.start else self.start.day
             letzter_tag = au.ende.day if au.ende < self.end else (self.end - timedelta(days=1)).day
