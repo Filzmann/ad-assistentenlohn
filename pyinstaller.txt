@@ -1,1 +1,1 @@
-pyinstaller --noconfirm --onefile --windowed --hidden-import "sqlalchemy.sql.default_comparator" --hidden-import "babel.numbers"  "C:/Users/simon/Desktop/ad-assistentenlohn/assistentenlohn_1.0.py"
+pyinstaller --noconfirm --onefile --windowed --hidden-import "sqlalchemy.sql.default_comparator" --hidden-import "babel.numbers"  assistentenlohn_1.0.py
