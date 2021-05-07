@@ -2,7 +2,6 @@ from datetime import datetime
 
 from sqlalchemy.future import select
 
-from Helpers.combobox_dict import Combobox
 from Model.assistent import Assistent
 from Model.assistenznehmer import ASN
 from Model.adresse import Adresse
@@ -75,7 +74,7 @@ class SchichtController:
         # show/hide initialisieren
         if self.asn:
             self.view.hide(self.view.asn_stammdaten_form)
-        self.change_asn()
+            self.change_asn()
         self.change_abweichende_adresse_beginn()
         self.change_abweichende_adresse_ende()
 
@@ -275,7 +274,8 @@ class SchichtController:
         self.view.hide(self.view.abweichende_adresse_beginn)
         self.view.hide(self.view.abweichende_adresse_ende)
         self.view.hide(self.view.asn_stammdaten_form)
-        self.view.draw_templates(asn.schicht_templates)
+
+        self.view.draw_templates(self.asn.schicht_templates)
 
     def change_abweichende_adresse_beginn(self, event=None):
         if int(self.view.abweichende_adresse_beginn_dropdown.get()) < -1:

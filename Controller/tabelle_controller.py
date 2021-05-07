@@ -84,12 +84,14 @@ class TabelleController:
                                       + "{:,.2f}€".format(schichtzuschlag)
 
             schicht_id = schicht['schicht_id']
+
+            asn_add += schicht['asn'].kuerzel if schicht['asn'] else ''
             schichten_view_data[schicht['beginn'].strftime('%d')].append(
                 {
                     'schicht_id': schicht_id,
                     'von': schicht['beginn'].strftime('%H:%M'),
                     'bis': schicht['ende'].strftime('%H:%M'),
-                    'asn': asn_add + schicht['asn'].kuerzel,
+                    'asn': asn_add,
                     'stunden': "{:,.2f}".format(stunden),
                     'stundenlohn': "{:,.2f}€".format(lohn.grundlohn),
                     'schichtlohn': "{:,.2f}€".format(lohn.grundlohn * stunden),
